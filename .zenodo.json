@@ -1,0 +1,23 @@
+{
+  "title": "gabp-sparse-inv: Differentiable selected inversion for sparse block matrices in PyTorch",
+  "description": "Differentiable selected inverse (plus log-determinant, Gaussian sampling, and linear solve) for sparse block-structured SPD and structured non-symmetric matrices, via Gaussian belief propagation / the Takahashi recurrence.",
+  "upload_type": "software",
+  "access_right": "open",
+  "license": "MIT",
+  "creators": [
+    {
+      "name": "Sehrawat, Vanshdeep",
+      "affiliation": "University of Nevada, Las Vegas",
+      "orcid": "0009-0005-8062-1337"
+    }
+  ],
+  "keywords": [
+    "selected-inversion",
+    "sparse-linear-algebra",
+    "gaussian-belief-propagation",
+    "takahashi-recurrence",
+    "differentiable",
+    "pytorch",
+    "gaussian-markov-random-field"
+  ]
+}

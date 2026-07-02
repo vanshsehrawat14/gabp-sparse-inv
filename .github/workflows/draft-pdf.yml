@@ -1,0 +1,30 @@
+name: draft-pdf
+
+# Compile the JOSS paper draft so the editor/reviewer (and the author) can see
+# the rendered PDF. Runs on changes to the paper sources, and on demand.
+on:
+  push:
+    paths:
+      - paper/joss/**
+      - .github/workflows/draft-pdf.yml
+  pull_request:
+    paths:
+      - paper/joss/**
+      - .github/workflows/draft-pdf.yml
+  workflow_dispatch:
+
+jobs:
+  paper:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build draft PDF
+        uses: openjournals/openjournals-draft-action@master
+        with:
+          journal: joss
+          paper-path: paper/joss/paper.md
+      - name: Upload paper PDF
+        uses: actions/upload-artifact@v4
+        with:
+          name: paper
+          path: paper/joss/paper.pdf

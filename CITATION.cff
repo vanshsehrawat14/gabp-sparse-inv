@@ -1,0 +1,37 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata below."
+title: "gabp-sparse-inv: Differentiable selected inversion for sparse block matrices in PyTorch"
+abstract: >-
+  Differentiable selected inverse (plus log-determinant, Gaussian sampling, and
+  linear solve) for sparse block-structured SPD and structured non-symmetric
+  matrices, via Gaussian belief propagation / the Takahashi recurrence.
+type: software
+authors:
+  - family-names: Sehrawat
+    given-names: Vanshdeep
+    orcid: "https://orcid.org/0009-0005-8062-1337"
+    email: vanshdeep.sehrawat@gmail.com
+    affiliation: "University of Nevada, Las Vegas"
+version: 0.3.1
+date-released: "2026-07-02"
+license: MIT
+repository-code: "https://github.com/vanshsehrawat14/gabp-sparse-inv"
+url: "https://github.com/vanshsehrawat14/gabp-sparse-inv"
+keywords:
+  - selected-inversion
+  - sparse-linear-algebra
+  - gaussian-belief-propagation
+  - takahashi-recurrence
+  - differentiable
+  - pytorch
+  - gaussian-markov-random-field
+# When the JOSS paper is accepted, point preferred-citation at it (add doi/volume/issue).
+preferred-citation:
+  type: article
+  title: "gabp-sparse-inv: Differentiable selected inversion for sparse block matrices in PyTorch"
+  authors:
+    - family-names: Sehrawat
+      given-names: Vanshdeep
+      orcid: "https://orcid.org/0009-0005-8062-1337"
+  journal: "Journal of Open Source Software"
+  year: 2026

@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage*
+htmlcov/
+
+# Packaging and builds
+build/
+dist/
+*.egg
+
+# Environments
+.venv/
+venv/
+env/
+
+# Generated outputs
+results/
+bench_results.*
+paper/joss/paper.pdf
+
+# Local configuration
+.env
+.pypirc
+.ruff_cache/
+.mypy_cache/
+.pyre/
+.vscode/
+.idea/
