@@ -1,0 +1,1082 @@
+[
+  {
+    "seed": 0,
+    "L": 31,
+    "b": 2,
+    "precision": {
+      "name": "fp64",
+      "input_storage": "torch.float64",
+      "factor_storage": "torch.float64",
+      "compute": "torch.float64",
+      "output": "torch.float64",
+      "runnable": true,
+      "note": "native"
+    },
+    "device": "cpu",
+    "num_threads": 1,
+    "time_median_s": 0.0056133999896701425,
+    "time_iqr_s": 0.00013385001511778682,
+    "dense_inv_time_s": 9.16970003163442e-05,
+    "dense_chol_time_s": 8.90375001472421e-05,
+    "kappa": 55.627993575005014,
+    "forward_normwise": 5.932769965729743e-16,
+    "forward_componentwise": 1.8378282117261046e-14,
+    "forward_worst_block": 1.9216872284805375e-15,
+    "factorization_residual": 7.105427357601002e-15,
+    "selected_inverse_residual": 1.3322676295501878e-15,
+    "analytic": {
+      "structured_elems": 244,
+      "dense_elems": 3844,
+      "ratio_dense_over_structured": 15.754098360655737
+    },
+    "peak_rss_bytes_noisy": 0,
+    "problem": "tree",
+    "extra": {
+      "kind": "random"
+    }
+  },
+  {
+    "seed": 1,
+    "L": 31,
+    "b": 2,
+    "precision": {
+      "name": "fp64",
+      "input_storage": "torch.float64",
+      "factor_storage": "torch.float64",
+      "compute": "torch.float64",
+      "output": "torch.float64",
+      "runnable": true,
+      "note": "native"
+    },
+    "device": "cpu",
+    "num_threads": 1,
+    "time_median_s": 0.005601150012807921,
+    "time_iqr_s": 0.00011924996215384454,
+    "dense_inv_time_s": 9.020500001497567e-05,
+    "dense_chol_time_s": 8.9082500198856e-05,
+    "kappa": 34.17381410731491,
+    "forward_normwise": 2.9755267180817415e-16,
+    "forward_componentwise": 4.060555420942112e-14,
+    "forward_worst_block": 9.630085807848745e-16,
+    "factorization_residual": 3.552713678800501e-15,
+    "selected_inverse_residual": 6.661338147750939e-16,
+    "analytic": {
+      "structured_elems": 244,
+      "dense_elems": 3844,
+      "ratio_dense_over_structured": 15.754098360655737
+    },
+    "peak_rss_bytes_noisy": 0,
+    "problem": "tree",
+    "extra": {
+      "kind": "random"
+    }
+  },
+  {
+    "seed": 0,
+    "L": 63,
+    "b": 2,
+    "precision": {
+      "name": "fp64",
+      "input_storage": "torch.float64",
+      "factor_storage": "torch.float64",
+      "compute": "torch.float64",
+      "output": "torch.float64",
+      "runnable": true,
+      "note": "native"
+    },
+    "device": "cpu",
+    "num_threads": 1,
+    "time_median_s": 0.011487499985378236,
+    "time_iqr_s": 0.0002215999411419034,
+    "dense_inv_time_s": 0.00034740000264719126,
+    "dense_chol_time_s": 0.0004028199997264892,
+    "kappa": 65.11572535703979,
+    "forward_normwise": 4.964014284812025e-16,
+    "forward_componentwise": 2.899196321630133e-13,
+    "forward_worst_block": 1.5201788433072033e-15,
+    "factorization_residual": 1.4210854715202004e-14,
+    "selected_inverse_residual": 8.881784197001252e-16,
+    "analytic": {
+      "structured_elems": 500,
+      "dense_elems": 15876,
+      "ratio_dense_over_structured": 31.752
+    },
+    "peak_rss_bytes_noisy": 0,
+    "problem": "tree",
+    "extra": {
+      "kind": "random"
+    }
+  },
+  {
+    "seed": 1,
+    "L": 63,
+    "b": 2,
+    "precision": {
+      "name": "fp64",
+      "input_storage": "torch.float64",
+      "factor_storage": "torch.float64",
+      "compute": "torch.float64",
+      "output": "torch.float64",
+      "runnable": true,
+      "note": "native"
+    },
+    "device": "cpu",
+    "num_threads": 1,
+    "time_median_s": 0.01152389997150749,
+    "time_iqr_s": 0.00034899997990578413,
+    "dense_inv_time_s": 0.0003424900001846254,
+    "dense_chol_time_s": 0.0003876700007822365,
+    "kappa": 68.55737787533465,
+    "forward_normwise": 4.3618985827723173e-16,
+    "forward_componentwise": 5.686643798090405e-14,
+    "forward_worst_block": 1.2105795332114539e-15,
+    "factorization_residual": 7.105427357601002e-15,
+    "selected_inverse_residual": 1.3322676295501878e-15,
+    "analytic": {
+      "structured_elems": 500,
+      "dense_elems": 15876,
+      "ratio_dense_over_structured": 31.752
+    },
+    "peak_rss_bytes_noisy": 0,
+    "problem": "tree",
+    "extra": {
+      "kind": "random"
+    }
+  },
+  {
+    "seed": 0,
+    "L": 127,
+    "b": 2,
+    "precision": {
+      "name": "fp64",
+      "input_storage": "torch.float64",
+      "factor_storage": "torch.float64",
+      "compute": "torch.float64",
+      "output": "torch.float64",
+      "runnable": true,
+      "note": "native"
+    },
+    "device": "cpu",
+    "num_threads": 1,
+    "time_median_s": 0.02307769999606535,
+    "time_iqr_s": 0.0003153000143356621,
+    "dense_inv_time_s": null,
+    "dense_chol_time_s": null,
+    "kappa": 68.5618240813556,
+    "forward_normwise": 5.986290519361423e-16,
+    "forward_componentwise": 9.932512419939591e-14,
+    "forward_worst_block": 1.93874462441172e-15,
+    "factorization_residual": 7.105427357601002e-15,
+    "selected_inverse_residual": 1.7763568394002505e-15,
+    "analytic": {
+      "structured_elems": 1012,
+      "dense_elems": 64516,
+      "ratio_dense_over_structured": 63.75098814229249
+    },
+    "peak_rss_bytes_noisy": 0,
+    "problem": "tree",
+    "extra": {
+      "kind": "random"
+    }
+  },
+  {
+    "seed": 1,
+    "L": 127,
+    "b": 2,
+    "precision": {
+      "name": "fp64",
+      "input_storage": "torch.float64",
+      "factor_storage": "torch.float64",
+      "compute": "torch.float64",
+      "output": "torch.float64",
+      "runnable": true,
+      "note": "native"
+    },
+    "device": "cpu",
+    "num_threads": 1,
+    "time_median_s": 0.02310389996273443,
+    "time_iqr_s": 9.569997200742364e-05,
+    "dense_inv_time_s": null,
+    "dense_chol_time_s": null,
+    "kappa": 52.23242849863098,
+    "forward_normwise": 5.401740690406362e-16,
+    "forward_componentwise": 7.256499471683602e-14,
+    "forward_worst_block": 2.104870976814715e-15,
+    "factorization_residual": 7.105427357601002e-15,
+    "selected_inverse_residual": 9.43689570931383e-16,
+    "analytic": {
+      "structured_elems": 1012,
+      "dense_elems": 64516,
+      "ratio_dense_over_structured": 63.75098814229249
+    },
+    "peak_rss_bytes_noisy": 0,
+    "problem": "tree",
+    "extra": {
+      "kind": "random"
+    }
+  },
+  {
+    "seed": 0,
+    "L": 255,
+    "b": 2,
+    "precision": {
+      "name": "fp64",
+      "input_storage": "torch.float64",
+      "factor_storage": "torch.float64",
+      "compute": "torch.float64",
+      "output": "torch.float64",
+      "runnable": true,
+      "note": "native"
+    },
+    "device": "cpu",
+    "num_threads": 1,
+    "time_median_s": 0.04598900000564754,
+    "time_iqr_s": 0.0010633000056259334,
+    "dense_inv_time_s": null,
+    "dense_chol_time_s": null,
+    "kappa": 67.65219790611074,
+    "forward_normwise": 6.734581987500112e-16,
+    "forward_componentwise": 1.1147983080364144e-12,
+    "forward_worst_block": 3.794844723271409e-15,
+    "factorization_residual": 7.105427357601002e-15,
+    "selected_inverse_residual": 1.3322676295501878e-15,
+    "analytic": {
+      "structured_elems": 2036,
+      "dense_elems": 260100,
+      "ratio_dense_over_structured": 127.75049115913556
+    },
+    "peak_rss_bytes_noisy": 0,
+    "problem": "tree",
+    "extra": {
+      "kind": "random"
+    }
+  },
+  {
+    "seed": 1,
+    "L": 255,
+    "b": 2,
+    "precision": {
+      "name": "fp64",
+      "input_storage": "torch.float64",
+      "factor_storage": "torch.float64",
+      "compute": "torch.float64",
+      "output": "torch.float64",
+      "runnable": true,
+      "note": "native"
+    },
+    "device": "cpu",
+    "num_threads": 1,
+    "time_median_s": 0.046129200025461614,
+    "time_iqr_s": 0.00033909999183379114,
+    "dense_inv_time_s": null,
+    "dense_chol_time_s": null,
+    "kappa": 56.77091263182567,
+    "forward_normwise": 6.432536684161501e-16,
+    "forward_componentwise": 2.6150733338515596e-13,
+    "forward_worst_block": 2.427433257374437e-15,
+    "factorization_residual": 7.105427357601002e-15,
+    "selected_inverse_residual": 1.3322676295501878e-15,
+    "analytic": {
+      "structured_elems": 2036,
+      "dense_elems": 260100,
+      "ratio_dense_over_structured": 127.75049115913556
+    },
+    "peak_rss_bytes_noisy": 0,
+    "problem": "tree",
+    "extra": {
+      "kind": "random"
+    }
+  },
+  {
+    "seed": 0,
+    "L": 511,
+    "b": 2,
+    "precision": {
+      "name": "fp64",
+      "input_storage": "torch.float64",
+      "factor_storage": "torch.float64",
+      "compute": "torch.float64",
+      "output": "torch.float64",
+      "runnable": true,
+      "note": "native"
+    },
+    "device": "cpu",
+    "num_threads": 1,
+    "time_median_s": 0.09426864999113604,
+    "time_iqr_s": 0.00229124998440966,
+    "dense_inv_time_s": null,
+    "dense_chol_time_s": null,
+    "kappa": 66.76902527173306,
+    "forward_normwise": 1.1987287325897346e-15,
+    "forward_componentwise": 8.308656820775124e-12,
+    "forward_worst_block": 6.527913864553122e-15,
+    "factorization_residual": 7.105427357601002e-15,
+    "selected_inverse_residual": 1.3322676295501878e-15,
+    "analytic": {
+      "structured_elems": 4084,
+      "dense_elems": 1044484,
+      "ratio_dense_over_structured": 255.75024485798238
+    },
+    "peak_rss_bytes_noisy": 0,
+    "problem": "tree",
+    "extra": {
+      "kind": "random"
+    }
+  },
+  {
+    "seed": 1,
+    "L": 511,
+    "b": 2,
+    "precision": {
+      "name": "fp64",
+      "input_storage": "torch.float64",
+      "factor_storage": "torch.float64",
+      "compute": "torch.float64",
+      "output": "torch.float64",
+      "runnable": true,
+      "note": "native"
+    },
+    "device": "cpu",
+    "num_threads": 1,
+    "time_median_s": 0.09141774999443442,
+    "time_iqr_s": 0.00044284999603405595,
+    "dense_inv_time_s": null,
+    "dense_chol_time_s": null,
+    "kappa": 70.37002813049348,
+    "forward_normwise": 1.0322841964435229e-15,
+    "forward_componentwise": 4.794488353297477e-13,
+    "forward_worst_block": 5.101845237972825e-15,
+    "factorization_residual": 1.4210854715202004e-14,
+    "selected_inverse_residual": 1.7763568394002505e-15,
+    "analytic": {
+      "structured_elems": 4084,
+      "dense_elems": 1044484,
+      "ratio_dense_over_structured": 255.75024485798238
+    },
+    "peak_rss_bytes_noisy": 0,
+    "problem": "tree",
+    "extra": {
+      "kind": "random"
+    }
+  },
+  {
+    "seed": 0,
+    "L": 31,
+    "b": 2,
+    "precision": {
+      "name": "fp32",
+      "input_storage": "torch.float32",
+      "factor_storage": "torch.float32",
+      "compute": "torch.float32",
+      "output": "torch.float32",
+      "runnable": true,
+      "note": "native"
+    },
+    "device": "cpu",
+    "num_threads": 1,
+    "time_median_s": 0.005641199997626245,
+    "time_iqr_s": 0.00018737501522991806,
+    "dense_inv_time_s": 9.956999565474689e-05,
+    "dense_chol_time_s": 8.919899992179125e-05,
+    "kappa": 55.627993575005014,
+    "forward_normwise": 1.8093579176830794e-07,
+    "forward_componentwise": 3.582823894280388e-06,
+    "forward_worst_block": 5.828722582225406e-07,
+    "factorization_residual": 7.105427357601002e-15,
+    "selected_inverse_residual": 5.440840527004553e-07,
+    "analytic": {
+      "structured_elems": 244,
+      "dense_elems": 3844,
+      "ratio_dense_over_structured": 15.754098360655737
+    },
+    "peak_rss_bytes_noisy": 0,
+    "problem": "tree",
+    "extra": {
+      "kind": "random"
+    }
+  },
+  {
+    "seed": 1,
+    "L": 31,
+    "b": 2,
+    "precision": {
+      "name": "fp32",
+      "input_storage": "torch.float32",
+      "factor_storage": "torch.float32",
+      "compute": "torch.float32",
+      "output": "torch.float32",
+      "runnable": true,
+      "note": "native"
+    },
+    "device": "cpu",
+    "num_threads": 1,
+    "time_median_s": 0.005737100000260398,
+    "time_iqr_s": 0.00022032501874491572,
+    "dense_inv_time_s": 0.00010024750023148954,
+    "dense_chol_time_s": 8.94289999268949e-05,
+    "kappa": 34.17381410731491,
+    "forward_normwise": 1.4581983344692004e-07,
+    "forward_componentwise": 2.8309758976015664e-06,
+    "forward_worst_block": 3.6710660840652524e-07,
+    "factorization_residual": 3.552713678800501e-15,
+    "selected_inverse_residual": 3.7878673664337725e-07,
+    "analytic": {
+      "structured_elems": 244,
+      "dense_elems": 3844,
+      "ratio_dense_over_structured": 15.754098360655737
+    },
+    "peak_rss_bytes_noisy": 0,
+    "problem": "tree",
+    "extra": {
+      "kind": "random"
+    }
+  },
+  {
+    "seed": 0,
+    "L": 63,
+    "b": 2,
+    "precision": {
+      "name": "fp32",
+      "input_storage": "torch.float32",
+      "factor_storage": "torch.float32",
+      "compute": "torch.float32",
+      "output": "torch.float32",
+      "runnable": true,
+      "note": "native"
+    },
+    "device": "cpu",
+    "num_threads": 1,
+    "time_median_s": 0.011526499991305172,
+    "time_iqr_s": 0.00021029997151345015,
+    "dense_inv_time_s": 0.0003272000001743436,
+    "dense_chol_time_s": 0.00032629999914206563,
+    "kappa": 65.11572535703979,
+    "forward_normwise": 1.803349868289799e-07,
+    "forward_componentwise": 0.0012676991417247532,
+    "forward_worst_block": 5.391467271560171e-07,
+    "factorization_residual": 1.4210854715202004e-14,
+    "selected_inverse_residual": 4.1147781959516294e-07,
+    "analytic": {
+      "structured_elems": 500,
+      "dense_elems": 15876,
+      "ratio_dense_over_structured": 31.752
+    },
+    "peak_rss_bytes_noisy": 0,
+    "problem": "tree",
+    "extra": {
+      "kind": "random"
+    }
+  },
+  {
+    "seed": 1,
+    "L": 63,
+    "b": 2,
+    "precision": {
+      "name": "fp32",
+      "input_storage": "torch.float32",
+      "factor_storage": "torch.float32",
+      "compute": "torch.float32",
+      "output": "torch.float32",
+      "runnable": true,
+      "note": "native"
+    },
+    "device": "cpu",
+    "num_threads": 1,
+    "time_median_s": 0.011779399996157736,
+    "time_iqr_s": 0.00034170004073530436,
+    "dense_inv_time_s": 0.00033184000058099626,
+    "dense_chol_time_s": 0.000327729998389259,
+    "kappa": 68.55737787533465,
+    "forward_normwise": 1.6442492596304481e-07,
+    "forward_componentwise": 2.352855535991159e-05,
+    "forward_worst_block": 5.012732369785982e-07,
+    "factorization_residual": 7.105427357601002e-15,
+    "selected_inverse_residual": 5.501502533533653e-07,
+    "analytic": {
+      "structured_elems": 500,
+      "dense_elems": 15876,
+      "ratio_dense_over_structured": 31.752
+    },
+    "peak_rss_bytes_noisy": 0,
+    "problem": "tree",
+    "extra": {
+      "kind": "random"
+    }
+  },
+  {
+    "seed": 0,
+    "L": 127,
+    "b": 2,
+    "precision": {
+      "name": "fp32",
+      "input_storage": "torch.float32",
+      "factor_storage": "torch.float32",
+      "compute": "torch.float32",
+      "output": "torch.float32",
+      "runnable": true,
+      "note": "native"
+    },
+    "device": "cpu",
+    "num_threads": 1,
+    "time_median_s": 0.023518299974966794,
+    "time_iqr_s": 0.00015119998715817928,
+    "dense_inv_time_s": null,
+    "dense_chol_time_s": null,
+    "kappa": 68.5618240813556,
+    "forward_normwise": 1.6767605977552386e-07,
+    "forward_componentwise": 3.070180317804071e-05,
+    "forward_worst_block": 7.867837522714184e-07,
+    "factorization_residual": 7.105427357601002e-15,
+    "selected_inverse_residual": 7.36347618435218e-07,
+    "analytic": {
+      "structured_elems": 1012,
+      "dense_elems": 64516,
+      "ratio_dense_over_structured": 63.75098814229249
+    },
+    "peak_rss_bytes_noisy": 0,
+    "problem": "tree",
+    "extra": {
+      "kind": "random"
+    }
+  },
+  {
+    "seed": 1,
+    "L": 127,
+    "b": 2,
+    "precision": {
+      "name": "fp32",
+      "input_storage": "torch.float32",
+      "factor_storage": "torch.float32",
+      "compute": "torch.float32",
+      "output": "torch.float32",
+      "runnable": true,
+      "note": "native"
+    },
+    "device": "cpu",
+    "num_threads": 1,
+    "time_median_s": 0.02331140002934262,
+    "time_iqr_s": 2.1300045773386955e-05,
+    "dense_inv_time_s": null,
+    "dense_chol_time_s": null,
+    "kappa": 52.23242849863098,
+    "forward_normwise": 1.4997710156114658e-07,
+    "forward_componentwise": 1.4592960035685513e-05,
+    "forward_worst_block": 8.060436012086113e-07,
+    "factorization_residual": 7.105427357601002e-15,
+    "selected_inverse_residual": 3.4362242458396697e-07,
+    "analytic": {
+      "structured_elems": 1012,
+      "dense_elems": 64516,
+      "ratio_dense_over_structured": 63.75098814229249
+    },
+    "peak_rss_bytes_noisy": 0,
+    "problem": "tree",
+    "extra": {
+      "kind": "random"
+    }
+  },
+  {
+    "seed": 0,
+    "L": 255,
+    "b": 2,
+    "precision": {
+      "name": "fp32",
+      "input_storage": "torch.float32",
+      "factor_storage": "torch.float32",
+      "compute": "torch.float32",
+      "output": "torch.float32",
+      "runnable": true,
+      "note": "native"
+    },
+    "device": "cpu",
+    "num_threads": 1,
+    "time_median_s": 0.047182600013911724,
+    "time_iqr_s": 0.0004349499649833888,
+    "dense_inv_time_s": null,
+    "dense_chol_time_s": null,
+    "kappa": 67.65219790611074,
+    "forward_normwise": 1.7303783389115632e-07,
+    "forward_componentwise": 0.0002895474136392656,
+    "forward_worst_block": 1.009477395161062e-06,
+    "factorization_residual": 7.105427357601002e-15,
+    "selected_inverse_residual": 5.934008315833239e-07,
+    "analytic": {
+      "structured_elems": 2036,
+      "dense_elems": 260100,
+      "ratio_dense_over_structured": 127.75049115913556
+    },
+    "peak_rss_bytes_noisy": 0,
+    "problem": "tree",
+    "extra": {
+      "kind": "random"
+    }
+  },
+  {
+    "seed": 1,
+    "L": 255,
+    "b": 2,
+    "precision": {
+      "name": "fp32",
+      "input_storage": "torch.float32",
+      "factor_storage": "torch.float32",
+      "compute": "torch.float32",
+      "output": "torch.float32",
+      "runnable": true,
+      "note": "native"
+    },
+    "device": "cpu",
+    "num_threads": 1,
+    "time_median_s": 0.048254899971652776,
+    "time_iqr_s": 0.0006161999772302806,
+    "dense_inv_time_s": null,
+    "dense_chol_time_s": null,
+    "kappa": 56.77091263182567,
+    "forward_normwise": 1.629054520667459e-07,
+    "forward_componentwise": 0.00011713495493622964,
+    "forward_worst_block": 7.222514231946737e-07,
+    "factorization_residual": 7.105427357601002e-15,
+    "selected_inverse_residual": 5.387631643039015e-07,
+    "analytic": {
+      "structured_elems": 2036,
+      "dense_elems": 260100,
+      "ratio_dense_over_structured": 127.75049115913556
+    },
+    "peak_rss_bytes_noisy": 0,
+    "problem": "tree",
+    "extra": {
+      "kind": "random"
+    }
+  },
+  {
+    "seed": 0,
+    "L": 511,
+    "b": 2,
+    "precision": {
+      "name": "fp32",
+      "input_storage": "torch.float32",
+      "factor_storage": "torch.float32",
+      "compute": "torch.float32",
+      "output": "torch.float32",
+      "runnable": true,
+      "note": "native"
+    },
+    "device": "cpu",
+    "num_threads": 1,
+    "time_median_s": 0.09441665004123934,
+    "time_iqr_s": 0.0003792500065173954,
+    "dense_inv_time_s": null,
+    "dense_chol_time_s": null,
+    "kappa": 66.76902527173306,
+    "forward_normwise": 1.7170925941497873e-07,
+    "forward_componentwise": 0.0010613255613117435,
+    "forward_worst_block": 9.002436109564721e-07,
+    "factorization_residual": 7.105427357601002e-15,
+    "selected_inverse_residual": 8.207430095552581e-07,
+    "analytic": {
+      "structured_elems": 4084,
+      "dense_elems": 1044484,
+      "ratio_dense_over_structured": 255.75024485798238
+    },
+    "peak_rss_bytes_noisy": 0,
+    "problem": "tree",
+    "extra": {
+      "kind": "random"
+    }
+  },
+  {
+    "seed": 1,
+    "L": 511,
+    "b": 2,
+    "precision": {
+      "name": "fp32",
+      "input_storage": "torch.float32",
+      "factor_storage": "torch.float32",
+      "compute": "torch.float32",
+      "output": "torch.float32",
+      "runnable": true,
+      "note": "native"
+    },
+    "device": "cpu",
+    "num_threads": 1,
+    "time_median_s": 0.09498804999748245,
+    "time_iqr_s": 0.0003632499719969928,
+    "dense_inv_time_s": null,
+    "dense_chol_time_s": null,
+    "kappa": 70.37002813049348,
+    "forward_normwise": 1.7078513184626734e-07,
+    "forward_componentwise": 4.095397896805356e-05,
+    "forward_worst_block": 9.265717410020367e-07,
+    "factorization_residual": 1.4210854715202004e-14,
+    "selected_inverse_residual": 1.0457349817194483e-06,
+    "analytic": {
+      "structured_elems": 4084,
+      "dense_elems": 1044484,
+      "ratio_dense_over_structured": 255.75024485798238
+    },
+    "peak_rss_bytes_noisy": 0,
+    "problem": "tree",
+    "extra": {
+      "kind": "random"
+    }
+  },
+  {
+    "seed": 0,
+    "L": 31,
+    "b": 2,
+    "precision": {
+      "name": "bf16",
+      "input_storage": "torch.bfloat16",
+      "factor_storage": "torch.float32",
+      "compute": "torch.float32",
+      "output": "torch.bfloat16",
+      "runnable": true,
+      "note": "store-low/compute-fp32 (no native half Cholesky on this backend)"
+    },
+    "device": "cpu",
+    "num_threads": 1,
+    "time_median_s": 0.005721049994463101,
+    "time_iqr_s": 0.00013559999933931977,
+    "dense_inv_time_s": 8.820199989713727e-05,
+    "dense_chol_time_s": 8.637749968329445e-05,
+    "kappa": 55.627993575005014,
+    "forward_normwise": 0.004689167453643363,
+    "forward_componentwise": 0.4138144544300667,
+    "forward_worst_block": 0.033501796329908407,
+    "factorization_residual": 7.105427357601002e-15,
+    "selected_inverse_residual": 0.024367373516857693,
+    "analytic": {
+      "structured_elems": 244,
+      "dense_elems": 3844,
+      "ratio_dense_over_structured": 15.754098360655737
+    },
+    "peak_rss_bytes_noisy": 0,
+    "problem": "tree",
+    "extra": {
+      "kind": "random"
+    }
+  },
+  {
+    "seed": 1,
+    "L": 31,
+    "b": 2,
+    "precision": {
+      "name": "bf16",
+      "input_storage": "torch.bfloat16",
+      "factor_storage": "torch.float32",
+      "compute": "torch.float32",
+      "output": "torch.bfloat16",
+      "runnable": true,
+      "note": "store-low/compute-fp32 (no native half Cholesky on this backend)"
+    },
+    "device": "cpu",
+    "num_threads": 1,
+    "time_median_s": 0.005800099985208362,
+    "time_iqr_s": 0.0002479499817127362,
+    "dense_inv_time_s": 8.981099992524832e-05,
+    "dense_chol_time_s": 8.662450010888279e-05,
+    "kappa": 34.17381410731491,
+    "forward_normwise": 0.004569259452279491,
+    "forward_componentwise": 0.15120983882072186,
+    "forward_worst_block": 0.016612026053703,
+    "factorization_residual": 3.552713678800501e-15,
+    "selected_inverse_residual": 0.01327969328336609,
+    "analytic": {
+      "structured_elems": 244,
+      "dense_elems": 3844,
+      "ratio_dense_over_structured": 15.754098360655737
+    },
+    "peak_rss_bytes_noisy": 0,
+    "problem": "tree",
+    "extra": {
+      "kind": "random"
+    }
+  },
+  {
+    "seed": 0,
+    "L": 63,
+    "b": 2,
+    "precision": {
+      "name": "bf16",
+      "input_storage": "torch.bfloat16",
+      "factor_storage": "torch.float32",
+      "compute": "torch.float32",
+      "output": "torch.bfloat16",
+      "runnable": true,
+      "note": "store-low/compute-fp32 (no native half Cholesky on this backend)"
+    },
+    "device": "cpu",
+    "num_threads": 1,
+    "time_median_s": 0.011752999969758093,
+    "time_iqr_s": 0.0003424000460654497,
+    "dense_inv_time_s": 0.00034104000078514216,
+    "dense_chol_time_s": 0.0003958399989642203,
+    "kappa": 65.11572535703979,
+    "forward_normwise": 0.003952756806727985,
+    "forward_componentwise": 15.367889379661491,
+    "forward_worst_block": 0.014655269562286419,
+    "factorization_residual": 1.4210854715202004e-14,
+    "selected_inverse_residual": 0.0102714001925035,
+    "analytic": {
+      "structured_elems": 500,
+      "dense_elems": 15876,
+      "ratio_dense_over_structured": 31.752
+    },
+    "peak_rss_bytes_noisy": 0,
+    "problem": "tree",
+    "extra": {
+      "kind": "random"
+    }
+  },
+  {
+    "seed": 1,
+    "L": 63,
+    "b": 2,
+    "precision": {
+      "name": "bf16",
+      "input_storage": "torch.bfloat16",
+      "factor_storage": "torch.float32",
+      "compute": "torch.float32",
+      "output": "torch.bfloat16",
+      "runnable": true,
+      "note": "store-low/compute-fp32 (no native half Cholesky on this backend)"
+    },
+    "device": "cpu",
+    "num_threads": 1,
+    "time_median_s": 0.011927299958188087,
+    "time_iqr_s": 0.0004744000034406781,
+    "dense_inv_time_s": 0.00033437000238336625,
+    "dense_chol_time_s": 0.0003781099978368729,
+    "kappa": 68.55737787533465,
+    "forward_normwise": 0.004735223503191927,
+    "forward_componentwise": 0.9313571306873052,
+    "forward_worst_block": 0.015748229775794195,
+    "factorization_residual": 7.105427357601002e-15,
+    "selected_inverse_residual": 0.021195355124744797,
+    "analytic": {
+      "structured_elems": 500,
+      "dense_elems": 15876,
+      "ratio_dense_over_structured": 31.752
+    },
+    "peak_rss_bytes_noisy": 0,
+    "problem": "tree",
+    "extra": {
+      "kind": "random"
+    }
+  },
+  {
+    "seed": 0,
+    "L": 127,
+    "b": 2,
+    "precision": {
+      "name": "bf16",
+      "input_storage": "torch.bfloat16",
+      "factor_storage": "torch.float32",
+      "compute": "torch.float32",
+      "output": "torch.bfloat16",
+      "runnable": true,
+      "note": "store-low/compute-fp32 (no native half Cholesky on this backend)"
+    },
+    "device": "cpu",
+    "num_threads": 1,
+    "time_median_s": 0.02337970002554357,
+    "time_iqr_s": 0.0001556000206619501,
+    "dense_inv_time_s": null,
+    "dense_chol_time_s": null,
+    "kappa": 68.5618240813556,
+    "forward_normwise": 0.00631908056640663,
+    "forward_componentwise": 1.0120555531999222,
+    "forward_worst_block": 0.04685366181562002,
+    "factorization_residual": 7.105427357601002e-15,
+    "selected_inverse_residual": 0.03246632138263861,
+    "analytic": {
+      "structured_elems": 1012,
+      "dense_elems": 64516,
+      "ratio_dense_over_structured": 63.75098814229249
+    },
+    "peak_rss_bytes_noisy": 0,
+    "problem": "tree",
+    "extra": {
+      "kind": "random"
+    }
+  },
+  {
+    "seed": 1,
+    "L": 127,
+    "b": 2,
+    "precision": {
+      "name": "bf16",
+      "input_storage": "torch.bfloat16",
+      "factor_storage": "torch.float32",
+      "compute": "torch.float32",
+      "output": "torch.bfloat16",
+      "runnable": true,
+      "note": "store-low/compute-fp32 (no native half Cholesky on this backend)"
+    },
+    "device": "cpu",
+    "num_threads": 1,
+    "time_median_s": 0.023725799983367324,
+    "time_iqr_s": 0.0005374000174924731,
+    "dense_inv_time_s": null,
+    "dense_chol_time_s": null,
+    "kappa": 52.23242849863098,
+    "forward_normwise": 0.0055143582457686975,
+    "forward_componentwise": 0.5410880162749024,
+    "forward_worst_block": 0.02102160592042243,
+    "factorization_residual": 7.105427357601002e-15,
+    "selected_inverse_residual": 0.0295957796538992,
+    "analytic": {
+      "structured_elems": 1012,
+      "dense_elems": 64516,
+      "ratio_dense_over_structured": 63.75098814229249
+    },
+    "peak_rss_bytes_noisy": 0,
+    "problem": "tree",
+    "extra": {
+      "kind": "random"
+    }
+  },
+  {
+    "seed": 0,
+    "L": 255,
+    "b": 2,
+    "precision": {
+      "name": "bf16",
+      "input_storage": "torch.bfloat16",
+      "factor_storage": "torch.float32",
+      "compute": "torch.float32",
+      "output": "torch.bfloat16",
+      "runnable": true,
+      "note": "store-low/compute-fp32 (no native half Cholesky on this backend)"
+    },
+    "device": "cpu",
+    "num_threads": 1,
+    "time_median_s": 0.04773280001245439,
+    "time_iqr_s": 0.0008024999988265336,
+    "dense_inv_time_s": null,
+    "dense_chol_time_s": null,
+    "kappa": 67.65219790611074,
+    "forward_normwise": 0.005394299166680139,
+    "forward_componentwise": 5.781191506983052,
+    "forward_worst_block": 0.035805341147978786,
+    "factorization_residual": 7.105427357601002e-15,
+    "selected_inverse_residual": 0.047616759097605654,
+    "analytic": {
+      "structured_elems": 2036,
+      "dense_elems": 260100,
+      "ratio_dense_over_structured": 127.75049115913556
+    },
+    "peak_rss_bytes_noisy": 0,
+    "problem": "tree",
+    "extra": {
+      "kind": "random"
+    }
+  },
+  {
+    "seed": 1,
+    "L": 255,
+    "b": 2,
+    "precision": {
+      "name": "bf16",
+      "input_storage": "torch.bfloat16",
+      "factor_storage": "torch.float32",
+      "compute": "torch.float32",
+      "output": "torch.bfloat16",
+      "runnable": true,
+      "note": "store-low/compute-fp32 (no native half Cholesky on this backend)"
+    },
+    "device": "cpu",
+    "num_threads": 1,
+    "time_median_s": 0.047412200015969574,
+    "time_iqr_s": 0.0008553000225219876,
+    "dense_inv_time_s": null,
+    "dense_chol_time_s": null,
+    "kappa": 56.77091263182567,
+    "forward_normwise": 0.004824417348968313,
+    "forward_componentwise": 4.11262303133096,
+    "forward_worst_block": 0.0223079665814194,
+    "factorization_residual": 7.105427357601002e-15,
+    "selected_inverse_residual": 0.02464239749474882,
+    "analytic": {
+      "structured_elems": 2036,
+      "dense_elems": 260100,
+      "ratio_dense_over_structured": 127.75049115913556
+    },
+    "peak_rss_bytes_noisy": 0,
+    "problem": "tree",
+    "extra": {
+      "kind": "random"
+    }
+  },
+  {
+    "seed": 0,
+    "L": 511,
+    "b": 2,
+    "precision": {
+      "name": "bf16",
+      "input_storage": "torch.bfloat16",
+      "factor_storage": "torch.float32",
+      "compute": "torch.float32",
+      "output": "torch.bfloat16",
+      "runnable": true,
+      "note": "store-low/compute-fp32 (no native half Cholesky on this backend)"
+    },
+    "device": "cpu",
+    "num_threads": 1,
+    "time_median_s": 0.09480104999965988,
+    "time_iqr_s": 0.0004312499950174242,
+    "dense_inv_time_s": null,
+    "dense_chol_time_s": null,
+    "kappa": 66.76902527173306,
+    "forward_normwise": 0.005380602332128304,
+    "forward_componentwise": 190.16062757615907,
+    "forward_worst_block": 0.029042146701252342,
+    "factorization_residual": 7.105427357601002e-15,
+    "selected_inverse_residual": 0.02936103881229024,
+    "analytic": {
+      "structured_elems": 4084,
+      "dense_elems": 1044484,
+      "ratio_dense_over_structured": 255.75024485798238
+    },
+    "peak_rss_bytes_noisy": 0,
+    "problem": "tree",
+    "extra": {
+      "kind": "random"
+    }
+  },
+  {
+    "seed": 1,
+    "L": 511,
+    "b": 2,
+    "precision": {
+      "name": "bf16",
+      "input_storage": "torch.bfloat16",
+      "factor_storage": "torch.float32",
+      "compute": "torch.float32",
+      "output": "torch.bfloat16",
+      "runnable": true,
+      "note": "store-low/compute-fp32 (no native half Cholesky on this backend)"
+    },
+    "device": "cpu",
+    "num_threads": 1,
+    "time_median_s": 0.09385514998575673,
+    "time_iqr_s": 0.000617949990555644,
+    "dense_inv_time_s": null,
+    "dense_chol_time_s": null,
+    "kappa": 70.37002813049348,
+    "forward_normwise": 0.005561348809219435,
+    "forward_componentwise": 2.210143441654733,
+    "forward_worst_block": 0.07252392967776956,
+    "factorization_residual": 1.4210854715202004e-14,
+    "selected_inverse_residual": 0.045984931489414294,
+    "analytic": {
+      "structured_elems": 4084,
+      "dense_elems": 1044484,
+      "ratio_dense_over_structured": 255.75024485798238
+    },
+    "peak_rss_bytes_noisy": 0,
+    "problem": "tree",
+    "extra": {
+      "kind": "random"
+    }
+  }
+]

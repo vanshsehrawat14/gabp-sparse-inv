@@ -16,9 +16,12 @@ dist/
 venv/
 env/
 
-# Generated outputs
-results/
+# Generated outputs. The frozen records the paper cites are tracked:
+# bench_results.csv (Fig. 1) and results/CONFIRMATORY/ (pre-registered runs).
+results/*
+!results/CONFIRMATORY/
 bench_results.*
+!bench_results.csv
 paper/joss/paper.pdf
 
 # Local configuration
