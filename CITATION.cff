@@ -12,7 +12,7 @@ authors:
     orcid: "https://orcid.org/0009-0005-8062-1337"
     email: vanshdeep.sehrawat@gmail.com
     affiliation: "University of Nevada, Las Vegas"
-version: 0.3.1
+version: 0.3.2
 date-released: "2026-07-02"
 license: MIT
 repository-code: "https://github.com/vanshsehrawat14/gabp-sparse-inv"
