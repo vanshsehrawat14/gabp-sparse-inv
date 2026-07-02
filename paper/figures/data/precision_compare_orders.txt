@@ -1,0 +1,41 @@
+
+elimination-order sensitivity  problem=tree size=127 b=2 [fp32], 16 seeds
+  ratios vs the kernel, median [min, max] over seeds; heavy-tailed -> read the spread, not the median alone
+
+  diag_load=1e+01  kappa~7.12e+00
+    normwise      : NAT/ker  1.05 [0.94, 1.15]        LEAF/ker  1.00 [0.94, 1.04]
+    componentwise : NAT/ker  1.14 [0.40, 7.82]        LEAF/ker  0.84 [0.33, 2.14]
+    worst_block   : NAT/ker  0.91 [0.70, 1.34]        LEAF/ker  0.91 [0.58, 1.01]
+
+  diag_load=1e+00  kappa~6.22e+01
+    normwise      : NAT/ker  1.14 [0.95, 1.78]        LEAF/ker  0.98 [0.90, 1.23]
+    componentwise : NAT/ker  1.46 [0.50, 3.37]        LEAF/ker  0.78 [0.19, 2.21]
+    worst_block   : NAT/ker  1.44 [0.77, 2.75]        LEAF/ker  0.96 [0.74, 1.67]
+
+  diag_load=1e-01  kappa~6.09e+02
+    normwise      : NAT/ker  1.78 [0.89, 2.52]        LEAF/ker  0.97 [0.52, 1.15]
+    componentwise : NAT/ker  1.02 [0.35, 5.08]        LEAF/ker  0.95 [0.35, 3.59]
+    worst_block   : NAT/ker  1.94 [0.57, 3.68]        LEAF/ker  0.95 [0.32, 1.36]
+
+  diag_load=1e-02  kappa~5.98e+03
+    normwise      : NAT/ker  2.15 [0.91, 3.12]        LEAF/ker  1.09 [0.68, 1.83]
+    componentwise : NAT/ker  1.56 [0.08, 11.26]       LEAF/ker  1.51 [0.42, 6.16]
+    worst_block   : NAT/ker  2.13 [1.10, 5.10]        LEAF/ker  1.13 [0.47, 2.11]
+
+  diag_load=1e-03  kappa~5.15e+04
+    normwise      : NAT/ker  3.02 [0.36, 17.48]       LEAF/ker  1.51 [0.41, 5.94]
+    componentwise : NAT/ker  1.46 [0.26, 17.11]       LEAF/ker  0.94 [0.42, 5.80]
+    worst_block   : NAT/ker  2.37 [0.54, 7.62]        LEAF/ker  1.35 [0.40, 3.86]
+
+  diag_load=1e-04  kappa~2.41e+05
+    normwise      : NAT/ker  1.81 [0.40, 10.05]       LEAF/ker  0.86 [0.22, 2.86]
+    componentwise : NAT/ker  1.36 [0.44, 8.07]        LEAF/ker  0.98 [0.21, 2.38]
+    worst_block   : NAT/ker  1.98 [0.40, 7.72]        LEAF/ker  0.91 [0.23, 2.82]
+
+  diag_load=1e-05  kappa~3.36e+05
+    normwise      : NAT/ker  3.52 [0.75, 24.85]       LEAF/ker  1.28 [0.55, 37.17]
+    componentwise : NAT/ker  2.85 [0.78, 30.28]       LEAF/ker  1.05 [0.23, 34.98]
+    worst_block   : NAT/ker  3.06 [0.80, 24.84]       LEAF/ker  1.12 [0.55, 37.15]
+
+read: NAT/ker>1 => kernel beats a *naive*-order dense solve; LEAF/ker~1 => a dense solve in the kernel's own order matches it (ordering, not structure, is the bulk of the edge). No robust win; no penalty.  (diagnostic, not asserted)
+

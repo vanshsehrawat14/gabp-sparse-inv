@@ -1,0 +1,2693 @@
+{
+  "run_tag": "CONFIRMATORY",
+  "probe": "deq",
+  "analysis": "gradient_channel_isolation",
+  "seed_pool": "HOLDOUT",
+  "seed": 1012,
+  "config": {
+    "rhos": [
+      0.5,
+      0.7,
+      0.85,
+      0.9,
+      0.95,
+      0.98,
+      0.99
+    ],
+    "n": 16,
+    "steps": 120,
+    "lr": 0.05,
+    "n_train": 32,
+    "n_test": 32,
+    "k_grid": [
+      1,
+      2,
+      4,
+      8,
+      16,
+      32
+    ],
+    "input_scale": 0.2,
+    "intervention": "backward_only_exact_forward",
+    "kind": "linear_affine_chain"
+  },
+  "n": 16,
+  "forward_operator": "exact_nonsym_junction_solve",
+  "train_arms": [
+    "exact_adjoint",
+    "neumann_K_adjoint"
+  ],
+  "eval_forward": "exact_for_both",
+  "metric": "test_loss_exact_forward",
+  "lower_is_better": true,
+  "rhos": [
+    0.5,
+    0.7,
+    0.85,
+    0.9,
+    0.95,
+    0.98,
+    0.99
+  ],
+  "k_grid": [
+    1,
+    2,
+    4,
+    8,
+    16,
+    32
+  ],
+  "matched_compute": {
+    "exact_backward_flops": 232,
+    "b2_one_step_backward_flops": 108,
+    "match_target": "backward_only"
+  },
+  "rows": {
+    "0.5": {
+      "rho": 0.5,
+      "exact_arm": {
+        "mode": "exact",
+        "K": 1,
+        "raw": 0.0011062140616583103,
+        "gain": 0.49977627693372556,
+        "first_train_loss": 0.00395418820907427,
+        "last_step_train_loss": 1.4630857906229504e-09
+      },
+      "exact_train_loss_exact_forward": 4.955281167727289e-09,
+      "exact_test_loss_exact_forward": 4.345622078192612e-09,
+      "arms": {
+        "1": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 1,
+            "raw": 0.004013317804528438,
+            "gain": 0.5005023247763343,
+            "first_train_loss": 0.00395418820907427,
+            "last_step_train_loss": 2.045770855532465e-08
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 4.955281167727289e-09,
+            "neumann_adj_loss": 2.5047871918140737e-08,
+            "delta_neumann_minus_exact": 2.009259075041345e-08
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 4.345622078192612e-09,
+            "neumann_adj_loss": 2.1962883249952404e-08,
+            "delta_neumann_minus_exact": 1.761726117175979e-08
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 5.2284913572147506e-08,
+              "rel_mse_to_target_variance": 1.0048457189824167e-06
+            },
+            "test": {
+              "mse": 4.584742620224387e-08,
+              "rel_mse_to_target_variance": 9.068182229276422e-07
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 0.002907103742870128,
+            "gain_abs_diff": 0.0007260478426087125
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 1,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 1,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 1,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        },
+        "2": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 2,
+            "raw": 0.003996957816890949,
+            "gain": 0.5004982388858074,
+            "first_train_loss": 0.00395418820907427,
+            "last_step_train_loss": 3.348540650096561e-08
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 4.955281167727289e-09,
+            "neumann_adj_loss": 2.4641683184231054e-08,
+            "delta_neumann_minus_exact": 1.9686402016503766e-08
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 4.345622078192612e-09,
+            "neumann_adj_loss": 2.160674047329263e-08,
+            "delta_neumann_minus_exact": 1.7261118395100017e-08
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 5.16973203829152e-08,
+              "rel_mse_to_target_variance": 9.935529681607374e-07
+            },
+            "test": {
+              "mse": 4.5332217682083344e-08,
+              "rel_mse_to_target_variance": 8.96627891356395e-07
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 0.0028907437552326385,
+            "gain_abs_diff": 0.0007219619520817955
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 2,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 2,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 2,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        },
+        "4": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 4,
+            "raw": 0.0019389614393891586,
+            "gain": 0.4999842554677714,
+            "first_train_loss": 0.00395418820907427,
+            "last_step_train_loss": 1.0339987430041011e-09
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 4.955281167727289e-09,
+            "neumann_adj_loss": 2.4560483484004022e-11,
+            "delta_neumann_minus_exact": -4.9307206842432854e-09
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 4.345622078192612e-09,
+            "neumann_adj_loss": 2.153782857797946e-11,
+            "delta_neumann_minus_exact": -4.324084249614633e-09
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 4.28211936138472e-09,
+              "rel_mse_to_target_variance": 8.229657494836754e-08
+            },
+            "test": {
+              "mse": 3.7552930561533266e-09,
+              "rel_mse_to_target_variance": 7.427610354246686e-08
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 0.0008327473777308483,
+            "gain_abs_diff": 0.00020797853404586064
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 4,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 4,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 4,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        },
+        "8": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 8,
+            "raw": 0.0011586368773915112,
+            "gain": 0.4997893695277568,
+            "first_train_loss": 0.00395418820907427,
+            "last_step_train_loss": 1.1313861535274817e-09
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 4.955281167727289e-09,
+            "neumann_adj_loss": 4.392481960408753e-09,
+            "delta_neumann_minus_exact": -5.627992073185362e-10
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 4.345622078192612e-09,
+            "neumann_adj_loss": 3.852054878543824e-09,
+            "delta_neumann_minus_exact": -4.935671996487885e-10
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 1.6957560345681808e-11,
+              "rel_mse_to_target_variance": 3.259015030068162e-10
+            },
+            "test": {
+              "mse": 1.4871881526099112e-11,
+              "rel_mse_to_target_variance": 2.9415158699634027e-10
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 5.2422815733200925e-05,
+            "gain_abs_diff": 1.3092594031260951e-05
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 8,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 8,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 8,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        },
+        "16": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 16,
+            "raw": 0.001106440225870546,
+            "gain": 0.49977633341822025,
+            "first_train_loss": 0.00395418820907427,
+            "last_step_train_loss": 1.4615476909378851e-09
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 4.955281167727289e-09,
+            "neumann_adj_loss": 4.952780337504124e-09,
+            "delta_neumann_minus_exact": -2.500830223165179e-12
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 4.345622078192612e-09,
+            "neumann_adj_loss": 4.343428879943205e-09,
+            "delta_neumann_minus_exact": -2.1931982494072255e-12
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 3.156092678090581e-16,
+              "rel_mse_to_target_variance": 6.0655856529530306e-15
+            },
+            "test": {
+              "mse": 2.767919545784016e-16,
+              "rel_mse_to_target_variance": 5.474680023786599e-15
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 2.2616421223569522e-07,
+            "gain_abs_diff": 5.6484494692643494e-08
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 16,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 16,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 16,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        },
+        "32": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 32,
+            "raw": 0.0011062140664420612,
+            "gain": 0.4997762769349203,
+            "first_train_loss": 0.00395418820907427,
+            "last_step_train_loss": 1.463085757338395e-09
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 4.955281167727289e-09,
+            "neumann_adj_loss": 4.955281114824348e-09,
+            "delta_neumann_minus_exact": -5.2902941572037274e-17
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 4.345622078192612e-09,
+            "neumann_adj_loss": 4.345622031797686e-09,
+            "delta_neumann_minus_exact": -4.639492604920892e-17
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 1.4119891659312586e-25,
+              "rel_mse_to_target_variance": 2.713653273382092e-24
+            },
+            "test": {
+              "mse": 1.2383089935336338e-25,
+              "rel_mse_to_target_variance": 2.4492567063590776e-24
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 4.783750869388759e-12,
+            "gain_abs_diff": 1.1947665079503622e-12
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 32,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 32,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 32,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        }
+      }
+    },
+    "0.7": {
+      "rho": 0.7,
+      "exact_arm": {
+        "mode": "exact",
+        "K": 1,
+        "raw": 0.8554770445752843,
+        "gain": 0.7010130991497397,
+        "first_train_loss": 0.026399594034003326,
+        "last_step_train_loss": 7.924518175874725e-07
+      },
+      "exact_train_loss_exact_forward": 7.39326593699328e-07,
+      "exact_test_loss_exact_forward": 5.966160182006464e-07,
+      "arms": {
+        "1": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 1,
+            "raw": 0.8487702588089578,
+            "gain": 0.6996088034727612,
+            "first_train_loss": 0.026399594034003326,
+            "last_step_train_loss": 3.855936959772512e-08
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 7.39326593699328e-07,
+            "neumann_adj_loss": 1.0921129408096493e-07,
+            "delta_neumann_minus_exact": -6.301152996183631e-07
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 5.966160182006464e-07,
+            "neumann_adj_loss": 8.81548827759305e-08,
+            "delta_neumann_minus_exact": -5.084611354247159e-07
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 1.4168432492477995e-06,
+              "rel_mse_to_target_variance": 1.601078808489025e-05
+            },
+            "test": {
+              "mse": 1.143440921345611e-06,
+              "rel_mse_to_target_variance": 1.4373585779102876e-05
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 0.00670678576632644,
+            "gain_abs_diff": 0.0014042956769785286
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 1,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 1,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 1,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        },
+        "2": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 2,
+            "raw": 0.8451731246446784,
+            "gain": 0.698854062356411,
+            "first_train_loss": 0.026399594034003326,
+            "last_step_train_loss": 1.0638400376749177e-06
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 7.39326593699328e-07,
+            "neumann_adj_loss": 9.324558030429021e-07,
+            "delta_neumann_minus_exact": 1.93129209343574e-07
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 5.966160182006464e-07,
+            "neumann_adj_loss": 7.527860282504278e-07,
+            "delta_neumann_minus_exact": 1.5617001004978133e-07
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 3.332370245306107e-06,
+              "rel_mse_to_target_variance": 3.7656864191797746e-05
+            },
+            "test": {
+              "mse": 2.6897345835539456e-06,
+              "rel_mse_to_target_variance": 3.381121843552305e-05
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 0.010303919930605865,
+            "gain_abs_diff": 0.002159036793328739
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 2,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 2,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 2,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        },
+        "4": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 4,
+            "raw": 0.8513868317493196,
+            "gain": 0.700157123157414,
+            "first_train_loss": 0.026399594034003326,
+            "last_step_train_loss": 1.1972331788370776e-09
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 7.39326593699328e-07,
+            "neumann_adj_loss": 1.7682306325829018e-08,
+            "delta_neumann_minus_exact": -7.21644287373499e-07
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 5.966160182006464e-07,
+            "neumann_adj_loss": 1.4271539487165212e-08,
+            "delta_neumann_minus_exact": -5.823444787134813e-07
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 5.283345008900178e-07,
+              "rel_mse_to_target_variance": 5.970351156472134e-06
+            },
+            "test": {
+              "mse": 4.2633810684069947e-07,
+              "rel_mse_to_target_variance": 5.3592688832262785e-06
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 0.0040902128259646675,
+            "gain_abs_diff": 0.0008559759923257859
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 4,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 4,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 4,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        },
+        "8": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 8,
+            "raw": 0.8552966658593377,
+            "gain": 0.7009753802591583,
+            "first_train_loss": 0.026399594034003326,
+            "last_step_train_loss": 6.328000788900243e-07
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 7.39326593699328e-07,
+            "neumann_adj_loss": 6.851271585130807e-07,
+            "delta_neumann_minus_exact": -5.419943518624731e-08
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 5.966160182006464e-07,
+            "neumann_adj_loss": 5.528826973135325e-07,
+            "delta_neumann_minus_exact": -4.373332088711397e-08
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 1.0314985639143074e-09,
+              "rel_mse_to_target_variance": 1.1656268204311556e-08
+            },
+            "test": {
+              "mse": 8.322311185705701e-10,
+              "rel_mse_to_target_variance": 1.046153338358371e-08
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 0.00018037871594656085,
+            "gain_abs_diff": 3.771889058146183e-05
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 8,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 8,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 8,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        },
+        "16": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 16,
+            "raw": 0.8554855358602094,
+            "gain": 0.7010148746898535,
+            "first_train_loss": 0.026399594034003326,
+            "last_step_train_loss": 7.882560027205199e-07
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 7.39326593699328e-07,
+            "neumann_adj_loss": 7.419291060742602e-07,
+            "delta_neumann_minus_exact": 2.6025123749321363e-09
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 5.966160182006464e-07,
+            "neumann_adj_loss": 5.987159634826601e-07,
+            "delta_neumann_minus_exact": 2.099945282013649e-09
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 2.2862625457558864e-12,
+              "rel_mse_to_target_variance": 2.583550801823186e-11
+            },
+            "test": {
+              "mse": 1.844582355040276e-12,
+              "rel_mse_to_target_variance": 2.318726067245343e-11
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 8.491284925082887e-06,
+            "gain_abs_diff": 1.7755401137131699e-06
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 16,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 16,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 16,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        },
+        "32": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 32,
+            "raw": 0.855477098410697,
+            "gain": 0.7010131104068226,
+            "first_train_loss": 0.026399594034003326,
+            "last_step_train_loss": 7.924416980087585e-07
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 7.39326593699328e-07,
+            "neumann_adj_loss": 7.39343079359969e-07,
+            "delta_neumann_minus_exact": 1.6485660640995403e-11
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 5.966160182006464e-07,
+            "neumann_adj_loss": 5.966293203446417e-07,
+            "delta_neumann_minus_exact": 1.330214399525544e-11
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 9.189920187178812e-17,
+              "rel_mse_to_target_variance": 1.0384907766761796e-15
+            },
+            "test": {
+              "mse": 7.414533636852754e-17,
+              "rel_mse_to_target_variance": 9.320414658234388e-16
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 5.383541268333403e-08,
+            "gain_abs_diff": 1.1257082821458653e-08
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 32,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 32,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 32,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        }
+      }
+    },
+    "0.85": {
+      "rho": 0.85,
+      "exact_arm": {
+        "mode": "exact",
+        "K": 1,
+        "raw": 1.743651146545804,
+        "gain": 0.8502990851292823,
+        "first_train_loss": 0.16847468695041043,
+        "last_step_train_loss": 4.619608719540788e-08
+      },
+      "exact_train_loss_exact_forward": 1.04321458009555e-06,
+      "exact_test_loss_exact_forward": 8.014149406720792e-07,
+      "arms": {
+        "1": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 1,
+            "raw": 1.75201591445835,
+            "gain": 0.8513546804483196,
+            "first_train_loss": 0.16847468695041043,
+            "last_step_train_loss": 1.9928067867585225e-05
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 1.04321458009555e-06,
+            "neumann_adj_loss": 2.1709729631918e-05,
+            "delta_neumann_minus_exact": 2.066651505182245e-05
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 8.014149406720792e-07,
+            "neumann_adj_loss": 1.667571872763898e-05,
+            "delta_neumann_minus_exact": 1.58743037869669e-05
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 1.323498278325439e-05,
+              "rel_mse_to_target_variance": 5.0743479367990796e-05
+            },
+            "test": {
+              "mse": 1.016572880120225e-05,
+              "rel_mse_to_target_variance": 4.860389746709672e-05
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 0.008364767912546034,
+            "gain_abs_diff": 0.0010555953190373168
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 1,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 1,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 1,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        },
+        "2": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 2,
+            "raw": 1.7512736299279978,
+            "gain": 0.8512612585539647,
+            "first_train_loss": 0.16847468695041043,
+            "last_step_train_loss": 2.442281756251039e-05
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 1.04321458009555e-06,
+            "neumann_adj_loss": 1.8794845157514607e-05,
+            "delta_neumann_minus_exact": 1.7751630577419057e-05
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 8.014149406720792e-07,
+            "neumann_adj_loss": 1.4436890044464229e-05,
+            "delta_neumann_minus_exact": 1.363547510379215e-05
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 1.0982090000236294e-05,
+              "rel_mse_to_target_variance": 4.210579390020028e-05
+            },
+            "test": {
+              "mse": 8.43538434924547e-06,
+              "rel_mse_to_target_variance": 4.033085714009914e-05
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 0.007622483382193845,
+            "gain_abs_diff": 0.000962173424682411
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 2,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 2,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 2,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        },
+        "4": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 4,
+            "raw": 1.7362671994126069,
+            "gain": 0.8493620971961282,
+            "first_train_loss": 0.16847468695041043,
+            "last_step_train_loss": 2.335947761241741e-06
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 1.04321458009555e-06,
+            "neumann_adj_loss": 4.686289026981997e-06,
+            "delta_neumann_minus_exact": 3.643074446886447e-06
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 8.014149406720792e-07,
+            "neumann_adj_loss": 3.6004800133819986e-06,
+            "delta_neumann_minus_exact": 2.7990650727099194e-06
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 1.0151631381074979e-05,
+              "rel_mse_to_target_variance": 3.892178070596322e-05
+            },
+            "test": {
+              "mse": 7.79923321393873e-06,
+              "rel_mse_to_target_variance": 3.728932168713985e-05
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 0.007383947133197122,
+            "gain_abs_diff": 0.0009369879331541098
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 4,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 4,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 4,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        },
+        "8": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 8,
+            "raw": 1.7317226994685702,
+            "gain": 0.8487830071463963,
+            "first_train_loss": 0.16847468695041043,
+            "last_step_train_loss": 2.0907844599489998e-05
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 1.04321458009555e-06,
+            "neumann_adj_loss": 1.6925290936080702e-05,
+            "delta_neumann_minus_exact": 1.588207635598515e-05
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 8.014149406720792e-07,
+            "neumann_adj_loss": 1.3004595011157057e-05,
+            "delta_neumann_minus_exact": 1.2203180070484978e-05
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 2.6372479782396684e-05,
+              "rel_mse_to_target_variance": 0.00010111319414891893
+            },
+            "test": {
+              "mse": 2.0262653366398138e-05,
+              "rel_mse_to_target_variance": 9.687883140412567e-05
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 0.011928447077233839,
+            "gain_abs_diff": 0.0015160779828859994
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 8,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 8,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 8,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        },
+        "16": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 16,
+            "raw": 1.7399141868819443,
+            "gain": 0.8498254891152749,
+            "first_train_loss": 0.16847468695041043,
+            "last_step_train_loss": 2.1552911897809865e-06
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 1.04321458009555e-06,
+            "neumann_adj_loss": 3.5290926486192705e-07,
+            "delta_neumann_minus_exact": -6.903053152336229e-07
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 8.014149406720792e-07,
+            "neumann_adj_loss": 2.711258252771173e-07,
+            "delta_neumann_minus_exact": -5.302891153949619e-07
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 2.60964774027554e-06,
+              "rel_mse_to_target_variance": 1.0005498944354038e-05
+            },
+            "test": {
+              "mse": 2.0048159509114666e-06,
+              "rel_mse_to_target_variance": 9.585330360866696e-06
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 0.0037369596638596736,
+            "gain_abs_diff": 0.0004735960140074269
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 16,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 16,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 16,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        },
+        "32": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 32,
+            "raw": 1.7433686604685776,
+            "gain": 0.8502633282184924,
+            "first_train_loss": 0.16847468695041043,
+            "last_step_train_loss": 6.705675849776145e-09
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 1.04321458009555e-06,
+            "neumann_adj_loss": 8.082945871085129e-07,
+            "delta_neumann_minus_exact": -2.3491999298703708e-07
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 8.014149406720792e-07,
+            "neumann_adj_loss": 6.209480571615508e-07,
+            "delta_neumann_minus_exact": -1.804668835105284e-07
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 1.4963825646593133e-08,
+              "rel_mse_to_target_variance": 5.7371935453126404e-08
+            },
+            "test": {
+              "mse": 1.1495108949093177e-08,
+              "rel_mse_to_target_variance": 5.495986639627404e-08
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 0.00028248607722636265,
+            "gain_abs_diff": 3.5756910789941365e-05
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 32,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 32,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 32,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        }
+      }
+    },
+    "0.9": {
+      "rho": 0.9,
+      "exact_arm": {
+        "mode": "exact",
+        "K": 1,
+        "raw": 2.2005891468678476,
+        "gain": 0.8994021015848829,
+        "first_train_loss": 0.43898906354680145,
+        "last_step_train_loss": 4.0024026128186645e-05
+      },
+      "exact_train_loss_exact_forward": 2.102052217664595e-05,
+      "exact_test_loss_exact_forward": 1.5997147189418842e-05,
+      "arms": {
+        "1": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 1,
+            "raw": 2.2052849727606034,
+            "gain": 0.8998223771832445,
+            "first_train_loss": 0.43898906354680145,
+            "last_step_train_loss": 9.290865190957783e-06
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 2.102052217664595e-05,
+            "neumann_adj_loss": 1.8708779970770544e-06,
+            "delta_neumann_minus_exact": -1.9149644179568895e-05
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 1.5997147189418842e-05,
+            "neumann_adj_loss": 1.423742122593844e-06,
+            "delta_neumann_minus_exact": -1.4573405066824998e-05
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 1.0349178601640544e-05,
+              "rel_mse_to_target_variance": 1.850773479464676e-05
+            },
+            "test": {
+              "mse": 7.876087558138557e-06,
+              "rel_mse_to_target_variance": 1.8296897919574627e-05
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 0.004695825892755856,
+            "gain_abs_diff": 0.0004202755983616635
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 1,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 1,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 1,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        },
+        "2": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 2,
+            "raw": 2.220052824021529,
+            "gain": 0.9011338278468587,
+            "first_train_loss": 0.43898906354680145,
+            "last_step_train_loss": 6.573494174912858e-05
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 2.102052217664595e-05,
+            "neumann_adj_loss": 7.82816498914804e-05,
+            "delta_neumann_minus_exact": 5.726112771483445e-05
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 1.5997147189418842e-05,
+            "neumann_adj_loss": 5.956685960970876e-05,
+            "delta_neumann_minus_exact": 4.356971242028992e-05
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 0.00018043218560948333,
+              "rel_mse_to_target_variance": 0.0003226720852174142
+            },
+            "test": {
+              "mse": 0.00013730210765139914,
+              "rel_mse_to_target_variance": 0.00031896581002888614
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 0.01946367715368158,
+            "gain_abs_diff": 0.001731726261975819
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 2,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 2,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 2,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        },
+        "4": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 4,
+            "raw": 2.2207008502099685,
+            "gain": 0.9011910199170421,
+            "first_train_loss": 0.43898906354680145,
+            "last_step_train_loss": 0.00011286742516620566
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 2.102052217664595e-05,
+            "neumann_adj_loss": 8.647877479478083e-05,
+            "delta_neumann_minus_exact": 6.545825261813489e-05
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 1.5997147189418842e-05,
+            "neumann_adj_loss": 6.580402633665532e-05,
+            "delta_neumann_minus_exact": 4.980687914723647e-05
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 0.00019277127061537218,
+              "rel_mse_to_target_variance": 0.00034473842706809907
+            },
+            "test": {
+              "mse": 0.00014669107632375142,
+              "rel_mse_to_target_variance": 0.00034077727417272994
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 0.02011170334212098,
+            "gain_abs_diff": 0.0017889183321592173
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 4,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 4,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 4,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        },
+        "8": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 8,
+            "raw": 2.201024801293441,
+            "gain": 0.8994411591329733,
+            "first_train_loss": 0.43898906354680145,
+            "last_step_train_loss": 7.863089750490313e-06
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 2.102052217664595e-05,
+            "neumann_adj_loss": 1.83782618733387e-05,
+            "delta_neumann_minus_exact": -2.642260303307249e-06
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 1.5997147189418842e-05,
+            "neumann_adj_loss": 1.3986281079683683e-05,
+            "delta_neumann_minus_exact": -2.0108661097351597e-06
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 8.870080852175047e-08,
+              "rel_mse_to_target_variance": 1.5862621599080993e-07
+            },
+            "test": {
+              "mse": 6.750629561615459e-08,
+              "rel_mse_to_target_variance": 1.5682352318964403e-07
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 0.00043565442559323486,
+            "gain_abs_diff": 3.9057548090415395e-05
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 8,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 8,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 8,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        },
+        "16": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 16,
+            "raw": 2.193625685643956,
+            "gain": 0.8987759575201837,
+            "first_train_loss": 0.43898906354680145,
+            "last_step_train_loss": 9.782507135055832e-05
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 2.102052217664595e-05,
+            "neumann_adj_loss": 8.700778718784323e-05,
+            "delta_neumann_minus_exact": 6.598726501119728e-05
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 1.5997147189418842e-05,
+            "neumann_adj_loss": 6.621811037926594e-05,
+            "delta_neumann_minus_exact": 5.02209631898471e-05
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 2.2495884610253976e-05,
+              "rel_mse_to_target_variance": 4.0230039731999306e-05
+            },
+            "test": {
+              "mse": 1.7121459526412166e-05,
+              "rel_mse_to_target_variance": 3.977477330926606e-05
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 0.006963461223891354,
+            "gain_abs_diff": 0.0006261440646991856
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 16,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 16,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 16,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        },
+        "32": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 32,
+            "raw": 2.19869062879207,
+            "gain": 0.8992317354104443,
+            "first_train_loss": 0.43898906354680145,
+            "last_step_train_loss": 5.595277148339432e-05
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 2.102052217664595e-05,
+            "neumann_adj_loss": 3.4588467489275435e-05,
+            "delta_neumann_minus_exact": 1.3567945312629485e-05
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 1.5997147189418842e-05,
+            "neumann_adj_loss": 2.632301914990467e-05,
+            "delta_neumann_minus_exact": 1.0325871960485827e-05
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 1.6806059688099567e-06,
+              "rel_mse_to_target_variance": 3.0054761602147294e-06
+            },
+            "test": {
+              "mse": 1.279054987348438e-06,
+              "rel_mse_to_target_variance": 2.971365968735906e-06
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 0.0018985180757775666,
+            "gain_abs_diff": 0.00017036617443855206
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 32,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 32,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 32,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        }
+      }
+    },
+    "0.95": {
+      "rho": 0.95,
+      "exact_arm": {
+        "mode": "exact",
+        "K": 1,
+        "raw": 2.9453779209196385,
+        "gain": 0.94909453631262,
+        "first_train_loss": 2.04524822781462,
+        "last_step_train_loss": 0.0006837915583633276
+      },
+      "exact_train_loss_exact_forward": 0.0007619990063737444,
+      "exact_test_loss_exact_forward": 0.0005769634094826444,
+      "arms": {
+        "1": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 1,
+            "raw": 2.9320569689537943,
+            "gain": 0.948459158094339,
+            "first_train_loss": 2.04524822781462,
+            "last_step_train_loss": 0.0022442711821525616
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 0.0007619990063737444,
+            "neumann_adj_loss": 0.0021524184920484217,
+            "delta_neumann_minus_exact": 0.0013904194856746773
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 0.0005769634094826444,
+            "neumann_adj_loss": 0.0016297803865977364,
+            "delta_neumann_minus_exact": 0.001052816977115092
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 0.00035305796666898796,
+              "rel_mse_to_target_variance": 0.00015723931236281274
+            },
+            "test": {
+              "mse": 0.0002673381694672756,
+              "rel_mse_to_target_variance": 0.00015873092377532516
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 0.013320951965844152,
+            "gain_abs_diff": 0.0006353782182809686
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 1,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 1,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 1,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        },
+        "2": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 2,
+            "raw": 2.9373643603624613,
+            "gain": 0.948713220893148,
+            "first_train_loss": 2.04524822781462,
+            "last_step_train_loss": 0.0018615042824691624
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 0.0007619990063737444,
+            "neumann_adj_loss": 0.001516078634800736,
+            "delta_neumann_minus_exact": 0.0007540796284269916
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 0.0005769634094826444,
+            "neumann_adj_loss": 0.0011479439926672468,
+            "delta_neumann_minus_exact": 0.0005709805831846024
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 0.00012842614331210877,
+              "rel_mse_to_target_variance": 5.7196382379714764e-05
+            },
+            "test": {
+              "mse": 9.724447158057565e-05,
+              "rel_mse_to_target_variance": 5.7738499656771174e-05
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 0.008013560557177168,
+            "gain_abs_diff": 0.00038131541947195036
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 2,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 2,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 2,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        },
+        "4": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 4,
+            "raw": 2.961838749522591,
+            "gain": 0.9498692274679507,
+            "first_train_loss": 2.04524822781462,
+            "last_step_train_loss": 9.556458075361459e-05
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 0.0007619990063737444,
+            "neumann_adj_loss": 1.6390760539256786e-05,
+            "delta_neumann_minus_exact": -0.0007456082458344876
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 0.0005769634094826444,
+            "neumann_adj_loss": 1.2410308882879257e-05,
+            "delta_neumann_minus_exact": -0.0005645531005997651
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 0.0005548747363287897,
+              "rel_mse_to_target_variance": 0.00024712123850652556
+            },
+            "test": {
+              "mse": 0.000420136689816196,
+              "rel_mse_to_target_variance": 0.0002494544083223226
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 0.016460828602952393,
+            "gain_abs_diff": 0.0007746911553306868
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 4,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 4,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 4,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        },
+        "8": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 8,
+            "raw": 2.987671390744459,
+            "gain": 0.9510620294414253,
+            "first_train_loss": 2.04524822781462,
+            "last_step_train_loss": 0.001045786540702056
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 0.0007619990063737444,
+            "neumann_adj_loss": 0.001134509628371713,
+            "delta_neumann_minus_exact": 0.0003725106219979687
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 0.0005769634094826444,
+            "neumann_adj_loss": 0.0008589653931478611,
+            "delta_neumann_minus_exact": 0.0002820019836652167
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 0.003756072832429668,
+              "rel_mse_to_target_variance": 0.0016728196645102384
+            },
+            "test": {
+              "mse": 0.002843893400714303,
+              "rel_mse_to_target_variance": 0.0016885498524713623
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 0.04229346982482074,
+            "gain_abs_diff": 0.0019674931288052866
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 8,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 8,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 8,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        },
+        "16": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 16,
+            "raw": 2.9810617670212696,
+            "gain": 0.9507594791269617,
+            "first_train_loss": 2.04524822781462,
+            "last_step_train_loss": 0.0008659527439884349
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 0.0007619990063737444,
+            "neumann_adj_loss": 0.0005730600542226415,
+            "delta_neumann_minus_exact": -0.0001889389521511029
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 0.0005769634094826444,
+            "neumann_adj_loss": 0.00043388204579426743,
+            "delta_neumann_minus_exact": -0.00014308136368837698
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 0.002656680831624721,
+              "rel_mse_to_target_variance": 0.0011831900327115032
+            },
+            "test": {
+              "mse": 0.002011512982536904,
+              "rel_mse_to_target_variance": 0.0011943274487903827
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 0.03568384610163111,
+            "gain_abs_diff": 0.0016649428143417078
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 16,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 16,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 16,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        },
+        "32": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 32,
+            "raw": 2.9565392748923296,
+            "gain": 0.9496210727479367,
+            "first_train_loss": 2.04524822781462,
+            "last_step_train_loss": 3.8381756389326604e-05
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 0.0007619990063737444,
+            "neumann_adj_loss": 0.00013626297682285205,
+            "delta_neumann_minus_exact": -0.0006257360295508923
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 0.0005769634094826444,
+            "neumann_adj_loss": 0.00010317267343942988,
+            "delta_neumann_minus_exact": -0.0004737907360432145
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 0.0002538017469346847,
+              "rel_mse_to_target_variance": 0.00011303416416575612
+            },
+            "test": {
+              "mse": 0.0001921735722554606,
+              "rel_mse_to_target_variance": 0.00011410225748945058
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 0.011161353972691135,
+            "gain_abs_diff": 0.000526536435316749
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 32,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 32,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 32,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        }
+      }
+    },
+    "0.98": {
+      "rho": 0.98,
+      "exact_arm": {
+        "mode": "exact",
+        "K": 1,
+        "raw": 3.9681792806038216,
+        "gain": 0.9804616010179369,
+        "first_train_loss": 14.107260513054031,
+        "last_step_train_loss": 0.013322761290173924
+      },
+      "exact_train_loss_exact_forward": 0.008442342589307521,
+      "exact_test_loss_exact_forward": 0.006383886098208596,
+      "arms": {
+        "1": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 1,
+            "raw": 3.985035703804844,
+            "gain": 0.9807658171915484,
+            "first_train_loss": 14.107260513054031,
+            "last_step_train_loss": 0.03339730298348913
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 0.008442342589307521,
+            "neumann_adj_loss": 0.023978215398676766,
+            "delta_neumann_minus_exact": 0.015535872809369244
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 0.006383886098208596,
+            "neumann_adj_loss": 0.018131650707958403,
+            "delta_neumann_minus_exact": 0.011747764609749807
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 0.003964816323323601,
+              "rel_mse_to_target_variance": 0.0002726544748650752
+            },
+            "test": {
+              "mse": 0.0029980655668737323,
+              "rel_mse_to_target_variance": 0.00027505255655116244
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 0.01685642320102243,
+            "gain_abs_diff": 0.00030421617361153785
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 1,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 1,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 1,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        },
+        "2": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 2,
+            "raw": 3.9514271218223014,
+            "gain": 0.9801543348490184,
+            "first_train_loss": 14.107260513054031,
+            "last_step_train_loss": 0.0030371038823984705
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 0.008442342589307521,
+            "neumann_adj_loss": 0.0009147392607798683,
+            "delta_neumann_minus_exact": -0.007527603328527653
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 0.006383886098208596,
+            "neumann_adj_loss": 0.000691705393708157,
+            "delta_neumann_minus_exact": -0.005692180704500439
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 0.0037991893739732366,
+              "rel_mse_to_target_variance": 0.00026126455785101986
+            },
+            "test": {
+              "mse": 0.002872845524088412,
+              "rel_mse_to_target_variance": 0.0002635644512608358
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 0.016752158781520254,
+            "gain_abs_diff": 0.00030726616891851855
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 2,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 2,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 2,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        },
+        "4": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 4,
+            "raw": 3.91094708577079,
+            "gain": 0.9793910918979519,
+            "first_train_loss": 14.107260513054031,
+            "last_step_train_loss": 0.010375450355388685
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 0.008442342589307521,
+            "neumann_adj_loss": 0.013203145205151475,
+            "delta_neumann_minus_exact": 0.004760802615843954
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 0.006383886098208596,
+            "neumann_adj_loss": 0.009984019363842482,
+            "delta_neumann_minus_exact": 0.0036001332656338866
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 0.04276092959894594,
+              "rel_mse_to_target_variance": 0.002940605025246077
+            },
+            "test": {
+              "mse": 0.03233497623756668,
+              "rel_mse_to_target_variance": 0.0029665188041360737
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 0.057232194833031436,
+            "gain_abs_diff": 0.0010705091199849637
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 4,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 4,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 4,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        },
+        "8": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 8,
+            "raw": 3.8912241193985646,
+            "gain": 0.9790083232412032,
+            "first_train_loss": 14.107260513054031,
+            "last_step_train_loss": 0.036141383495353
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 0.008442342589307521,
+            "neumann_adj_loss": 0.03375370693496816,
+            "delta_neumann_minus_exact": 0.02531136434566064
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 0.006383886098208596,
+            "neumann_adj_loss": 0.025524166917212054,
+            "delta_neumann_minus_exact": 0.019140280819003458
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 0.0759575860285136,
+              "rel_mse_to_target_variance": 0.005223489322517306
+            },
+            "test": {
+              "mse": 0.057437906145880825,
+              "rel_mse_to_target_variance": 0.0052695455039178
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 0.07695516120525703,
+            "gain_abs_diff": 0.0014532777767336524
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 8,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 8,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 8,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        },
+        "16": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 16,
+            "raw": 3.913016352690323,
+            "gain": 0.9794308319975338,
+            "first_train_loss": 14.107260513054031,
+            "last_step_train_loss": 0.01731586809947111
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 0.008442342589307521,
+            "neumann_adj_loss": 0.011580631292902429,
+            "delta_neumann_minus_exact": 0.0031382887035949075
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 0.006383886098208596,
+            "neumann_adj_loss": 0.00875709443162025,
+            "delta_neumann_minus_exact": 0.002373208333411654
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 0.039798479253556375,
+              "rel_mse_to_target_variance": 0.0027368817560281585
+            },
+            "test": {
+              "mse": 0.0300948147173872,
+              "rel_mse_to_target_variance": 0.0027609988982270728
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 0.05516292791349864,
+            "gain_abs_diff": 0.0010307690204031106
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 16,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 16,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 16,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        },
+        "32": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 32,
+            "raw": 3.959592804737659,
+            "gain": 0.9803047278557359,
+            "first_train_loss": 14.107260513054031,
+            "last_step_train_loss": 0.0013748292222590377
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 0.008442342589307521,
+            "neumann_adj_loss": 0.0036207979124418584,
+            "delta_neumann_minus_exact": -0.004821544676865663
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 0.006383886098208596,
+            "neumann_adj_loss": 0.0027379612961646177,
+            "delta_neumann_minus_exact": -0.003645924802043978
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 0.0010054705125926281,
+              "rel_mse_to_target_variance": 6.914469984159359e-05
+            },
+            "test": {
+              "mse": 0.0007603085346575358,
+              "rel_mse_to_target_variance": 6.975324640524478e-05
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 0.00858647586616268,
+            "gain_abs_diff": 0.0001568731622010322
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 32,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 32,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 32,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        }
+      }
+    },
+    "0.99": {
+      "rho": 0.99,
+      "exact_arm": {
+        "mode": "exact",
+        "K": 1,
+        "raw": 4.738048785634811,
+        "gain": 0.9903289630285846,
+        "first_train_loss": 58.424820430867456,
+        "last_step_train_loss": 0.044618887152428316
+      },
+      "exact_train_loss_exact_forward": 0.07005656607762412,
+      "exact_test_loss_exact_forward": 0.052964853225890125,
+      "arms": {
+        "1": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 1,
+            "raw": 4.808534928794158,
+            "gain": 0.9909143316468757,
+            "first_train_loss": 58.424820430867456,
+            "last_step_train_loss": 0.6150334536879163
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 0.07005656607762412,
+            "neumann_adj_loss": 0.6131988981225113,
+            "delta_neumann_minus_exact": 0.5431423320448872
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 0.052964853225890125,
+            "neumann_adj_loss": 0.46359478972018997,
+            "delta_neumann_minus_exact": 0.41062993649429985
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 0.2687262904453129,
+              "rel_mse_to_target_variance": 0.004535683671872131
+            },
+            "test": {
+              "mse": 0.20316385600959622,
+              "rel_mse_to_target_variance": 0.004560058943068681
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 0.07048614315934731,
+            "gain_abs_diff": 0.00058536861829106
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 1,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 1,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 1,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        },
+        "2": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 2,
+            "raw": 4.809584490866023,
+            "gain": 0.990922745026231,
+            "first_train_loss": 58.424820430867456,
+            "last_step_train_loss": 0.6797301797243736
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 0.07005656607762412,
+            "neumann_adj_loss": 0.6256941257814096,
+            "delta_neumann_minus_exact": 0.5556375597037855
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 0.052964853225890125,
+            "neumann_adj_loss": 0.47304148906807153,
+            "delta_neumann_minus_exact": 0.4200766358421814
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 0.27701936172941394,
+              "rel_mse_to_target_variance": 0.004675657873691523
+            },
+            "test": {
+              "mse": 0.2094336154017177,
+              "rel_mse_to_target_variance": 0.00470078511822841
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 0.071535705231212,
+            "gain_abs_diff": 0.0005937819976463699
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 2,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 2,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 2,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        },
+        "4": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 4,
+            "raw": 4.783603598961551,
+            "gain": 0.9907119047214105,
+            "first_train_loss": 58.424820430867456,
+            "last_step_train_loss": 0.43598199701614065
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 0.07005656607762412,
+            "neumann_adj_loss": 0.3557096662246759,
+            "delta_neumann_minus_exact": 0.2856531001470518
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 0.052964853225890125,
+            "neumann_adj_loss": 0.2689264089115612,
+            "delta_neumann_minus_exact": 0.2159615556856711
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 0.11004611765180725,
+              "rel_mse_to_target_variance": 0.001857408064388095
+            },
+            "test": {
+              "mse": 0.08319775378151148,
+              "rel_mse_to_target_variance": 0.0018673925009411502
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 0.04555481332674027,
+            "gain_abs_diff": 0.00038294169282582224
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 4,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 4,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 4,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        },
+        "8": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 8,
+            "raw": 4.7274662091746436,
+            "gain": 0.9902375230011822,
+            "first_train_loss": 58.424820430867456,
+            "last_step_train_loss": 0.06805457860763496
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 0.07005656607762412,
+            "neumann_adj_loss": 0.03584189598490847,
+            "delta_neumann_minus_exact": -0.03421467009271564
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 0.052964853225890125,
+            "neumann_adj_loss": 0.027097559240551197,
+            "delta_neumann_minus_exact": -0.025867293985338928
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 0.005679498703322147,
+              "rel_mse_to_target_variance": 9.586114365806561e-05
+            },
+            "test": {
+              "mse": 0.004293863642935683,
+              "rel_mse_to_target_variance": 9.637674579459387e-05
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 0.010582576460167026,
+            "gain_abs_diff": 9.144002740246737e-05
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 8,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 8,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 8,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        },
+        "16": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 16,
+            "raw": 4.662643315807488,
+            "gain": 0.9896561882209057,
+            "first_train_loss": 58.424820430867456,
+            "last_step_train_loss": 0.04507159708448008
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 0.07005656607762412,
+            "neumann_adj_loss": 0.06689184198148511,
+            "delta_neumann_minus_exact": -0.003164724096139007
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 0.052964853225890125,
+            "neumann_adj_loss": 0.05057245998087698,
+            "delta_neumann_minus_exact": -0.0023923932450131483
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 0.27386024430624795,
+              "rel_mse_to_target_variance": 0.004622336863342904
+            },
+            "test": {
+              "mse": 0.20704698222215143,
+              "rel_mse_to_target_variance": 0.004647216593845847
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 0.07540546982732277,
+            "gain_abs_diff": 0.0006727748076789108
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 16,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 16,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 16,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        },
+        "32": {
+          "neumann_arm": {
+            "mode": "b2_neumann",
+            "K": 32,
+            "raw": 4.626149544911377,
+            "gain": 0.9893122667024552,
+            "first_train_loss": 58.424820430867456,
+            "last_step_train_loss": 0.25654240951029916
+          },
+          "train_metrics_exact_forward": {
+            "exact_adj_loss": 0.07005656607762412,
+            "neumann_adj_loss": 0.2507019647395212,
+            "delta_neumann_minus_exact": 0.1806453986618971
+          },
+          "test_metrics_exact_forward": {
+            "exact_adj_loss": 0.052964853225890125,
+            "neumann_adj_loss": 0.18953947719802744,
+            "delta_neumann_minus_exact": 0.13657462397213732
+          },
+          "learned_function_distance": {
+            "train": {
+              "mse": 0.585811873171337,
+              "rel_mse_to_target_variance": 0.009887597315204949
+            },
+            "test": {
+              "mse": 0.44289325601305096,
+              "rel_mse_to_target_variance": 0.009940839835269348
+            },
+            "metric": "mean squared prediction difference under exact forward"
+          },
+          "parameter_distance": {
+            "raw_abs_diff": 0.11189924072343338,
+            "gain_abs_diff": 0.0010166963261294404
+          },
+          "forward_identity": {
+            "pretrain_same_raw_train_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 32,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_exact_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 32,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "posttrain_neumann_raw_test_inputs": {
+              "mode_pair": "exact_forward_with_exact_backward_vs_exact_forward_with_neumann_backward",
+              "K": 32,
+              "bitwise_equal": true,
+              "max_abs": 0.0,
+              "mean_abs": 0.0
+            },
+            "requirement": "forward numbers are identical for exact vs Neumann backward modes at fixed parameters"
+          },
+          "eval_forward": "exact_for_both"
+        }
+      }
+    }
+  },
+  "seconds": 56.377791200065985
+}
