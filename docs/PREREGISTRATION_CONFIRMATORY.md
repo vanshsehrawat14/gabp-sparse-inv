@@ -2,7 +2,7 @@
 
 **Status: `CONFIRMATORY`, FROZEN. Written before any HOLDOUT seed was touched.**
 This document freezes the subset of the exploratory hypothesis menu
-([PREREGISTRATION.md](PREREGISTRATION.md)) that we commit to testing on the
+([PREREGISTRATION.md](PREREGISTRATION.md)) committed here for testing on the
 reserved HOLDOUT seeds `1000-1029`. It is the only file whose results may back a
 paper claim. It supersedes nothing in the exploratory menu; it selects from it.
 
@@ -157,8 +157,8 @@ pass/fail that can "fail the paper"; the paper's confirmed claim rests on H3.
 `eps = 2.0` (short correlation length, so globality should barely matter), on
 HOLDOUT. The `_negative_control_check` `AUTO-FAIL` banner is computed and
 reported. **Pre-declared honest interpretation:** on DEV this control
-`AUTO-FAIL`ed (exact still beat matched B2 even at short range). We therefore
-**predict it may `AUTO-FAIL` on HOLDOUT too**, and we commit **now** to reading
+`AUTO-FAIL`ed (exact still beat matched B2 even at short range). This record
+therefore **predicts it may `AUTO-FAIL` on HOLDOUT too**, and commits **now** to reading
 that failure as a *disclosed limitation* of the maze cost story — evidence that a
 residual exact-solve advantage survives even where reach should be irrelevant —
 **not** as support for H1 and **not** something to omit. This disclosed caveat is

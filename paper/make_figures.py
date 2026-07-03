@@ -5,7 +5,7 @@ Each paper figure/table is backed either by one of the project's benchmark CLIs
 (``gabp_sparse_inv.bench.*``) or by a demonstration's data function
 (``gabp_sparse_inv.demos.*``). This script centralizes the exact invocations the paper
 needs and writes their CSV/JSON into ``paper/figures/data/`` so every figure regenerates
-from a single command. We emit *data*, not rendered PDFs: the LaTeX consumes the CSVs via
+from a single command. It emits *data*, not rendered PDFs: the LaTeX consumes the CSVs via
 ``pgfplotstable`` (see paper/README.md). There is no plotting dependency to verify here.
 
 Usage:
@@ -97,8 +97,8 @@ WIRED = {
                          "No-pivot selinv vs pivoted LU across block-diagonal dominance."),
 }
 
-# These bench modes print a console diagnostic and return 0 without writing a CSV; we capture
-# their stdout to a .txt artifact instead of expecting <out>.csv.
+# These bench modes print a console diagnostic and return 0 without writing a CSV; this
+# script captures their stdout to a .txt artifact instead of expecting <out>.csv.
 CONSOLE_ONLY = {"precision_compare_orders"}
 
 
