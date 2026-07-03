@@ -111,7 +111,7 @@ linear field - but the **extrapolation** gap is just as flat. So the inductive-b
 specific to the exact `A^{-1} e_s` the solve computes: it carries to a different, non-linear,
 diagonal-using global functional.
 
-## Matched-capacity *causal* control (within-architecture intervention)
+## Matched-capacity control (within-architecture intervention)
 
 The GNN/Transformer comparisons above match (over-match) *capacity* but differ in
 *architecture*, so a residual worry is that the gap reflects architecture, not the inverse
@@ -119,8 +119,8 @@ specifically. The cleanest fix is an intervention that holds the model **identic
 **only** the solve's globality. `causal_solve_sweep` (`demos/maze_grid.py`) does exactly this:
 the same `GaBPMazeGrid` encoder and parameter count, with its exact `junction_solve` replaced by
 `K` damped-Jacobi sweeps on the *same* learned precision `A` - one matvec per sweep, so `K` steps
-reach exactly `K` hops and `K→∞` recovers the exact solve. Every other factor (architecture,
-capacity, inputs, data, optimiser, steps) is fixed; the single intervened variable is reach.
+reach exactly `K` hops and `K→∞` recovers the exact solve. Architecture,
+capacity, inputs, data, optimiser, and steps are fixed; the intervened variable is reach.
 
 Train 6×6, evaluate 6×6 (CPU, fp64, seed 0, 200 steps; the same model, only `K` varies):
 
@@ -131,10 +131,11 @@ Train 6×6, evaluate 6×6 (CPU, fp64, seed 0, 200 steps; the same model, only `K
 (predict-the-mean floor: `2.5e-2`.) The dose-response is **monotone** in reach, and the exact
 (global) solve is **~10³× below the deepest truncation** and the *only* variant that beats the
 predict-mean floor - every bounded-reach version is *worse* than trivial, because a truncated
-solve produces a confidently-wrong near-source field. Because nothing but the solve's reach
-changes, the gap is causally attributable to the inverse's **globality**, not to architecture or
-parameter count: the matched-capacity causal claim the cross-architecture baselines could only
-approximate. Gated in `tests/test_maze_grid.py`
+solve produces a confidently-wrong near-source field. Within this intervention, the result
+supports attributing the gap to the inverse's **globality**, not to architecture or parameter
+count: the matched-capacity attribution claim the cross-architecture baselines could only
+approximate.
+Gated in `tests/test_maze_grid.py`
 (`test_matched_capacity_causal_dose_response`); figure `maze_causal` in `paper/make_figures.py`.
 
 ## Scope and honest caveats (what this does *not* yet show)
@@ -170,8 +171,8 @@ approximate. Gated in `tests/test_maze_grid.py`
    ([DEQ.md](DEQ.md)): the non-symmetric selected inverse as the exact `O(fill)` DEQ backward,
    robust as ρ(J)→1. The other demonstration rung; moves the story from attribution to impact.
 3. ~~The architecture confound (the gap could be architecture, not the inverse)~~ - **done**:
-   the within-architecture **matched-capacity causal control** (above) holds the model identical
+   the within-architecture **matched-capacity control** (above) holds the model identical
    and varies only the solve's reach, giving a monotone dose-response with only the exact global
-   solve succeeding - causal attribution to the inverse's globality, not architecture.
+   solve succeeding - evidence for attribution to the inverse's globality, not architecture.
 4. Architecture variants (relative position encodings, more heads/layers) for completeness;
    width and training budget are already controlled. *(Still open - minor.)*

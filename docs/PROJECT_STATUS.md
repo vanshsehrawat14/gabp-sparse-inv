@@ -100,10 +100,14 @@ These are diagnostics, not CI assertions. See `gabp_sparse_inv.bench.precision` 
 
 - Package metadata, `CITATION.cff`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, changelog, CI, and
   JOSS paper draft are present.
-- The version is `0.3.1`.
-- PyPI publication is still pending.
+- The version is `0.3.2`.
+- PyPI `0.3.2` is published and the local `dist/v0.3.2` artifacts have been checked against
+  the files served by PyPI. The earlier internal `0.3.0` release was removed from PyPI;
+  `0.3.1` remains as the prior clean release.
 - GPU timing is not yet published. The CUDA-compatible level-set paths exist, but the public
   package does not ship measured GPU benchmark claims.
+- JOSS submission is deferred until the public repository satisfies JOSS's public-development
+  history requirement.
 
 ## Deliberately Out Of Scope
 
