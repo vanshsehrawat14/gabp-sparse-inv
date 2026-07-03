@@ -2,7 +2,7 @@
 
 **Status: EXPLORATORY only.** This is a hypothesis menu for DEV-seed exploration,
 not a confirmatory preregistration and not a paper verdict. It records the
-candidate phenomena we are allowed to look for while using DEV seeds. A paper
+candidate phenomena that may be examined while using DEV seeds. A paper
 claim is backed only by confirmatory numbers from data this exploration never
 touched.
 

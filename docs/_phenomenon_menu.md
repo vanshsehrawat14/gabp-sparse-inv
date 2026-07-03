@@ -203,8 +203,8 @@ SURPRISING? The failures are surprising because these controls were designed to
 be boring. Large-eps maze should have made globality mostly irrelevant.
 Symmetric swap should have removed the special status of exactness.
 
-COLLISION? H4 is not a collision with known theory; it is a collision with our
-own story. The large-eps failure suggests the maze control still contains an
+COLLISION? H4 is not a collision with known theory; it is a collision with the
+project's own story. The large-eps failure suggests the maze control still contains an
 exact-solve advantage even when propagation should be short-range. The
 symmetric-swap failure suggests operator-form co-adaptation may be generic, not
 specific to exactness.
