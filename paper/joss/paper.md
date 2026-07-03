@@ -53,7 +53,7 @@ nearest system, `torch-sla` [@torchsla2026], ships a differentiable sparse *solv
 constant-memory adjoint, but no selected inverse, log-determinant gradient, marginal variances,
 or Gaussian sampling.
 
-Mature selected-inversion codes (SelInv, PEXSI [@lin2011selinv]) target high-performance computing
+Mature selected-inversion codes (SelInv [@lin2011selinv], PEXSI [@lin2013pexsi]) target high-performance computing
 in compiled languages and are not differentiable, not written against an autodiff framework, and not
 designed to be dropped into a neural network's forward pass. General-purpose sparse solvers compute
 full factorizations or solves, not the on-pattern inverse blocks, and again expose no gradient.

@@ -388,7 +388,7 @@ python -m gabp_sparse_inv.demos.maze_grid     # size-sweep table: junction vs lo
 solve with the equilibrium Jacobian, `(I − J)ᵀ u = ∂L/∂z*`. When `J` is graph-structured this
 is exactly `nonsym_junction_solve(…, transpose=True)` on `A = I − J`: one block `LDU`,
 `O(fill)`, the transpose of the same factors. The structured backward is **exact** (matches a
-dense implicit-diff oracle and autograd through an unrolled solver to `~1e-15`) and stays
+dense implicit-diff oracle and autograd through an unrolled solver to near machine precision) and stays
 machine-accurate as the equilibrium stiffens (`ρ(J) → 1`), where the standard iterative
 (Neumann) DEQ backward's gradient error tracks `ρᴷ`. Honest scope: low-treewidth Jacobians,
 `ρ(J) < 1`, a mechanism/impact result (not a SOTA claim). See [docs/DEQ.md](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.2/docs/DEQ.md).

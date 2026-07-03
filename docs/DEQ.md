@@ -24,7 +24,7 @@ The module realizes both the affine equilibrium `z* = (I − W)⁻¹ b` (where a
 structured solve *is* the exact implicit-diff gradient, no unrolling) and a genuine nonlinear
 DEQ `z* = tanh(W z* + b)` (`deq_fixed_point`: Picard forward, a custom IFT backward whose only
 non-trivial step is the structured transpose solve). The nonlinear backward is validated equal
-to autograd through a fully unrolled solver to `~1e-15`, and `gradcheck` passes.
+to autograd through a fully unrolled solver to near machine precision, and `gradcheck` passes.
 
 ## The result: exact and robust as the equilibrium stiffens (ρ(J) → 1)
 
