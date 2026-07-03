@@ -65,7 +65,7 @@ But the same well-trained (2000-step) baselines, evaluated out-of-distribution, 
 Better in-distribution training does not buy extrapolation.
 
 **Verdict (refined by the controls):** the decisive, training-invariant gap is on the
-**size/diameter-extrapolation** axis - an exact `O(n)` primitive with *size-independent*
+**size/diameter-extrapolation** axis - an exact `O(fill)` primitive with *size-independent*
 parameters generalises across problem sizes (GaBP flat `~1e-5` from 6×6 to 10×10), while a
 universal long-range learner - even at >250× capacity and 10× training - cannot (≈7000-9000×
 worse at 10×10). The *in-distribution* gap is partly trainable away (efficiency), so the honest
