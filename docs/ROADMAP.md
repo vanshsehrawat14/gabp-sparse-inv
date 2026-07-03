@@ -17,14 +17,15 @@ The mathematical engine is classical selected inversion, Gaussian belief propaga
 Takahashi / Erisman-Tinney recurrences. The package contribution is the tested, differentiable,
 uniform PyTorch implementation.
 
-## Current Milestone: Software Release
+## Current Milestone: Public Artifact And Preprint
 
-Near-term release work is mechanical and packaging-focused:
+Near-term release work is publication-focused:
 
-1. Publish the `0.3.1` package to PyPI (0.3.0 was built from the internal tree and was deleted from PyPI).
-2. Submit the JOSS software paper.
-3. Archive the release snapshot and add the archive DOI when available.
-4. Keep the public documentation limited to implemented, verified behavior.
+1. Keep the PyPI `0.3.2` release and public repository synchronized.
+2. Push the curated public artifact branch so every paper-cited path resolves.
+3. Submit the LaTeX source package to arXiv.
+4. Archive the public release snapshot and add the archive DOI when available.
+5. Prepare JOSS after the repository satisfies the public-development-history requirement.
 
 No GPU timing claim is required for the software paper. The current kernels are reference-quality
 and correctness-focused.
@@ -48,9 +49,9 @@ stable tests.
 
 The package metadata is in place. Remaining packaging tasks:
 
-- publish to TestPyPI or PyPI,
-- verify install from the published artifact in a clean environment,
-- tag the release,
+- verify each future release from the published artifact in a clean environment,
+- keep uploaded artifacts under versioned `dist/v*` directories,
+- tag releases after tests and artifact checks pass,
 - create an archival DOI for the tagged release.
 
 ### Documentation
