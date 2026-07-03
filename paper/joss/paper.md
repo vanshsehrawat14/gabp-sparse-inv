@@ -93,4 +93,10 @@ throughput.
 The author thanks Isaac Liao (Carnegie Mellon University) for scoping the selected-inverse operator and the
 maze demonstration, and for feedback on the target regime.
 
+# AI usage disclosure
+
+I used AI assistance during software development and manuscript preparation, including coding
+support, editing, and artifact checks. I reviewed and validated the assisted work and remain
+responsible for the software, tests, data, citations, and paper.
+
 # References
