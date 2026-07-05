@@ -1,0 +1,55 @@
+\section{Related work}
+\label{sec:related}
+
+\paragraph{The exact engine.}
+The Takahashi equations \cite{takahashi1973} and Erisman--Tinney
+\cite{erismantinney1975} compute inverse entries on the Cholesky factor's
+pattern without the full inverse; SelInv \cite{lin2011selinv} and PEXSI
+\cite{lin2013pexsi} do this for general sparse SPD and Hermitian matrices via
+the elimination tree; Gaussian belief propagation is the same
+collect/distribute recurrence and is exact on trees
+\cite{weiss2001correctness,bickson2008gaussian}. This work is not a performance
+competitor to these solvers and claims nothing for the forward pass.
+
+\paragraph{Differentiating selected inversion.}
+The reverse-mode adjoint of the matrix inverse,
+$\cotan{A}=-\inv{A}\cotan{G}\inv{A}$, is folklore
+\cite{dwyer1948symbolic,giles2008collected}; that its evaluation costs a
+constant factor of the forward is the cheap-gradient principle
+\cite{baur1983complexity}; and differentiating a sparse log-determinant
+through selected inversion on the same factorization is done by
+\cite{zhu2019sparse} and is standard in GMRF and sparse-Cholesky learning
+\cite{rue2005gmrf}. These are the scaffolding of
+Remark~\ref{rem:scaffold}.
+
+\paragraph{Differentiable sparse linear algebra (the nearest neighbour).}
+The closest contemporary system is \texttt{torch-sla} \cite{torchsla2026},
+which ships a GPU differentiable sparse \emph{solve} and its adjoint with
+$\bigO(1)$ autograd-graph nodes and $\bigO(\mathrm{nnz})$ memory. It overlaps
+this package's constant-memory adjoint but does not provide a selected inverse, a
+log-determinant or its gradient, marginal variances or $\diagop(\inv{A})$,
+Gaussian sampling, or a non-symmetric selected-inverse adjoint. The
+defensible surface is therefore not ``a differentiable sparse solver'' but
+the selected-inverse / log-det-gradient / marginal-variance / sampling
+operator family with its unified symmetric and non-symmetric interface, plus
+the pre-registered account (Sections~\ref{sec:maze}--\ref{sec:deq}) of why
+that exactness wins on solve-shaped tasks -- attainability against
+bounded-reach or biased-gradient alternatives, not an inductive-bias effect.
+
+\paragraph{Where the claim lives.}
+The original motivation drew on the lineage of inductive bias for
+generalization and size or length extrapolation; the evidence in this paper
+instead lands on the expressivity limits of bounded-depth message passing --
+the over-squashing line \cite{alon2021bottleneck,topping2022understanding}
+and graph rewiring \cite{topping2022understanding,karhadkar2023fosr},
+implicit and steady-state GNNs \cite{gu2020implicit}, and graph transformers
+\cite{rampasek2022recipe,shirzad2023exphormer} -- since the matched-fit
+result says the alternatives cannot represent or attain the target, an
+expressivity/attainability story rather than a generalization-preference
+one. Section~\ref{sec:program} engages this literature directly as the
+competitor set for the resolvent-layer experiment (E3), which is explicitly
+an expressivity-separation claim, not an inductive-bias claim. The consumers
+that make a differentiable selected inverse useful, deep equilibrium models
+\cite{bai2019deep} and delta-rule linear-attention layers
+\cite{yang2024parallelizing}, supply the structured symmetric and
+non-symmetric solves of Section~\ref{sec:deq} and the appendix.

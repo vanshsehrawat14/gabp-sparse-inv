@@ -4,15 +4,15 @@
 Each paper figure/table is backed either by one of the project's benchmark CLIs
 (``gabp_sparse_inv.bench.*``) or by a demonstration's data function
 (``gabp_sparse_inv.demos.*``). This script centralizes the exact invocations the paper
-needs and writes their CSV/JSON into ``paper/figures/data/`` so every figure regenerates
-from a single command. It emits *data*, not rendered PDFs: the LaTeX consumes the CSVs via
-``pgfplotstable`` (see paper/README.md). There is no plotting dependency to verify here.
+needs and writes their CSV/JSON into ``paper/attainability/figures/data/`` so every figure
+regenerates from a single command. It emits *data*, not rendered PDFs: the LaTeX consumes the
+CSVs via ``pgfplotstable`` (see paper/README.md). There is no plotting dependency to verify here.
 
 Usage:
-    python paper/make_figures.py                 # all figures, modest configs
-    python paper/make_figures.py --quick         # smaller/faster configs (smoke)
-    python paper/make_figures.py --only precision_tree,deq_robustness
-    python paper/make_figures.py --list          # list figure ids
+    python paper/attainability/make_figures.py                 # all figures, modest configs
+    python paper/attainability/make_figures.py --quick         # smaller/faster configs (smoke)
+    python paper/attainability/make_figures.py --only precision_tree,deq_robustness
+    python paper/attainability/make_figures.py --list          # list figure ids
 
 Everything is a CPU diagnostic (BLAS/device-dependent), matching the benches' own stance.
 """

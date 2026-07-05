@@ -1,0 +1,98 @@
+\section{The selected-inverse schedule and its adjoint (full statement)}
+\label{app:theorem}
+
+This appendix gives the scaffolding of Section~\ref{sec:theorem} in full: the
+classical machinery that makes the layer exact, global, and cheaply
+differentiable.
+
+\subsection{Forward: a two-pass schedule on the elimination tree}
+
+\begin{theorem}[Tree selected inverse]
+\label{thm:tree-forward}
+Let $\Gr$ be a tree rooted at $r$ and $A$ SPD with pattern $\Gr$. Order nodes
+so that each precedes its parent. Then \textbf{(a) zero fill:} the block
+$LDL\T$ factorization in this order has $L$ unit lower-triangular with the
+pattern of $A$ and every pivot $\piv{v}$ SPD; \textbf{(b) collect
+(leaves$\to$root):}
+$\piv{v} = \Ablock{v}{v} - \sum_{c\in\children(v)} \Ablock{v}{c}\inv{\piv{c}}\Ablock{c}{v}$
+and $\Gblock{r}{r} = \inv{\piv{r}}$; \textbf{(c) distribute
+(root$\to$leaves):} with $\fac{v} = \Ablock{\parent(v)}{v}\inv{\piv{v}}$,
+\[
+  \Gblock{\parent(v)}{v} = -\,\Gblock{\parent(v)}{\parent(v)}\,\fac{v},
+  \qquad
+  \Gblock{v}{v} = \inv{\piv{v}} + \fac{v}\T \Gblock{\parent(v)}{\parent(v)} \fac{v}.
+\]
+This produces every block of $\selinv(A)$ exactly in
+$\bigO((|V|+|E|)\,b^3)$ time and $\bigO((|V|+|E|)\,b^2)$ memory. Steps
+(b)--(c) are the Gaussian-BP collect/distribute recurrence and equal the
+Takahashi recurrence.
+\end{theorem}
+
+\subsection{Why the adjoint is again a selected inversion}
+
+\begin{theorem}[Selected inversion is a gradient; its adjoint is self-adjoint]
+\label{thm:p0}
+On the SPD cone, $\selinv_{\pat}(A) = \nabla_A \log\det A\,|_{\pat}$.
+Consequently the Fr\'echet derivative
+$D\,\selinv|_A = P_{\pat}\,L_A\,\iota_{\pat}$ (with
+$L_A: X\mapsto -\inv{A}X\inv{A}$ the derivative of inversion and $P_{\pat}$
+the on-pattern projection) is self-adjoint: it is the projected Hessian of a
+scalar potential, and a gradient field has a symmetric Jacobian (symmetry of
+second derivatives).
+Hence the reverse-mode map $\cotan{G}\mapsto\cotan{A}$ equals the forward
+derivative map, and is realized by the reverse of the schedule of
+Theorem~\ref{thm:tree-forward} at the same $\bigO(\text{fill})$ cost
+(cheap-gradient principle \cite{baur1983complexity}).
+\end{theorem}
+
+\begin{remark}[Self-adjoint up to transpose; the non-symmetric correction]
+\label{rem:transpose}
+For non-symmetric $A$,
+$L_A^* : X\mapsto -A^{-\mathsf{T}}XA^{-\mathsf{T}} = L_{A\T}$, so the adjoint
+is $P_{\pat}L_{A\T}\iota_{\pat}$: selected inversion of $A\T$. The
+non-symmetric (LU / Erisman--Tinney) kernels are thus not literally
+self-adjoint; they are self-adjoint up to transpose, which is exactly why
+their backward propagates independent lower and upper factor cotangents (the
+$L$ of $A$ is the $U$ of $A\T$).
+\end{remark}
+
+\begin{remark}[Why the naive off-pattern argument fails]
+It is tempting to argue that $\cotan{A}|_{\pat}$ never references an
+off-pattern block of $\inv{A}$. That is false:
+$\cotan{A}_{vv} = -\sum_{(s,t)\in\pat} \Gblock{v}{s}\cotan{G}_{st}\Gblock{t}{v}$
+involves off-pattern $\Gblock{v}{s}$. What is true is that the reverse
+schedule never forms them: it propagates cotangents along tree edges, exactly
+as the forward computes $\Gblock{v}{v}$ without forming the dense inverse.
+(The first-order adjoint closes on the pattern; the Fisher matrix, the
+curvature tensor, and the $z$-derivative of the resolvent do not: each needs
+two independent off-pattern hops.)
+\end{remark}
+
+\section{Engine details: generality, stability boundary, and a drop-in}
+\label{app:engine}
+
+\paragraph{No-pivot stability boundary (non-symmetric).}
+The non-symmetric kernels eliminate on a static pattern with no pivoting (the
+$\bigO(\text{fill})$ regime), valid while pivots stay non-singular.
+Empirically this is at parity with a pivoted dense LU while the system is
+block-diagonally dominant, with the accuracy floor collapsing below the
+dominance boundary. The height- and $\kappa$-independent backward-error
+constant of the SPD tree schedule extends to the chordal SPD case but not to
+the non-symmetric case without dominance (the growth factor returns). This is
+a numerical-analysis note with no demonstrated learning payoff, which is why
+it is not in the body. Data:
+\texttt{paper/attainability/figures/data/nonsym\_stability.csv},
+\texttt{paper/attainability/figures/data/stability.csv} (\texttt{paper/attainability/make\_figures.py}).
+
+\paragraph{DeltaNet chunk inverse (a drop-in capability note).}
+The differentiable triangular chunk inverse $(I-A)^{-1}$ drops, unchanged,
+into a chunked delta-rule linear-attention layer
+\cite{yang2024parallelizing}: the within-chunk delta rule \emph{is} that
+triangular solve. It reproduces the token-by-token delta rule exactly, and
+its analytic backward equals autograd through the whole multi-chunk layer.
+Because the forward is identical by construction, this demonstrates
+availability (the operator is a genuine drop-in), not a capability gain, and
+so it is recorded here rather than as a result. The inductive-bias payoff for
+sequence models would be a learned-sparse graph-coupled mixer, which belongs
+to the program of Section~\ref{sec:program} rather than to the present
+evidence.

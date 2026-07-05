@@ -1,0 +1,135 @@
+\documentclass[11pt]{article}
+\ifdefined\XeTeXrevision\else\pdfoutput=1\fi
+
+\usepackage[margin=1.1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,bm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{microtype}
+\usepackage{caption}
+\captionsetup{font=small,skip=8pt,justification=raggedright,singlelinecheck=false}
+\captionsetup[table]{position=above}
+\input{macros}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\hypersetup{
+  pdftitle={A Differentiable, Exact Selected-Inverse Layer for PyTorch:
+            Size Extrapolation and Stiff-Regime Trainability, Explained by
+            Attainability, Not Inductive Bias},
+  pdfauthor={Vanshdeep Sehrawat},
+}
+
+\setlength{\emergencystretch}{1em}
+
+\raggedbottom
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\begin{document}
+
+\begin{titlepage}
+\renewcommand{\thefootnote}{\fnsymbol{footnote}}
+\begin{center}
+\vspace*{1.2cm}
+
+{\LARGE A Differentiable, Exact Selected-Inverse Layer for PyTorch:\\[0.45em]
+Size Extrapolation and Stiff-Regime Trainability,\\[0.25em]
+Explained by Attainability, Not Inductive Bias\par}
+
+\vspace{1.6cm}
+
+{\large Vanshdeep Sehrawat\footnote{e-mail:
+  \texttt{sehrawat@unlv.nevada.edu}, \texttt{vanshdeep.sehrawat@gmail.com};\ ORCID:
+  \href{https://orcid.org/0009-0005-8062-1337}{0009-0005-8062-1337}.}}\\[0.35em]
+{\itshape University of Nevada, Las Vegas, USA}
+
+\vspace{0.9em}
+
+{\small Code, data, and frozen pre-registration records:
+\href{https://github.com/vanshsehrawat14/gabp-sparse-inv}{\texttt{github.com/vanshsehrawat14/gabp-sparse-inv}}
+(package \texttt{gabp-sparse-inv} on PyPI).\\
+File paths cited in this paper are relative to the repository root.}
+
+\vspace{1.2cm}
+
+{\bfseries Abstract}
+\end{center}
+
+\begin{quote}
+Any layer built on self-consistency, soft constraint satisfaction, or a fixed
+point pays for a matrix inverse; deep equilibrium models, delta-rule linear
+attention, and implicit graph layers are all of this form. When the coupling
+is sparse on a low-treewidth graph, the \emph{selected} inverse (the blocks of
+$\inv{A}$ on the sparsity pattern of $A$) is exact in $\bigO(n)$ time by
+Gaussian belief propagation and the Takahashi recurrences, and its
+reverse-mode adjoint is again a selected inversion at the same cost. This is
+implemented as differentiable PyTorch operators, symmetric and non-symmetric.
+The operator is classical and buys no precision over a well-ordered dense
+solve (Section~\ref{sec:numerics}). The hypothesis under test was that
+embedding it buys something else: that \emph{exactness is an inductive
+bias} -- that among models reaching comparable training fit, the one
+containing the exact global solve is preferred and generalizes better. Two
+pre-registered probes on $30$ held-out seeds test this directly with a
+matched-fit design that asks not just whether the exact-trained model
+generalizes better, but whether the compared truncated/iterative model can
+even \emph{reach} comparable training fit at all. On both probes it cannot:
+in the high-difficulty cells the truncated model matches the exact model's
+training fit in at most $0$--$23\%$ of seeds against a pre-registered
+$60\%$ bar, so the held-out gap is explained by \emph{attainability} -- the
+approximation cannot fit the task -- not by an implicit preference among
+optima that fit equally well. The inductive-bias reading did not survive on
+either probe. This does not change the raw comparison: the exact model still
+beats matched-or-greater-capacity GNNs and Transformers by three to four
+orders of magnitude at every tested size, and the exact selected-inverse
+backward stays at machine precision as a fixed point stiffens
+($\rho(J)\to1$) where iterative adjoints are $77$ to $100\%$ wrong. What
+changes is the explanation for why. One negative control did not fully pass
+its pre-specified clause either, so even the conservative attainability
+reading is reported as hedged, not pristine, per the frozen decision rules.
+The paper specifies where exactness should and should not help at
+benchmark scale and names the one prerequisite, a GPU-batched kernel, that
+gates testing there; that program tests numerical properties (exact
+gradients for calibrated uncertainty, conditioning-independent adjoints, a
+resolvent layer against over-squashing), not inductive bias. The present
+evidence is controlled and CPU-scale.
+\end{quote}
+
+\vfill
+\begin{center}
+July 2026
+\end{center}
+\end{titlepage}
+
+\input{sections/introduction}
+\input{sections/problem}
+\input{sections/theorem}
+\input{sections/kernels}
+\input{sections/numerics}
+\input{sections/demonstrations}
+\input{sections/program}
+\input{sections/related}
+\input{sections/conclusion}
+
+\section*{Acknowledgements}
+I thank Isaac Liao (Carnegie Mellon University) for scoping the
+selected-inverse operator, sharpening the target regime, and giving feedback on
+the maze demonstration and research direction.
+
+\section*{AI assistance disclosure}
+I used AI assistance during software development and manuscript preparation,
+including coding support, editing, and artifact checks. I reviewed and validated
+the assisted work and remain responsible for the code, data, citations, and
+claims in this paper.
+
+\appendix
+\input{sections/appendix}
+
+\bibliographystyle{plain}
+\bibliography{refs}
+
+\end{document}
