@@ -1,0 +1,29 @@
+\subsection{Why it is differentiable at forward cost}
+\label{sec:theorem}
+
+For the layer to be usable as a learned component it must be trainable. That it is,
+at no asymptotic overhead, is a classical fact, stated once and built on.
+
+\begin{remark}[Selected inversion is a gradient; its adjoint is selected inversion]
+\label{rem:scaffold}
+Selected inversion is the gradient of the log-determinant restricted to the
+pattern:
+$\selinv_{\pat}(A) = \nabla_A \log\det A \,|_{\pat}$
+\cite{zhu2019sparse,dwyer1948symbolic}. A gradient field has a symmetric
+Jacobian, so the reverse-mode adjoint of selected inversion is again a
+selected inversion: a structure-preserving two-pass schedule on the same
+elimination tree, with no extra fill. Its cost is a constant multiple of the
+forward cost by the cheap-gradient principle \cite{baur1983complexity},
+i.e.\ $\bigO(\text{fill})$ time and memory, the same asymptotics as the
+forward selected inverse. For symmetric $A$ this is literally self-adjoint;
+for non-symmetric $A$ the adjoint is selected inversion of $A\T$
+(self-adjoint up to transpose), which is why the LU case propagates
+independent lower and upper cotangents. The full statement and proof are in
+Appendix~\ref{app:theorem}.
+\end{remark}
+
+Remark~\ref{rem:scaffold} is why the exact, global, $\bigO(\text{fill})$ solve of
+\S\ref{sec:setup} can be used as a layer: embedded in a model and trained
+end-to-end at the same cost as the forward pass, never forming the dense
+inverse. From here the question is what the exactness of this layer does to
+learning.

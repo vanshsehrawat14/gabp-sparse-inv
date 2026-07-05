@@ -1,0 +1,111 @@
+\section{Introduction}
+\label{sec:intro}
+
+Anywhere a model relies on self-consistency, soft constraint satisfaction, or a
+fixed point, it pays for a matrix inverse. Deep equilibrium models
+differentiate through an equilibrium with the implicit function theorem
+\cite{bai2019deep}; linear-attention and delta-rule layers mix tokens with a
+triangular solve \cite{yang2024parallelizing}; implicit and steady-state graph
+layers solve for a fixed point. In each case the forward pass, and almost
+always the backward pass, is a linear solve. The general inverse is
+$\bigO(n^3)$. When the coupling is sparse on a low-treewidth graph, the
+\emph{selected} inverse, meaning only the blocks of $\inv{A}$ on the sparsity
+pattern of $A$, is exact in $\bigO(n)$ on trees and $\bigO(n^{1.5})$ on 2-D
+grids via Gaussian belief propagation and the Takahashi recurrence
+\cite{takahashi1973,erismantinney1975}, never forming the dense inverse. Few
+systems expose this operation as a learnable layer, and fewer still expose a
+differentiable one.
+
+\paragraph{The wrong question, and the right one.}
+The obvious pitch is speed or accuracy: a faster, more exact inverse. This
+paper resists it, because it is mostly false. On the precision axis, the one
+place an exact method should dominate, the selected inverse is a wash: scored on the
+pattern against a 64-bit oracle and swept over conditioning, it matches a
+well-ordered dense solve, with no robust advantage
+(Section~\ref{sec:numerics}). If exactness mattered only as accuracy, there
+would be no paper. The right question is different:
+\begin{quote}
+\emph{When does the exactness of a structured linear-algebra primitive change
+what a neural network can learn or generalize, as opposed to merely how fast
+or how accurately it computes a fixed quantity?}
+\end{quote}
+
+\paragraph{Hypothesis under test: exactness as an inductive bias.}
+The hypothesis was that an exact, scale-free, differentiable global solve is a
+distinct inductive bias, and that this bias, not accuracy, is what it buys:
+exactness yields no numerical advantage (Section~\ref{sec:numerics}) but was
+expected to yield a decisive learning advantage \emph{because} it changes
+which of two equally-fit models is preferred (Sections~\ref{sec:maze}
+and~\ref{sec:deq}). Two pre-registered probes test this on $30$ held-out
+seeds with a matched-fit design (Appendix data in
+\texttt{archive/docs/CONFIRMATORY\_RESULTS.md}): they ask not only whether the
+exact-trained model generalizes better, but whether the alternative can even
+reach comparable \emph{training} fit at all. On both probes the
+inductive-bias (equal-fit, different-preference) branch never fires: the
+alternative is unmatchable at the difficulty levels where the raw gap is
+largest ($0$--$23\%$ of held-out seeds reach a pre-registered $60\%$
+matchability bar). The raw comparisons below are real and large; the
+explanation the paper tests them against is attainability, not inductive
+bias, and that is the conservative reading the pre-registration resolves to
+(Section~\ref{sec:program} states the honest scope).
+\begin{itemize}
+  \item \emph{Size extrapolation.} A model that contains the exact solve,
+        with size-independent parameters, stays accurate as the problem
+        grows, while GNNs and Transformers of more than $250\times$ its
+        capacity, trained on the same data, collapse toward the
+        predict-the-mean floor (Section~\ref{sec:maze}). A within-architecture
+        control, holding the model fixed and replacing the exact solve with
+        $K$ truncated sweeps, shows a monotone dose-response in which only the
+        exact, global solve generalizes -- and the matched-fit check shows the
+        truncated variants cannot reach the exact arm's training fit at any
+        swept $K$, so the effect is better read as an attainability/capacity
+        gap (a bounded-reach solve cannot represent a globally-coupled target)
+        than as an inductive bias among equally-attainable optima.
+  \item \emph{Trainability at the edge of stability.} The exact
+        $\bigO(\text{fill})$ implicit-differentiation backward stays at
+        machine precision as a fixed point stiffens ($\rho(J)\to 1$), exactly
+        where iterative adjoints return gradients that are $77$ to $100\%$
+        wrong (Section~\ref{sec:deq}). A pre-registered confirmatory run on
+        $30$ held-out seeds, with the forward solve held bit-identical
+        between arms, shows the same pattern as size extrapolation: the
+        iterative-adjoint arm cannot match the exact arm's training fit in
+        the stiff cells, so the held-out gap is attainability, not a
+        preference among equally-good optima. One negative control (a
+        near-machine-precision low-stiffness cell) did not cleanly pass its
+        pre-specified clause, and this is disclosed rather than smoothed
+        over.
+\end{itemize}
+
+\paragraph{What is, and is not, the contribution.}
+The exact forward engine is classical
+\cite{takahashi1973,erismantinney1975,lin2011selinv,weiss2001correctness}.
+That its differentiable adjoint is again a selected inversion at forward cost
+is also not new: selected inversion is the gradient of a log-determinant
+\cite{zhu2019sparse,dwyer1948symbolic}, so its reverse mode costs a constant
+multiple of the forward \cite{baur1983complexity}. Both are stated once, as
+scaffolding (Section~\ref{sec:theorem}). The contribution is the scientific
+claim and its evidence:
+\begin{enumerate}
+  \item the paradox that exactness is not accuracy
+        (Section~\ref{sec:numerics});
+  \item two pre-registered, matched-fit probes that test exactness as an
+        inductive bias, one for size generalization with a
+        within-architecture control (Section~\ref{sec:maze}), one for
+        trainability at the edge of stability (Section~\ref{sec:deq}) --
+        and the honest result that both resolve to attainability, not
+        inductive bias, under the frozen decision rules;
+  \item a falsifiable benchmark program (Section~\ref{sec:program})
+        stating where exactness's numerical properties (not the retired
+        inductive-bias claim) are expected to matter, where they must not (a
+        negative control), and the single build prerequisite that gates
+        testing it at benchmark scale.
+\end{enumerate}
+
+\paragraph{Scope.}
+The present evidence is at controlled, CPU scale: routing grids up to
+$10\times10$ for the baseline comparison and up to $48\times48$ for the
+held-out matched-compute control, and deep-equilibrium fixed points at
+$n\le16$. The structural win is confined
+to low-treewidth (1-D and quasi-2-D) problems; dense 3-D problems belong to
+multigrid. The benchmark-scale tests in Section~\ref{sec:program} are gated on
+one named, scoped engineering item, a GPU-batched kernel, not on new theory.

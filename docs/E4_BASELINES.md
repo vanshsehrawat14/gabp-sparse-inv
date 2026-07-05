@@ -136,7 +136,7 @@ supports attributing the gap to the inverse's **globality**, not to architecture
 count: the matched-capacity attribution claim the cross-architecture baselines could only
 approximate.
 Gated in `tests/test_maze_grid.py`
-(`test_matched_capacity_causal_dose_response`); figure `maze_causal` in `paper/make_figures.py`.
+(`test_matched_capacity_causal_dose_response`); figure `maze_causal` in `paper/attainability/make_figures.py`.
 
 ## Scope and honest caveats (what this does *not* yet show)
 

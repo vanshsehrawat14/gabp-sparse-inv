@@ -6,7 +6,7 @@ Frozen-preregistration results on data the exploration never touched. Design and
 decision rules: [PREREGISTRATION_CONFIRMATORY.md](PREREGISTRATION_CONFIRMATORY.md).
 Exploratory menu (DEV, hypothesis-generating only):
 [`_phenomenon_menu.md`](_phenomenon_menu.md). Machine-readable results:
-`results/CONFIRMATORY/confirmatory_analysis/confirmatory_results.json` (ignored tree).
+`archive/results/CONFIRMATORY/confirmatory_analysis/confirmatory_results.json` (ignored tree).
 
 Meaningful-effect threshold `δ = 1e-3`; a cell counts iff its 95% paired-bootstrap CI
 lower bound (`reps = 2000`, `seed = 314159`) clears `δ`.

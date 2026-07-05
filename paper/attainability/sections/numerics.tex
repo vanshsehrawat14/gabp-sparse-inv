@@ -1,0 +1,70 @@
+\section{Exactness is not accuracy}
+\label{sec:numerics}
+
+Before claiming exactness buys learning, the paper rules out the mundane explanation
+that it buys accuracy. It does not, and this is the hinge of the argument:
+the one axis where an exact method should win, numerical precision, is where
+it does not win, which forces the advantage in Sections~\ref{sec:maze}
+and~\ref{sec:deq} to be inductive rather than numerical.
+
+\paragraph{No robust win in either direction.}
+Scored on the pattern against a 64-bit oracle and swept over conditioning
+(Table~\ref{tab:precision}), the selected inverse and a dense SPD solve at
+equal precision stay within small constant factors of each other across
+structures and $\kappa$: the error ratio ranges from $0.3$ to $2.0$ with no
+consistent direction (at the highest-$\kappa$ grid cell the dense solve is in
+fact the more accurate, by about $3\times$). An initial reading of roughly $2\times$
+on trees, growing with $\kappa$, on ill-scaled random matrices turned out,
+over enough seeds (16 for the ordering study), to be a ratio-of-medians
+artifact, and most of the modest, heavy-tailed median gap is an
+elimination-ordering effect: a dense Cholesky run in the kernel's own
+leaf-first order is just as accurate. If exactness conferred an accuracy
+edge, this is where it would appear; it is absent.
+
+\begin{table}[H]
+  \centering
+  \caption{Selected inverse vs.\ dense Cholesky solve at equal precision
+  (fp32, scored on the pattern against an fp64 oracle; normwise error, medians
+  over 4 seeds per cell; CPU diagnostic). The ratio column is the median of
+  per-seed dense/selinv error ratios (not the quotient of the two median
+  columns). Ratios span $0.3$--$2.0$ with no consistent direction: exactness
+  is not accuracy. Data: \texttt{paper/attainability/figures/data/precision\_*.csv}
+  (\texttt{paper/attainability/make\_figures.py}).}
+  \label{tab:precision}
+  \begin{tabular}{lcccc}
+    \toprule
+    structure & $\kappa$ & selinv err & dense err & ratio \\
+    \midrule
+    tree ($n{=}127$) & $6.0\mathrm{e}{+1}$ & $1.6\mathrm{e}{-7}$ & $2.0\mathrm{e}{-7}$ & $1.3$ \\
+    tree ($n{=}127$) & $5.8\mathrm{e}{+3}$ & $6.1\mathrm{e}{-6}$ & $1.1\mathrm{e}{-5}$ & $2.0$ \\
+    tree ($n{=}127$) & $2.9\mathrm{e}{+5}$ & $4.1\mathrm{e}{-4}$ & $4.5\mathrm{e}{-4}$ & $1.6$ \\
+    grid ($8{\times}8$) & $1.8\mathrm{e}{+1}$ & $1.7\mathrm{e}{-7}$ & $1.5\mathrm{e}{-7}$ & $0.9$ \\
+    grid ($8{\times}8$) & $1.7\mathrm{e}{+3}$ & $3.1\mathrm{e}{-6}$ & $3.4\mathrm{e}{-6}$ & $1.1$ \\
+    grid ($8{\times}8$) & $1.7\mathrm{e}{+5}$ & $8.5\mathrm{e}{-4}$ & $2.8\mathrm{e}{-4}$ & $0.3$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{What exactness does give: a cheap global operator.}
+The edge is not the value of the number; it is that the operator is exact,
+global, and cheap. Cheapness is what makes the bias usable:
+Figure~\ref{fig:scaling} shows forward-plus-backward cost scaling as
+$\bigO(n)$, with the measured dense crossover on a block chain, and a
+differentiable GMRF learning at linear cost where dense autograd is
+$\bigO(N^3)$. An exact, whole-graph functional at a price that does not grow
+with problem size or graph diameter is the combination the next two sections
+exploit.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{figures/scaling.pdf}
+  \caption{The exact global operator is cheap. Left: forward-plus-backward
+  time vs.\ $n$ for the selected inverse on a block chain ($b=8$), with the
+  dense crossover.
+  Right: differentiable GMRF learning at linear cost vs.\ dense
+  $\bigO(N^3)$ autograd. BLAS- and device-dependent CPU diagnostics, reported
+  rather than asserted; GPU wall-clock at scale is the prerequisite of
+  Section~\ref{sec:program}. Data: \texttt{bench\_results.csv} (repository
+  root; $b=8$) and \texttt{paper/attainability/figures/data/gmrf\_scaling.csv}.}
+  \label{fig:scaling}
+\end{figure}

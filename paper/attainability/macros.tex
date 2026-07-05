@@ -1,0 +1,28 @@
+% Shared math macros for the paper. Kept small and self-contained.
+% (Packages are loaded in main.tex so that hyperref can be loaded last.)
+
+% --- objects -----------------------------------------------------------------
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\mat}[1]{\bm{#1}}                 % a matrix / block
+\newcommand{\inv}[1]{#1^{-1}}
+\newcommand{\T}{^{\mathsf{T}}}                % transpose
+\newcommand{\selinv}{\operatorname{SelInv}}  % selected inverse on the pattern
+\newcommand{\pat}{\mathcal{S}}               % the (filled) sparsity pattern
+\newcommand{\Gr}{\mathcal{G}}                % the graph
+\newcommand{\diagop}{\operatorname{diag}}
+\newcommand{\trace}{\operatorname{tr}}
+\newcommand{\bigO}{\mathcal{O}}
+\newcommand{\loss}{\mathcal{L}}
+
+% --- selected blocks / factors ----------------------------------------------
+\newcommand{\Gblock}[2]{G_{#1#2}}            % a block of A^{-1}
+\newcommand{\Ablock}[2]{A_{#1#2}}
+\newcommand{\piv}[1]{D_{#1}}                 % pivot block
+\newcommand{\fac}[1]{\ell_{#1}}             % factor block ell_v = A_{p,v} D_v^{-1}
+
+% --- adjoints (cotangents): \cotan{G} = \partial f / \partial G ---------------
+% (named \cotan because \cot is the LaTeX cotangent operator)
+\newcommand{\cotan}[1]{\bar{#1}}
+
+\newcommand{\children}{\operatorname{ch}}
+\newcommand{\parent}{p}

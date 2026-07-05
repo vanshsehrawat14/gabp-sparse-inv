@@ -1,0 +1,49 @@
+\section{The primitive: an exact, differentiable, $\bigO(\text{fill})$ global solve}
+\label{sec:primitive}
+
+The vehicle for the operator family under test is a differentiable selected-inverse layer.
+The later sections need three facts about it: it is exact and global
+(\S\ref{sec:setup}), it is differentiable at the asymptotic cost of its
+forward pass (\S\ref{sec:theorem}), and it is available across the matrix
+structures the experiments use (\S\ref{sec:kernels}). None of the three is
+new; together they make exactness embeddable and trainable.
+
+\subsection{Selected inversion on a pattern}
+\label{sec:setup}
+
+Let $A \in \R^{N\times N}$ be a block matrix with $n$ diagonal blocks of size
+$b$ ($N = nb$) whose block sparsity pattern is a graph $\Gr$ on the $n$ nodes.
+The \emph{selected inverse} on a pattern $\pat \supseteq \Gr$ is
+\begin{equation}
+  \selinv_{\pat}(A) \;=\; \{\, \Gblock{u}{v} \;:\; (u,v)\in\pat \,\},
+  \qquad \Gblock{u}{v} = \big(\inv{A}\big)_{uv},
+  \label{eq:selinv-def}
+\end{equation}
+that is, the blocks of $\inv{A}$ on $\pat$ only, never the dense inverse. For
+SPD $A$ the natural pattern is the pattern of $A$ itself when $\Gr$ is a tree
+(zero fill), and the filled (chordal) pattern
+$\pat = \mathrm{pattern}(L+L\T)$ otherwise. Most entries of $\inv{A}$ are dense
+and cannot even be materialized at scale; the on-pattern blocks are exactly
+what marginal-variance and log-determinant-gradient computations read.  The
+same sparse factors also supply the solve siblings used for routed fields
+$\inv{A}e_s$ and fixed-point backwards.
+
+\paragraph{Why it is global, exact, and cheap.}
+$\inv{A}$ couples every node to every other: $\Gblock{u}{v}$ is a global
+functional of the whole graph, not of a local neighbourhood. Yet if $\Gr$ has
+low treewidth, a fill-reducing elimination order keeps $\pat$ small, and
+\eqref{eq:selinv-def} is computed exactly, not approximately or iteratively,
+by the Takahashi recurrence and Gaussian belief propagation in $\bigO(n)$
+block operations on trees and $\bigO(n^{1.5})$ on 2-D grids. Exact, global,
+and cheap is the conjunction the rest of the paper leans on: a
+whole-graph quantity, computed without error, at a cost independent of the
+number of hops between nodes.
+
+\paragraph{The target regime.}
+The target is well-scaled operators with large condition number, e.g.\
+graph-Laplacian precisions $A = L(W) + \varepsilon I$ with $\bigO(1)$ entries
+and $\kappa \approx \lambda_{\max}/\varepsilon$. This is the regime where
+inversion is a meaningful operation and a static elimination pattern is
+numerically stable, and where the bias is sharpest: a global, exact,
+scale-free solve is most distinctive when the graph is large and the coupling
+is long-range.

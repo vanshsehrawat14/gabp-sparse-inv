@@ -1,0 +1,281 @@
+% Bibliography. Entries verified against primary sources (arXiv, Crossref,
+% ACM DL, publisher pages) during the pre-release audit.
+
+% --- the classical exact engine ----------------------------------------------
+
+@inproceedings{takahashi1973,
+  title     = {Formation of a sparse bus impedance matrix and its application to short circuit study},
+  author    = {Takahashi, K. and Fagan, J. and Chin, M.-S.},
+  booktitle = {Proceedings of the 8th PICA Conference (Power Industry Computer Applications)},
+  address   = {Minneapolis, MN},
+  pages     = {63--69},
+  year      = {1973},
+}
+
+@article{erismantinney1975,
+  title   = {On computing certain elements of the inverse of a sparse matrix},
+  author  = {Erisman, A. M. and Tinney, W. F.},
+  journal = {Communications of the ACM},
+  volume  = {18},
+  number  = {3},
+  pages   = {177--179},
+  year    = {1975},
+  doi     = {10.1145/360680.360704},
+}
+
+@article{lin2011selinv,
+  title   = {{SelInv}---An algorithm for selected inversion of a sparse symmetric matrix},
+  author  = {Lin, Lin and Yang, Chao and Meza, Juan C. and Lu, Jianfeng and Ying, Lexing and E, Weinan},
+  journal = {ACM Transactions on Mathematical Software},
+  volume  = {37},
+  number  = {4},
+  pages   = {40:1--40:19},
+  year    = {2011},
+  doi     = {10.1145/1916461.1916464},
+}
+
+@article{lin2013pexsi,
+  title   = {Accelerating atomic orbital-based electronic structure calculation via pole expansion and selected inversion},
+  author  = {Lin, Lin and Chen, Mohan and Yang, Chao and He, Lixin},
+  journal = {Journal of Physics: Condensed Matter},
+  volume  = {25},
+  number  = {29},
+  pages   = {295501},
+  year    = {2013},
+  doi     = {10.1088/0953-8984/25/29/295501},
+}
+
+@article{weiss2001correctness,
+  title   = {Correctness of belief propagation in {Gaussian} graphical models of arbitrary topology},
+  author  = {Weiss, Yair and Freeman, William T.},
+  journal = {Neural Computation},
+  volume  = {13},
+  number  = {10},
+  pages   = {2173--2200},
+  year    = {2001},
+  doi     = {10.1162/089976601750541769},
+}
+
+@phdthesis{bickson2008gaussian,
+  title  = {Gaussian belief propagation: Theory and application},
+  author = {Bickson, Danny},
+  school = {The Hebrew University of Jerusalem},
+  year   = {2008},
+  note   = {arXiv:0811.2518},
+}
+
+@article{rauch1965maximum,
+  title   = {Maximum likelihood estimates of linear dynamic systems},
+  author  = {Rauch, H. E. and Tung, F. and Striebel, C. T.},
+  journal = {AIAA Journal},
+  volume  = {3},
+  number  = {8},
+  pages   = {1445--1450},
+  year    = {1965},
+  doi     = {10.2514/3.3166},
+}
+
+@book{rue2005gmrf,
+  title     = {Gaussian {Markov} Random Fields: Theory and Applications},
+  author    = {Rue, H{\aa}vard and Held, Leonhard},
+  publisher = {Chapman \& Hall/CRC},
+  address   = {Boca Raton, FL},
+  series    = {Monographs on Statistics and Applied Probability},
+  year      = {2005},
+}
+
+% --- matrix derivatives / cheap gradients -------------------------------------
+
+@article{dwyer1948symbolic,
+  title   = {Symbolic matrix derivatives},
+  author  = {Dwyer, Paul S. and Macphail, M. S.},
+  journal = {The Annals of Mathematical Statistics},
+  volume  = {19},
+  number  = {4},
+  pages   = {517--534},
+  year    = {1948},
+  doi     = {10.1214/aoms/1177730148},
+}
+
+@incollection{giles2008collected,
+  title     = {Collected matrix derivative results for forward and reverse mode algorithmic differentiation},
+  author    = {Giles, Mike B.},
+  booktitle = {Advances in Automatic Differentiation},
+  series    = {Lecture Notes in Computational Science and Engineering},
+  volume    = {64},
+  pages     = {35--44},
+  publisher = {Springer},
+  year      = {2008},
+  doi       = {10.1007/978-3-540-68942-3_4},
+}
+
+@article{baur1983complexity,
+  title   = {The complexity of partial derivatives},
+  author  = {Baur, Walter and Strassen, Volker},
+  journal = {Theoretical Computer Science},
+  volume  = {22},
+  number  = {3},
+  pages   = {317--330},
+  year    = {1983},
+  doi     = {10.1016/0304-3975(83)90110-X},
+}
+
+@article{zhu2019sparse,
+  title   = {Sparse inversion for derivative of log determinant},
+  author  = {Zhu, Shengxin and Wathen, Andrew J.},
+  journal = {arXiv preprint arXiv:1911.00685},
+  year    = {2019},
+}
+
+% --- consumers: implicit layers, DEQs, linear attention ------------------------
+
+@inproceedings{bai2019deep,
+  title     = {Deep equilibrium models},
+  author    = {Bai, Shaojie and Kolter, J. Zico and Koltun, Vladlen},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2019},
+}
+
+@inproceedings{yang2024parallelizing,
+  title     = {Parallelizing linear transformers with the delta rule over sequence length},
+  author    = {Yang, Songlin and Wang, Bailin and Zhang, Yu and Shen, Yikang and Kim, Yoon},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2024},
+}
+
+@inproceedings{geng2021training,
+  title     = {On training implicit models},
+  author    = {Geng, Zhengyang and Zhang, Xin-Yu and Bai, Shaojie and Wang, Yisen and Lin, Zhouchen},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2021},
+}
+
+@article{anderson1965iterative,
+  title   = {Iterative procedures for nonlinear integral equations},
+  author  = {Anderson, Donald G.},
+  journal = {Journal of the ACM},
+  volume  = {12},
+  number  = {4},
+  pages   = {547--560},
+  year    = {1965},
+  doi     = {10.1145/321296.321305},
+}
+
+@article{broyden1965class,
+  title   = {A class of methods for solving nonlinear simultaneous equations},
+  author  = {Broyden, C. G.},
+  journal = {Mathematics of Computation},
+  volume  = {19},
+  number  = {92},
+  pages   = {577--593},
+  year    = {1965},
+  doi     = {10.1090/S0025-5718-1965-0198670-6},
+}
+
+@inproceedings{gu2020implicit,
+  title     = {Implicit graph neural networks},
+  author    = {Gu, Fangda and Chang, Heng and Zhu, Wenwu and Sojoudi, Somayeh and El Ghaoui, Laurent},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2020},
+}
+
+% --- differentiable sparse linear algebra (nearest neighbour) ------------------
+
+@article{torchsla2026,
+  title   = {{torch-sla}: Differentiable Sparse Linear Algebra with Adjoint Solvers and Sparse Tensor Parallelism for {PyTorch}},
+  author  = {Chi, Mingyuan and Wen, Shizheng},
+  journal = {arXiv preprint arXiv:2601.13994},
+  year    = {2026},
+}
+
+% --- GP / UQ incumbents (program, E2) ------------------------------------------
+
+@inproceedings{gardner2018gpytorch,
+  title     = {{GPyTorch}: Blackbox matrix-matrix {Gaussian} process inference with {GPU} acceleration},
+  author    = {Gardner, Jacob R. and Pleiss, Geoff and Weinberger, Kilian Q. and Bindel, David and Wilson, Andrew Gordon},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2018},
+}
+
+@article{ubaru2017fast,
+  title   = {Fast estimation of $\mathrm{tr}(f(A))$ via stochastic {Lanczos} quadrature},
+  author  = {Ubaru, Shashanka and Chen, Jie and Saad, Yousef},
+  journal = {SIAM Journal on Matrix Analysis and Applications},
+  volume  = {38},
+  number  = {4},
+  pages   = {1075--1099},
+  year    = {2017},
+  doi     = {10.1137/16M1104974},
+}
+
+@inproceedings{wilson2015kernel,
+  title     = {Kernel interpolation for scalable structured {Gaussian} processes ({KISS-GP})},
+  author    = {Wilson, Andrew Gordon and Nickisch, Hannes},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  pages     = {1775--1784},
+  year      = {2015},
+}
+
+@inproceedings{hensman2013gaussian,
+  title     = {Gaussian processes for big data},
+  author    = {Hensman, James and Fusi, Nicol{\`o} and Lawrence, Neil D.},
+  booktitle = {Uncertainty in Artificial Intelligence (UAI)},
+  pages     = {282--290},
+  year      = {2013},
+}
+
+@article{katzfuss2021general,
+  title   = {A general framework for {Vecchia} approximations of {Gaussian} processes},
+  author  = {Katzfuss, Matthias and Guinness, Joseph},
+  journal = {Statistical Science},
+  volume  = {36},
+  number  = {1},
+  pages   = {124--141},
+  year    = {2021},
+  doi     = {10.1214/19-STS755},
+}
+
+% --- over-squashing, rewiring, graph transformers (program, E3) -----------------
+
+@inproceedings{alon2021bottleneck,
+  title     = {On the bottleneck of graph neural networks and its practical implications},
+  author    = {Alon, Uri and Yahav, Eran},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2021},
+}
+
+@inproceedings{topping2022understanding,
+  title     = {Understanding over-squashing and bottlenecks on graphs via curvature},
+  author    = {Topping, Jake and Di Giovanni, Francesco and Chamberlain, Benjamin Paul and Dong, Xiaowen and Bronstein, Michael M.},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2022},
+}
+
+@inproceedings{karhadkar2023fosr,
+  title     = {{FoSR}: First-order spectral rewiring for addressing oversquashing in {GNNs}},
+  author    = {Karhadkar, Kedar and Banerjee, Pradeep Kr. and Mont{\'u}far, Guido},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2023},
+}
+
+@inproceedings{rampasek2022recipe,
+  title     = {Recipe for a general, powerful, scalable graph transformer},
+  author    = {Ramp{\'a}{\v s}ek, Ladislav and Galkin, Mikhail and Dwivedi, Vijay Prakash and Luu, Anh Tuan and Wolf, Guy and Beaini, Dominique},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2022},
+}
+
+@inproceedings{shirzad2023exphormer,
+  title     = {Exphormer: Sparse transformers for graphs},
+  author    = {Shirzad, Hamed and Velingker, Ameya and Venkatachalam, Balaji and Sutherland, Danica J. and Sinop, Ali Kemal},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  pages     = {31613--31632},
+  year      = {2023},
+}
+
+@inproceedings{dwivedi2022long,
+  title     = {{Long Range Graph Benchmark}},
+  author    = {Dwivedi, Vijay Prakash and Ramp{\'a}{\v s}ek, Ladislav and Galkin, Mikhail and Parviz, Ali and Wolf, Guy and Luu, Anh Tuan and Beaini, Dominique},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS), Datasets and Benchmarks Track},
+  year      = {2022},
+}
