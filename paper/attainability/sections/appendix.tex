@@ -80,9 +80,9 @@ dominance boundary. The height- and $\kappa$-independent backward-error
 constant of the SPD tree schedule extends to the chordal SPD case but not to
 the non-symmetric case without dominance (the growth factor returns). This is
 a numerical-analysis note with no demonstrated learning payoff, which is why
-it is not in the body. Data:
-\texttt{paper/attainability/figures/data/nonsym\_stability.csv},
-\texttt{paper/attainability/figures/data/stability.csv} (\texttt{paper/attainability/make\_figures.py}).
+it is not in the body. Data: \texttt{nonsym\_stability.csv} and
+\texttt{stability.csv} in \texttt{paper/attainability/figures/data/}
+(\texttt{paper/attainability/make\_figures.py}).
 
 \paragraph{DeltaNet chunk inverse (a drop-in capability note).}
 The differentiable triangular chunk inverse $(I-A)^{-1}$ drops, unchanged,
@@ -92,7 +92,7 @@ triangular solve. It reproduces the token-by-token delta rule exactly, and
 its analytic backward equals autograd through the whole multi-chunk layer.
 Because the forward is identical by construction, this demonstrates
 availability (the operator is a genuine drop-in), not a capability gain, and
-so it is recorded here rather than as a result. The inductive-bias payoff for
+so it is recorded here rather than as a result. A learned-capability payoff for
 sequence models would be a learned-sparse graph-coupled mixer, which belongs
 to the program of Section~\ref{sec:program} rather than to the present
 evidence.

@@ -141,7 +141,7 @@ def deq_robustness() -> None:
 def scaling() -> None:
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(6.3, 2.7))
 
-    with open(HERE.parent / "bench_results.csv", newline="") as f:
+    with open(HERE.parent.parent / "bench_results.csv", newline="") as f:
         t = list(csv.DictReader(f))
     ns: dict[int, dict[str, list[float]]] = {}
     for r in t:
@@ -162,7 +162,8 @@ def scaling() -> None:
     ax1.set_xlabel("chain length $n$")
     ax1.set_ylabel("time (s)")
     ax1.set_title("chain selected inverse ($b=8$)")
-    ax1.legend(loc="lower right")
+    ax1.set_ylim(top=0.4)  # headroom so the legend sits clear of the data
+    ax1.legend(loc="upper left")
 
     g = rows("gmrf_scaling.csv")
     n2 = [int(r["n"]) for r in g]

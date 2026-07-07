@@ -1,8 +1,12 @@
 # Confirmatory results (HOLDOUT)
 
 **Status: CONFIRMATORY.** Produced under
-[`PREREGISTRATION_CONFIRMATORY.md`](PREREGISTRATION_CONFIRMATORY.md) on **HOLDOUT
-seeds `1000-1029`** with the frozen rules (committed before the run). Analysis:
+[`PREREGISTRATION_MATCHED_FIT_CONFIRMATORY.md`](PREREGISTRATION_MATCHED_FIT_CONFIRMATORY.md)
+on **HOLDOUT seeds `1000-1029`** with the frozen rules (committed before the
+run). *(Link repointed 2026-07-06: the prereg this run was produced under was
+frozen as `PREREGISTRATION_CONFIRMATORY.md` at commit `00c0bf5`; the 2026-07-04
+merge reused that filename for the bootstrap prereg, so the original is restored
+under the distinct name above. The §5/§6 rules cited below are its sections.)* Analysis:
 `gabp_sparse_inv/bench/matched_fit_taskA.py --confirmatory`. The DEV menu-anchor
 determinism check is not applicable (no recorded HOLDOUT reference); NC3 forward
 bitwise identity holds by construction (the linear DEQ forward is the exact solve

@@ -1,5 +1,11 @@
 # Confirmatory preregistration — exactness as an inductive bias
 
+> **Disclosure (added 2026-07-06, not part of the frozen text).** HOLDOUT seeds
+> `1000-1029` were consumed twice: by the matched-fit confirmatory run of
+> 2026-06-29 ([`archive/docs/PREREGISTRATION_MATCHED_FIT_CONFIRMATORY.md`](../archive/docs/PREREGISTRATION_MATCHED_FIT_CONFIRMATORY.md))
+> before this file's 2026-06-30 freeze, so the status line below holds within
+> this file's branch but not in wall-clock terms across branches.
+
 **Status: `CONFIRMATORY`, FROZEN. Written before any HOLDOUT seed was touched.**
 This document freezes the subset of the exploratory hypothesis menu
 ([PREREGISTRATION.md](PREREGISTRATION.md)) committed here for testing on the

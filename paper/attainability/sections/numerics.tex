@@ -5,7 +5,8 @@ Before claiming exactness buys learning, the paper rules out the mundane explana
 that it buys accuracy. It does not, and this is the hinge of the argument:
 the one axis where an exact method should win, numerical precision, is where
 it does not win, which forces the advantage in Sections~\ref{sec:maze}
-and~\ref{sec:deq} to be inductive rather than numerical.
+and~\ref{sec:deq} to be a learning-dynamics effect -- the attainability gap
+those sections measure -- rather than a numerical one.
 
 \paragraph{No robust win in either direction.}
 Scored on the pattern against a 64-bit oracle and swept over conditioning
@@ -21,7 +22,7 @@ elimination-ordering effect: a dense Cholesky run in the kernel's own
 leaf-first order is just as accurate. If exactness conferred an accuracy
 edge, this is where it would appear; it is absent.
 
-\begin{table}[H]
+\begin{table}[t]
   \centering
   \caption{Selected inverse vs.\ dense Cholesky solve at equal precision
   (fp32, scored on the pattern against an fp64 oracle; normwise error, medians
@@ -47,7 +48,7 @@ edge, this is where it would appear; it is absent.
 
 \paragraph{What exactness does give: a cheap global operator.}
 The edge is not the value of the number; it is that the operator is exact,
-global, and cheap. Cheapness is what makes the bias usable:
+global, and cheap. Cheapness is what makes the operator usable as a layer:
 Figure~\ref{fig:scaling} shows forward-plus-backward cost scaling as
 $\bigO(n)$, with the measured dense crossover on a block chain, and a
 differentiable GMRF learning at linear cost where dense autograd is
@@ -55,7 +56,7 @@ $\bigO(N^3)$. An exact, whole-graph functional at a price that does not grow
 with problem size or graph diameter is the combination the next two sections
 exploit.
 
-\begin{figure}[H]
+\begin{figure}[t]
   \centering
   \includegraphics[width=\textwidth]{figures/scaling.pdf}
   \caption{The exact global operator is cheap. Left: forward-plus-backward
