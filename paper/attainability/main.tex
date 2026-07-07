@@ -21,6 +21,15 @@
 
 \setlength{\emergencystretch}{1em}
 
+% Float placement: prefer page-top floats (clean, journal-style) and pack them
+% so we avoid float-only pages and mid-page gaps.
+\renewcommand{\topfraction}{0.92}
+\renewcommand{\bottomfraction}{0.70}
+\renewcommand{\textfraction}{0.06}
+\renewcommand{\floatpagefraction}{0.75}
+\setcounter{topnumber}{3}
+\setcounter{totalnumber}{4}
+
 \raggedbottom
 
 \theoremstyle{plain}
@@ -35,13 +44,13 @@
 \begin{titlepage}
 \renewcommand{\thefootnote}{\fnsymbol{footnote}}
 \begin{center}
-\vspace*{1.2cm}
+\vspace*{0.2cm}
 
 {\LARGE A Differentiable, Exact Selected-Inverse Layer for PyTorch:\\[0.45em]
 Size Extrapolation and Stiff-Regime Trainability,\\[0.25em]
 Explained by Attainability, Not Inductive Bias\par}
 
-\vspace{1.6cm}
+\vspace{0.9cm}
 
 {\large Vanshdeep Sehrawat\footnote{e-mail:
   \texttt{sehrawat@unlv.nevada.edu}, \texttt{vanshdeep.sehrawat@gmail.com};\ ORCID:
@@ -55,12 +64,12 @@ Explained by Attainability, Not Inductive Bias\par}
 (package \texttt{gabp-sparse-inv} on PyPI).\\
 File paths cited in this paper are relative to the repository root.}
 
-\vspace{1.2cm}
+\vspace{0.45cm}
 
 {\bfseries Abstract}
 \end{center}
 
-\begin{quote}
+\begin{quote}\small
 Any layer built on self-consistency, soft constraint satisfaction, or a fixed
 point pays for a matrix inverse; deep equilibrium models, delta-rule linear
 attention, and implicit graph layers are all of this form. When the coupling
@@ -84,8 +93,9 @@ $60\%$ bar, so the held-out gap is explained by \emph{attainability} -- the
 approximation cannot fit the task -- not by an implicit preference among
 optima that fit equally well. The inductive-bias reading did not survive on
 either probe. This does not change the raw comparison: the exact model still
-beats matched-or-greater-capacity GNNs and Transformers by three to four
-orders of magnitude at every tested size, and the exact selected-inverse
+beats matched-or-greater-capacity GNNs and Transformers at every tested
+size, by roughly $600\times$ in distribution and up to $28{,}000\times$
+extrapolating, and the exact selected-inverse
 backward stays at machine precision as a fixed point stiffens
 ($\rho(J)\to1$) where iterative adjoints are $77$ to $100\%$ wrong. What
 changes is the explanation for why. One negative control did not fully pass
@@ -104,6 +114,7 @@ evidence is controlled and CPU-scale.
 July 2026
 \end{center}
 \end{titlepage}
+\setcounter{page}{2}
 
 \input{sections/introduction}
 \input{sections/problem}
@@ -119,12 +130,6 @@ July 2026
 I thank Isaac Liao (Carnegie Mellon University) for scoping the
 selected-inverse operator, sharpening the target regime, and giving feedback on
 the maze demonstration and research direction.
-
-\section*{AI assistance disclosure}
-I used AI assistance during software development and manuscript preparation,
-including coding support, editing, and artifact checks. I reviewed and validated
-the assisted work and remain responsible for the code, data, citations, and
-claims in this paper.
 
 \appendix
 \input{sections/appendix}

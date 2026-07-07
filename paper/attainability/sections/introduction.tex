@@ -37,14 +37,14 @@ exactness yields no numerical advantage (Section~\ref{sec:numerics}) but was
 expected to yield a decisive learning advantage \emph{because} it changes
 which of two equally-fit models is preferred (Sections~\ref{sec:maze}
 and~\ref{sec:deq}). Two pre-registered probes test this on $30$ held-out
-seeds with a matched-fit design (Appendix data in
+seeds with a matched-fit design (frozen record:
 \texttt{archive/docs/CONFIRMATORY\_RESULTS.md}): they ask not only whether the
 exact-trained model generalizes better, but whether the alternative can even
 reach comparable \emph{training} fit at all. On both probes the
 inductive-bias (equal-fit, different-preference) branch never fires: the
 alternative is unmatchable at the difficulty levels where the raw gap is
-largest ($0$--$23\%$ of held-out seeds reach a pre-registered $60\%$
-matchability bar). The raw comparisons below are real and large; the
+largest (only $0$--$23\%$ of held-out seeds are matchable, below the
+pre-registered $60\%$ adjudication bar). The raw comparisons below are real and large; the
 explanation the paper tests them against is attainability, not inductive
 bias, and that is the conservative reading the pre-registration resolves to
 (Section~\ref{sec:program} states the honest scope).

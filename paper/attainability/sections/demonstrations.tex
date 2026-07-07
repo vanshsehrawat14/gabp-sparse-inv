@@ -36,7 +36,7 @@ axis, size extrapolation, and explicitly does not claim the in-distribution
 gap, which is substantially an optimization effect. Sweep records:
 \texttt{docs/E4\_BASELINES.md}.
 
-\begin{table}[H]
+\begin{table}[t]
   \centering
   \caption{Size extrapolation: test MSE of \texttt{gabp} (contains the exact
   solve; $65$ size-independent parameters) vs.\
@@ -58,7 +58,7 @@ gap, which is substantially an optimization effect. Sweep records:
   \end{tabular}
 \end{table}
 
-\begin{figure}[H]
+\begin{figure}[t]
   \centering
   \includegraphics[width=0.72\textwidth]{figures/maze_extrapolation.pdf}
   \caption{Probe 1. Test error vs.\ grid size: \texttt{gabp} (exact solve,
@@ -85,13 +85,13 @@ a confidently wrong near-source field), and only the exact, global solve,
 three orders of magnitude below the deepest truncation, succeeds. A
 matched-fit check on the held-out seeds (below) shows why: the truncated
 arm cannot reach the exact arm's \emph{training} fit at any swept $K$ up to
-$256$ (median matched-or-greater capacity gap $\sim2000\times$), so this
+$256$ (median relative train-loss gap $\sim2000\times$), so this
 dose-response is best read as an attainability/expressivity gap -- a
 bounded-reach solve structurally cannot represent a globally-coupled
 target -- rather than as evidence that exactness biases training toward a
 better solution among equally attainable ones.
 
-\begin{table}[H]
+\begin{table}[t]
   \centering
   \caption{Within-architecture control (same model; only the solve's reach varies).
   Train and eval at $6\times6$, CPU, fp64, seed 0. Only the exact global solve
@@ -108,13 +108,13 @@ better solution among equally attainable ones.
   \end{tabular}
 \end{table}
 
-\begin{figure}[H]
+\begin{figure}[t]
   \centering
   \includegraphics[width=0.72\textwidth]{figures/maze_causal.pdf}
   \caption{Within-architecture isolation. Holding the model fixed and varying only the
   solve's reach ($K$ Jacobi sweeps; $K\to\infty$ is the exact solve), test
   error falls monotonically, and only the exact global solve beats
-  predict-the-mean. The bias is the exactness and globality of the solve, not
+  predict-the-mean. The driver is the exactness and globality of the solve, not
   capacity or architecture. Data: \texttt{paper/attainability/figures/data/maze\_causal.csv}.}
   \label{fig:maze-causal}
 \end{figure}
@@ -123,8 +123,10 @@ better solution among equally attainable ones.
 The confirmatory test ran the routed-field task at sizes $6\times6$ to
 $48\times48$ on $30$ reserved held-out seeds ($1000$--$1029$), comparing the
 exact solve against a compute-matched truncated (Jacobi) baseline within the
-same model class, under the frozen rules of
-\texttt{archive/docs/PREREGISTRATION\_CONFIRMATORY.md}. The truncated arm is
+same model class, under matched-fit decision rules frozen before the run
+(thresholds pre-declared in \texttt{archive/docs/PREREGISTRATION.md}; the
+confirmatory gates and per-cell adjudication are recorded in
+\texttt{archive/docs/CONFIRMATORY\_RESULTS.md}). The truncated arm is
 \textbf{unmatchable for all $30$ seeds}: median exact training loss
 $1.45\times10^{-5}$ against the truncated arm's best of $2.96\times10^{-2}$,
 a relative gap of about $2000\times$, so no matched-fit regime exists at
@@ -134,7 +136,7 @@ as-trained gap also shrinks with size ($8.17\times10^{-2}$ at size $6$ to
 $1.30\times10^{-3}$ at size $48$), so there is no growing-extrapolation
 signal beyond the attainability gap itself. Full verdict and per-seed
 records: \texttt{archive/docs/CONFIRMATORY\_RESULTS.md} (Maze section),
-\texttt{archive/results/CONFIRMATORY/maze\_extrapolation/}.
+\texttt{archive/results/CONFIRMATORY/}\allowbreak\texttt{maze\_extrapolation/}.
 
 \paragraph{Not specific to the label.}
 The routing label is itself a single solve, so the experiment also regresses the effective
@@ -144,7 +146,7 @@ global functional that additionally needs the diagonal of the inverse. The
 same extrapolation signature holds: \texttt{gabp} stays flat at roughly
 $2\mathrm{e}{-3}$ from $6\times6$ to $10\times10$, about $40\times$ below the
 baselines. The gap is smaller, because the baselines capture some of the
-smooth distance structure of $R$, but the shape is the same. The bias is not
+smooth distance structure of $R$, but the shape is the same. The effect is not
 an artifact of reconstructing one specific solve. Records:
 \texttt{docs/E4\_BASELINES.md}.
 
@@ -206,7 +208,7 @@ to about $10^{-11}$), and the nonlinear implicit-function-theorem backward is
 validated against autograd through a fully unrolled solver to near machine
 precision.
 
-\begin{table}[H]
+\begin{table}[t]
   \centering
   \caption{Edge of stability: parameter-gradient relative error against a
   dense implicit-differentiation oracle as $\rho(J)\to1$. CPU, fp64
@@ -229,7 +231,7 @@ precision.
   \end{tabular}
 \end{table}
 
-\begin{figure}[H]
+\begin{figure}[t]
   \centering
   \includegraphics[width=0.72\textwidth]{figures/deq_robustness.pdf}
   \caption{Probe 2. Gradient error of the exact selected-inverse backward
@@ -247,8 +249,8 @@ reserved held-out seeds ($1000$--$1029$) that were never touched during
 development. Both arms train a scalar gain through the same exact forward
 solve ($n=16$, non-symmetric coupling), held bit-identical between arms; the
 only intervention is the backward rule used during training, the exact
-implicit adjoint versus a biased $K$-term Neumann adjoint. An initial,
-cruder analysis (a paired-bootstrap test of the held-out loss difference
+implicit adjoint versus a biased $K$-term Neumann adjoint. A cruder
+analysis (a paired-bootstrap test of the held-out loss difference
 alone) clears a fixed effect-size bar at the three primary cells
 ($\rho=0.99$, $K\in\{1,2,4\}$) and stays silent on the low-$\rho$ controls --
 so there \emph{is} a reliable, reproducible difference in what the two arms
@@ -260,8 +262,9 @@ generalizes worse). The pre-registered matched-fit adjudication
 (\texttt{archive/bench/matched\_fit\_taskA.py}) is designed
 exactly to separate them, by checking whether the Neumann arm can match the
 exact arm's training loss (gated by a frozen floor and a $60\%$ matchability
-bar) before crediting any test-loss gap to an inductive-bias mechanism. At
-the primary cells the Neumann arm is matchable in only $0$--$23\%$ of seeds
+bar) before crediting any test-loss gap to an inductive-bias mechanism. In
+the stiff cells ($\rho=0.99$, $K\in\{1,2,4\}$, and $\rho=0.98$, $K=1$) the
+Neumann arm is matchable in only $0$--$23\%$ of seeds
 (relative train gap $+3.9$ to $+13.2$), so the inductive-bias
 (\textsc{survive}) branch does not fire; the result resolves to the
 conservative attainability/optimization reading. The one designed silent
