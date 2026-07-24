@@ -56,11 +56,12 @@ distance. That is the distinction the next two sections exploit.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth]{figures/scaling.pdf}
+  \includegraphics[width=0.92\textwidth]{figures/scaling.pdf}
   \caption{CPU scaling diagnostics. Left: forward-plus-backward time for a
-  block chain ($b=8$) and its dense comparator. Right: differentiable
-  tree-GMRF learning vs.\ dense autograd. These timings are BLAS- and
-  device-dependent; no GPU claim is made. Data: \url{bench_results.csv} and
-  \url{paper/attainability/figures/data/gmrf_scaling.csv}.}
+  block chain ($b=8$) and dense Cholesky. Right: differentiable tree-GMRF
+  learning and dense autograd. Timings depend on BLAS and device; no GPU
+  claim is made. Data: \href{bench_results.csv}{\texttt{bench\_results.csv}}
+  and
+  \href{paper/attainability/figures/data/gmrf_scaling.csv}{\texttt{gmrf\_scaling.csv}}.}
   \label{fig:scaling}
 \end{figure}
