@@ -23,6 +23,7 @@ results/*
 bench_results.*
 !bench_results.csv
 paper/joss/paper.pdf
+paper/attainability/main.pdf
 
 # Local configuration
 .env

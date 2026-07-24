@@ -1,4 +1,4 @@
-\subsection{The engine, briefly}
+\subsection{Implemented operator family}
 \label{sec:kernels}
 
 The operator must be available wherever the experiments need it, so the package ships the
@@ -11,30 +11,30 @@ the chordal $\pat = \mathrm{pattern}(L+L\T)$, the general sparse SPD
 junction-tree case. The non-symmetric rung runs from the triangular chunk
 inverse $(I-A)^{-1}$ (the delta-rule primitive) through the zero-fill
 non-symmetric tree to the general filled-pattern LU (Erisman--Tinney) selected
-inverse, whose adjoint is selected inversion of $A\T$
-(Remark~\ref{rem:scaffold}). Every forward pass is checked against a dense
-oracle. Differentiable kernels are validated by \texttt{gradcheck}; the
+inverse, whose inversion derivative is adjoint up to transpose
+(Remark~\ref{rem:scaffold}). Every operator family is checked against a dense
+oracle on its documented test grid. Differentiable kernels are validated by \texttt{gradcheck}; the
 functional kernels that support higher-order autograd are additionally checked
 by \texttt{gradgradcheck}. The filled-pattern kernels also ship hand-written
 tape-free analytic backwards whose autograd graphs are constant-size regardless
 of $n$; these analytic backwards are first-order operators and are validated
 against the functional paths. The engineering boundary (no pivoting; the
-$\bigO(\text{fill})$ static-pattern regime) is described in
+static-pattern regime) is described in
 Appendix~\ref{app:engine}.
 
-\begin{table}[t]
+\begin{table}[H]
   \centering
-  \caption{The selected-inverse operator family used in this paper. The
-  forward passes are classical; the differentiable adjoint
-  (Remark~\ref{rem:scaffold}) is what makes each a trainable layer.
-  ``Self-adjoint up to transpose'' means the adjoint is $\selinv(A\T)$.}
+  \caption{Implemented selected-inverse operators. The forward recurrences are
+  classical; the differentiable adjoints make them trainable. For the
+  non-symmetric rows, $L_A^*=L_{A\T}$ denotes the inversion derivative, not
+  the selected-inverse value at $A\T$.}
   \label{tab:ladder}
   \begin{tabular}{lll}
     \toprule
     Structure & Forward (classical) & Differentiable adjoint \\
     \midrule
     Chain / star / tree (SPD)        & GaBP / Takahashi, zero fill        & self-adjoint, $\bigO(n)$ \\
-    Junction tree (general SPD)      & Takahashi on chordal $\pat$        & self-adjoint, $\bigO(\text{fill})$ \\
+    Junction tree (general SPD)      & Takahashi on chordal $\pat$        & projected derivative self-adjoint \\
     Triangular $(I-A)^{-1}$          & delta-rule chunk solve             & self-adjoint up to transpose \\
     Non-symmetric tree / LU          & Erisman--Tinney on $\pat$          & self-adjoint up to transpose \\
     \bottomrule

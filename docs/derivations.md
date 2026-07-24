@@ -178,10 +178,31 @@ both eliminated after `v`, so it is already computed - the §2.1 closure Lemma i
 gives `G_vv = D_v^{-1} - ell_v^T(-G_{p(v),p(v)} ell_v) = D_v^{-1} + ell_v^T G_{p(v),p(v)}
 ell_v` = (6). `tests/test_junction.py` asserts this block-for-block against `tree.py`.
 
-**Cost.** `sum_v (1 + |U_v|^2)` block operations - the fill count - i.e. `O((|V| + fill)
-b^3)` time, `O(|V| + fill)` block storage. On a 2-D grid under nested dissection that is
-the classical `O(n^{1.5} b^3)`; the shipped reference uses a min-degree order and a
-per-node loop (no supernodal batching - a deliberate non-goal, `docs/ROADMAP.md`).
+**Cost and storage.** These are different structural quantities. Write
+`w_v := |U_v|` and define
+
+    F := sum_v (1 + w_v),       W := sum_v (1 + w_v^2).                (J-cost)
+
+`F` is the number of diagonal-plus-lower blocks in the factor pattern (up to
+orientation), while `W` is the scalar-block structural work proxy for the dense
+clique updates and Takahashi sums. Thus numeric factor/selected-block storage is
+`Theta(F b^2)` and factorization plus selected inversion costs `Theta(W b^3)`.
+If `omega := 1 + max_v w_v`, then
+
+    F <= W <= omega F,          W >= F^2 / (2 |V|).
+
+The first two inequalities follow from `w <= w^2` for integer `w >= 1` and
+`w^2 <= (omega-1)w`; the last follows from Cauchy--Schwarz and
+`sum_v w_v^2 >= (sum_v w_v)^2 / |V|`. Consequently `W = Theta(F)` only when
+the front width is bounded. On a tree both are `Theta(n)`. On a 2-D grid under
+nested dissection, `F = Theta(n log n)` but `W = Theta(n^{3/2})`.
+
+The shipped level-set implementation also pre-materializes flattened
+clique-pair index tensors, so its symbolic metadata is `Theta(W)`, not
+`Theta(F)`. A streaming or supernodal implementation could retain
+`Theta(F)` numeric storage while generating clique work on demand. The shipped
+reference uses a min-degree order and a per-node loop; neither implementation
+is claimed memory-optimal.
 
 ---
 
@@ -294,7 +315,7 @@ is `O(b^2)` per block, removes a backend-dependent dependence on which triangle 
 Cholesky reads, and gives a consistent story for the error analysis below.
 (`star.py`, `tree.py`, and `chain.py` all follow it.)
 
-**Backward stability (tracked constant).** Let `u` be the unit roundoff and
+**Local primitive error bounds (not a global stability theorem).** Let `u` be the unit roundoff and
 `gamma_k := k u / (1 - k u)`. The schedule is built from three `b x b` primitives,
 each with a standard backward-error bound (Higham, *Accuracy and Stability of
 Numerical Algorithms*, 2nd ed.):
@@ -309,57 +330,52 @@ Numerical Algorithms*, 2nd ed.):
 - **(P) Block product** with inner dimension `b`: `|Ĉ - AB| <= gamma_b |A||B|`, so
   `||Ĉ - AB||_2 <= c_P · b · u · ||A||_2 ||B||_2` (§3.5).
 
-> **Theorem (tracked backward stability).** Run on an SPD block tree (block size `b`,
-> maximum node degree `Δ = max_v (1 + #children(v))`) with the symmetrized §2 schedule
-> at unit roundoff `u`, the computed selected blocks `Ĝ` are the exact selected inverse
-> of `A + E` with
->
->     ||E||_2  <=  c(b, Δ) · u · ||A||_2 + O(u^2),   c(b, Δ) = O(b · Δ),     (9a)
->
-> a low-degree polynomial in the block size and the node degree that is **independent of
-> the tree height** and carries **no growth factor and no `kappa(A)` dependence**.
-> Consequently the forward error obeys
->
->     ||Ĝ - G|| / ||G||  <=  c(b, Δ) · kappa(A) · u + O(u^2).               (9)
+**What these local bounds do and do not prove.** Composing (C), (S), and (P)
+shows that every local factorization, solve, product, and accumulation has the
+standard backward-error form. SPD Cholesky avoids pivot-growth factors, and the
+first-order perturbation of the inverse still predicts forward sensitivity
+proportional to `kappa(A) u`.
 
-*Proof.* Compose (C), (S), (P) along the schedule. The collect step at `v` forms the
-pivot by accumulating `A_vv` and its `<= Δ` children Schur terms `ell_c U_c^T` - each a
-product (P) plus a `gamma_Δ` summation - then factors it (C) and solves for `ell_v`
-(S); the distribute step (5)-(6) is products (P) and a symmetric add. Each computed block
-is therefore the exact result for inputs perturbed by the (C)/(S)/(P) backward errors
-above. Because the pattern is **fill-free** (part (a)) each factor block `L_{uv}` is
-nonzero only on a parent-child edge, so a column of `L` has `<= 2` block-nonzeros and each
-perturbation is attributable to the originating `A`-block with no cross-talk; collecting
-them gives the per-block bound `||ΔA_vv||_2, ||ΔA_{p,v}||_2 <= c·b·Δ·u·(local norms)`, and
-the block-row nonzero count (`<= Δ`) turns this into the global (9a). **SPD-ness** is what
-removes the growth factor a pivot-free *general* factorization would carry; the **zero
-fill** is what bounds each block's error by `O(Δ)` operations rather than `O(n)`. The tree
-**height** enters only the magnitude of the `ell_v` (which compound along root-to-leaf
-paths) and hence `kappa(A)` - i.e. the *forward* error (9) via the first-order inverse
-perturbation `||Ĝ - G||/||G|| <= kappa(A) ||E||/||A||` - but it does **not** enter the
-backward constant (9a). ∎
+Those local facts do **not**, by themselves, prove that the complete two-pass
+algorithm is the exact selected inverse of one globally perturbed matrix
+`A + E` with a normwise constant independent of tree height or conditioning.
+Turning local perturbations into a single structured `E` requires controlling
+how factor-block magnitudes and cancellation accumulate along the elimination
+tree. The previous version of this note asserted that global theorem without
+such a proof. It is retracted here.
 
-The absolute constants `c_C, c_S, c_P` and the exact degree of `c(b, Δ)` are not
-optimized here; the content is the *form* - polynomial in `b`, linear in node degree,
-height- and `kappa`-free, growth-factor-free. That form is exactly what the precision study
-(Thread D) probes empirically and what separates the SPD selected inverse from a pivot-free
-non-symmetric factorization (§6.1, §9).
+An honest open theorem is therefore: under which scaling and structural
+assumptions can one bound a structured backward error
 
-**Empirical check (`bench/stability.py`).** The harness measures the literal (9a) object:
-it reassembles `A_hat = L_hat D_hat L_hat^T` from the kernel's *own* fp32 factors and reports the
-backward constant `||A_hat - A||_2 / (u ||A||_2)`, sweeping tree **height** and `kappa(A)`.
-On one measured grid at `b = 2` the constant sits at `~0.3-0.55` and does not visibly grow
-with height or κ - **consistent with** (9a), but this is a **diagnostic** on fill-free
-trees only (`tests/test_stability.py` gates harness wiring, not independence). The *forward*
-error over the same grid grows ~linearly with `kappa`, matching (9). BLAS/dtype-dependent;
-reported, not asserted.
+    ||E|| / ||A|| <= C(A, G, b) u + O(u^2),                              (9a)
+
+and how must `C` depend on elimination depth, degree, front width, and factor
+growth? If such a bound is available, the usual first-order inverse
+perturbation gives
+
+    ||G_hat - G|| / ||G|| <= C(A, G, b) kappa(A) u + O(u^2).             (9)
+
+The absence of pivot growth for SPD Cholesky is useful, but it is not a license
+to call the selected inverse condition-independent.
+
+**Empirical check (`bench/stability.py`).** The harness reassembles the matrix
+represented by the kernel's fp32 factors and reports
+`||A_hat - A||_2 / (u ||A||_2)` while sweeping tree height and `kappa(A)`.
+On one measured `b = 2` grid the statistic is about `0.3--0.55` and shows no
+visible growth with either axis. This is a finite-grid diagnostic, not evidence
+of height or condition-number independence; `tests/test_stability.py` checks
+the harness, not a universal theorem. Forward error increases with
+conditioning on the same grid, as ordinary perturbation theory predicts.
+Values are BLAS- and dtype-dependent.
 
 Block inverses are realized through Cholesky factors (`cholesky_solve`) rather than
-explicit inverses where it matters. Empirically (9) holds with a small `C`, which is
-exactly the condition-aware tolerance the tests assert (`tol ~ 1e3 * kappa * eps` in
-fp64). Well-conditioned fp64 problems match the dense oracle to `~1e-10`; fp32 holds
-a loose `~1e-4`; bf16 is a coarse storage format exercised through a store-low /
-compute-fp32 path (CPU LAPACK has no half Cholesky). Note that for an *uncontrolled*
+explicit inverses where it matters. The finite test grids are consistent with a small
+effective constant in (9), but do not establish that bound outside those grids. The tests
+therefore use a conservative condition-aware tolerance (`tol ~ 1e3 * kappa * eps` in
+fp64), not a claimed theorem. Well-conditioned fp64 problems match the dense oracle to
+`~1e-10`; fp32 holds a loose `~1e-4`; bf16 is a coarse storage format exercised through
+a store-low / compute-fp32 path (CPU LAPACK has no half Cholesky). Note that for an
+*uncontrolled*
 random tree the factor blocks `ell_v` compound along root-to-leaf paths (expected
 height `~ e*log n`), so `kappa(A)` is not pinned by `b` alone the way it is for a
 fixed-depth chain or star; the tests therefore use condition-aware tolerances
@@ -593,9 +609,10 @@ Finally the schedule is two clean sweeps. The forward is a monotone increasing s
 operations in reverse creation order, giving a reverse-Takahashi sweep (increasing order)
 then a reverse-elimination sweep (decreasing order) on the **same** structure, each cotangent
 complete before it is consumed (its forward consumers are later in creation order, hence
-earlier in reverse) and the forward `(D, L|_S)` reused. The per-node work is the same
-`1 + (number of higher S-neighbours of v)` pattern as the forward, clique updates included,
-so the cost matches the forward selected inverse. ∎
+earlier in reverse) and the forward `(D, L|_S)` reused. With `w_v = |U_v|`, both
+directions visit `Theta(1 + w_v^2)` block operations at node `v`, including the
+clique-pair updates. Thus both cost `Theta(W b^3)` for
+`W = sum_v (1 + w_v^2)`. ∎
 
 **Clique-tree view.** Grouping eliminated variables into the cliques of the chordal
 completion makes `S` the pattern of a **tree of cliques** (junction tree), and the schedule
@@ -610,10 +627,12 @@ of the filled-pattern adjoint. The **forward** is now shipped (§2.2,
 composition of differentiable `S`-local block ops, **reverse-mode autograd through it is
 exactly the self-adjoint schedule of this theorem** - i.e. the adjoint is realized
 constructively, validated by `gradcheck` in `tests/test_junction.py`. The *hand-written*
-analytic clique recurrence - the explicit analog of §8.3 eqs. (13)-(14), which trades the
-autograd tape's `O(fill)` memory for the same two-sweep schedule - is now also shipped (§8.5,
-`gabp_sparse_inv/junction_autodiff.py`); the tree case (§8.2-8.3) is its zero-fill
-specialization.
+analytic clique recurrence - the explicit analog of §8.3 eqs. (13)-(14) - is now also
+shipped (§8.5, `gabp_sparse_inv/junction_autodiff.py`); the tree case (§8.2-8.3) is its
+zero-fill specialization. It stores `Theta(F b^2)` numeric factor/selected blocks, but the
+current checked level-set implementation also pre-materializes `Theta(W)` symbolic
+clique-pair indices. It is therefore tape-free, not a claim of `Theta(F)` total memory for
+the shipped path.
 
 ### 8.5 The explicit clique recurrences (what `SelInvJunction.backward` runs)
 
@@ -653,8 +672,10 @@ Decreasing order makes each `bWd[w]`, `bW[w,w']` complete before the lower cliqu
 them (forward) reads them in (16a). Finally `barAe` reads `bW[hi,lo]` at each **input** edge
 (fill blocks are not inputs, so their `bW` is internal only). The clique-Schur reversal (16a)
 is the one new ingredient over §8.3; on a tree `U_v = {parent}` and (15)-(16) collapse
-block-for-block to (13)-(14). Cost is the forward's `O((|V| + fill) b^3)` time and
-`O(|V| + fill)` blocks of memory - no autograd tape. Validated block-for-block against the
+block-for-block to (13)-(14). Cost is the forward's `Theta(W b^3)` work and
+`Theta(F b^2)` numeric block storage, with `F,W` defined in §2.2, and no autograd tape.
+The current level-set schedule additionally stores `Theta(W)` symbolic indices.
+Validated block-for-block against the
 autograd path and by `gradcheck` (`tests/test_junction_autodiff.py`).
 
 ## 9. Non-symmetric selected inverse: the lower-bidiagonal case
@@ -674,9 +695,10 @@ a matrix inverse is `dG = -G (dM) G` (Dwyer-Macphail 1948 / Giles 2008, the same
 §8: that the **on-pattern** cotangent of the **selected** inverse is produced by a schedule
 of the same shape and `O(n)` cost as the forward - here so directly that both passes are
 *local* (no sequential sweep at all), realized as a single batched kernel. It is the
-non-symmetric, triangular endpoint of the "selected inversion is self-adjoint (up to
-transpose)" thesis - the reverse schedule has the same shape and `O(n)` cost, and the
-non-symmetry shows up only as the adjoint being a selected inversion of the transpose (§10.3).
+non-symmetric, triangular endpoint of the same-schedule thesis: the reverse has the same
+shape and `O(n)` cost, while the inversion derivative obeys
+`L_M^*(X) = -M^{-T} X M^{-T} = L_{M^T}(X)` (§10.3). This is an identity between
+derivative maps, not a selected-inverse value at the transpose.
 
 ### 9.1 Setup
 
@@ -728,8 +750,8 @@ block):
 
 These are exactly the three accumulations and two contractions in
 `SelInvBidiag.backward`. The backward touches the same blocks as the forward with the same
-`O(n)` cost and is, like the forward, fully local/batched - the schedule is **self-adjoint**
-in the strong (sweep-free) sense. There is *no* pivot symmetrization (§6/§8.1): the dense
+`O(n)` cost and is, like the forward, fully local/batched. Its transpose-form VJP is not a
+self-adjoint non-symmetric inversion map. There is *no* pivot symmetrization (§6/§8.1): the dense
 oracle assembles `M` exactly and inverts it, so analytic and autograd gradients agree to
 `~1e-9` (`tests/test_nonsym.py`), without the factor-of-2/transpose bookkeeping that the
 symmetric stored-block convention forces.
@@ -746,7 +768,7 @@ win) and the adjoint is the same `dT = T (dA) T` restricted to the strictly-lowe
 It is the explicit bridge to the demonstration ladder, implemented as
 `selected_inverse_tril` / `selinv_tril` (`gabp_sparse_inv/nonsym.py`). The
 autograd-differentiable triangular solve is its baseline, so the contribution is the
-analytic self-adjoint backward (17), not the inverse itself; it is validated against the
+analytic transpose-form VJP (17), not the inverse itself; it is validated against the
 dense inverse and against autograd-through-`solve_triangular` to `~1e-15`
 (`tests/test_nonsym.py`).
 
@@ -791,10 +813,11 @@ Implemented as `selected_inverse_nonsym_junction` (`gabp_sparse_inv/nonsym_junct
 
 The forward is **classical**: the block `LDU` selected inverse on the filled pattern is the
 Erisman-Tinney (1975) recurrence (the non-symmetric Takahashi). The contribution is the same
-as the rest of the program - the **differentiable** thread: that this selected inversion is
-*self-adjoint up to transpose* on the filled pattern. Its reverse-mode is again a selected
-inversion on `S` - but, because `A` is non-symmetric, a selected inversion of `Aᵀ` (the
-adjoint map is `P_S L_{Aᵀ} ι_S`, not `P_S L_A ι_S`), same schedule, same `O(fill)` cost. This
+as the rest of the program - the **differentiable** thread: its reverse-mode closes on a
+same-pattern schedule. Because `A` is non-symmetric, the inversion derivative is not
+self-adjoint: its linear adjoint is the
+derivative at `Aᵀ` (the adjoint map is `P_S L_{Aᵀ} ι_S`, not
+`P_S L_A ι_S`), with the same `Theta(W b^3)` structural work. This
 is why §10.3 propagates **independent** lower/upper cotangents (the `L` of `A` is the `U` of
 `Aᵀ`): that independence is the fingerprint of "up to transpose." Established for the
 non-symmetric case in §10.3 (the non-symmetric analogue of §8.4). The proof technique
@@ -835,19 +858,23 @@ collapse block-for-block to the SPD junction kernel; on a tree (no fill) they co
 (18)-(20). Both reductions are asserted in `tests/test_nonsym_junction.py`, alongside a dense
 `torch.linalg.inv` oracle on loopy grids/random graphs and an oracle-free `A G = I` residual.
 
-### 10.3 The adjoint is again a filled-pattern selected inversion (self-adjoint up to transpose)
+### 10.3 The adjoint is a same-pattern reverse schedule (the inversion derivative at the transpose)
 
 The matrix differential of the inverse is `dG = − G (dA) G` (folklore). Restricting a scalar
 loss `f(G|_S)` to the selected blocks, its cotangents `Ā` on `S` are obtained by a **reverse
 sweep that touches only `S`-blocks**, reusing the saved `{D_v^{-1}, L, U, G|_S}` in the
-reverse of the (21)-(26) schedule - `O(fill)` work and memory, no new fill. The argument is
+reverse of the (21)-(26) schedule. With `w_v = |U_v|`, numeric factor/selected-block
+storage is `Theta(F b^2)` and arithmetic is `Theta(W b^3)`; the current checked level-set
+path additionally stores `Theta(W)` symbolic metadata. No new fill blocks are formed. The argument is
 the §8.4 one verbatim: each line of (21)-(26) is a local block map whose VJP reads and writes
 only blocks incident to the clique `U_v ∪ {v}` (all on `S` by chordality), so the adjoint
 closes on `S`. The **only** structural difference from the symmetric case is that the lower
 and upper factors now carry *independent* cotangents (no `L = U^T` symmetry to fold the two
 into one), so the reverse sweep propagates both `L̄` and `Ū` - a constant-factor change, not a
-complexity or closure change. This is the non-symmetric "belief-propagation-like `O(n)`
-adjoint": a two-pass collect/distribute on the same elimination structure.
+complexity or closure change. At bounded front width and fixed block size this is a
+belief-propagation-like `O(n)` adjoint: a two-pass collect/distribute schedule on the same
+elimination structure. In general its cost is front-dependent, not linear in the number of
+input nonzeros.
 
 In the implementation the forward (21)-(26) is written functionally (the pivots are
 `torch.linalg.inv`), so reverse-mode autograd **is** this `S`-local schedule, `gradcheck`-validated
@@ -862,11 +889,12 @@ autograd path to machine precision and by `gradcheck` (`tests/test_junction_auto
 
 ### 10.4 The no-pivot (static-pattern) regime
 
-(21)-(26) eliminate in the fixed symbolic order with **no pivoting**. This is what keeps the
-pattern static and the cost `O(fill)`, but requires every pivot `D_v` (a Schur complement) to
-stay non-singular. A sufficient condition is block diagonal dominance / the well-scaled,
-large-`κ` regime targeted by the package's well-scaled generators: there the leading
-Schur complements inherit dominance and stay invertible. Partial / threshold pivoting would
+(21)-(26) eliminate in the fixed symbolic order with **no pivoting**. This keeps the
+pattern static and the work `Theta(W b^3)`, but requires every pivot `D_v` (a Schur
+complement) to stay nonsingular and numerically usable. The package's block-dominant
+generators provide a controlled empirical regime; no general claim is made here that the
+particular singular-value dominance diagnostic used by the harness is inherited by every
+Schur complement. Partial / threshold pivoting would
 restore stability for indefinite or badly-scaled `A`, but it changes the elimination pattern
 *dynamically* - destroying the static-`S`, bounded-fill story. So pivoting is deliberately out
 of scope and flagged as a research question (`docs/ROADMAP.md`, "Non-symmetric stability"),
@@ -897,8 +925,9 @@ inverse on the filled pattern (§2.2, §8.4 - `gabp_sparse_inv/junction.py`,
 self-adjoint schedule realized by reverse-mode, `gradcheck`-validated), and the **general
 non-symmetric (LU / Erisman-Tinney)** selected inverse on the filled pattern (§10,
 `gabp_sparse_inv/nonsym_junction.py`, `selected_inverse_nonsym_junction`/
-`selinv_nonsym_junction`): forward + an autograd adjoint (self-adjoint up to transpose,
-§10.3), no pivoting (the static-pattern regime), dense-oracle/`gradcheck`-gated. The remaining item is the
-*hand-written* analytic filled-pattern backward (a tape-free optimization of the same
-schedule, for both the symmetric and non-symmetric junction kernels); see
+`selinv_nonsym_junction`): forward + an autograd adjoint evaluated through
+`L_A^* = L_{A^T}` (§10.3), no pivoting (the static-pattern regime),
+dense-oracle/`gradcheck`-gated.
+The hand-written analytic filled-pattern backwards are shipped for both
+symmetric and non-symmetric junction kernels; see
 [PROJECT_STATUS.md](PROJECT_STATUS.md).

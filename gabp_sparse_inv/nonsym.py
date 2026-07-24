@@ -164,7 +164,7 @@ def selected_inverse_tril(
     triangular and ``T`` is unit lower triangular and dense. This is the chunk inverse
     of DeltaNet / gated linear attention. The "selected" set is the full lower triangle
     (no sparsity win); a plain blocked triangular solve is the baseline, so the
-    contribution is the analytic self-adjoint backward of :func:`selinv_tril`, not the
+    contribution is the analytic transpose-form VJP of :func:`selinv_tril`, not the
     forward inverse.
 
     Parameters
@@ -199,11 +199,12 @@ def selected_inverse_tril(
 
 
 class SelInvTril(torch.autograd.Function):
-    """Autograd Function for ``T = (I - A)^{-1}`` with the analytic self-adjoint backward.
+    """Autograd Function for ``T = (I - A)^{-1}`` with an analytic transpose-form VJP.
 
     Backward (``docs/derivations.md`` §9.4): ``dT = T (dA) T``, so for a loss ``f(T)``
     with cotangent ``bar_T`` the gradient restricted to the strictly-lower pattern is
-    ``bar_A = tril(T^T bar_T T^T, -1)``. Use :func:`selinv_tril`.
+    ``bar_A = tril(T^T bar_T T^T, -1)``. This is the adjoint of the inversion
+    derivative, not a selected inverse and not a self-adjoint map. Use :func:`selinv_tril`.
     """
 
     @staticmethod

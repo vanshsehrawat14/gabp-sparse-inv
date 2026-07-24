@@ -1,39 +1,31 @@
 \section{Conclusion}
 \label{sec:conclusion}
 
-The selected inverse is a classical, exact, $\bigO(\text{fill})$ global operator, and,
-because it is the gradient of a log-determinant, it is cheap to
-differentiate. Those facts are not new, and this paper's own numerics rule
-out the obvious payoff: exactness buys nothing on the precision axis
-(Section~\ref{sec:numerics}). The hypothesis under test was that it buys
-something else instead -- that exactness is an inductive bias, changing which
-of two equally-fit models is preferred. Two pre-registered, matched-fit
-probes on $30$ held-out seeds test this directly, and on both, the
-inductive-bias branch does not fire: the alternative (bounded-reach sweeps in
-Section~\ref{sec:maze}, the biased Neumann adjoint in Section~\ref{sec:deq})
-cannot reach comparable training fit at the difficulty levels where the raw
-gap is largest, so the gap is explained by attainability, not by an implicit
-preference among optima that fit equally well. This is a real finding, not a
-null one: it says the practical advantage of embedding the exact solve --
-still a factor of roughly $600\times$ to $28{,}000\times$ across the tested
-sizes -- comes from
-the alternatives' inability to represent or optimize the target, not from a
-training-time bias effect. Both probes' negative controls are disclosed as
-imperfect (Section~\ref{sec:program}), so even this conservative reading is
-reported as hedged, following the frozen pre-registration rather than
-relaxing it post hoc.
+Selected inversion is a classical global operator whose cost is governed by
+the elimination fronts. Its log-determinant relationship gives the projected
+derivative a reverse schedule with the same asymptotic structural work. On
+the finite precision grid in Section~\ref{sec:numerics}, this implementation
+has no robust accuracy advantage over a well-ordered dense solve.
 
-The limits are explicit: the evidence is at controlled CPU scale and
-confined to low-treewidth (1-D and quasi-2-D) problems. What remains open is
-whether exactness matters for reasons unrelated to inductive bias: exact
-deterministic gradients for calibrated uncertainty quantification,
-conditioning-independent adjoints for differentiable physics, and a
-one-layer exact resolvent against message-passing's bounded-depth limits
-(Section~\ref{sec:program}). These are numerical and expressivity claims,
-each with its own falsification bar, gated on a single scoped build: a
-GPU-batched kernel. The next step is to run them. If they confirm the claim,
-exactness's numerical properties become a design principle for
-solve-shaped learning at scale; if they fail, they pin down where exactness
-does not matter, which is itself an answer. What this paper does not
-support, on its own pre-registered evidence, is the inductive-bias framing
-that motivated it.
+The tested hypothesis was that exact structured computation acts as an
+inductive bias among models with comparable training fit. In both
+pre-registered probes over $30$ held-out seeds, the finite alternative fails
+to attain comparable fit in the high-difficulty cells: bounded Jacobi sweeps
+in Section~\ref{sec:maze} and finite Neumann adjoints in
+Section~\ref{sec:deq}. The diagnostic test-error ratios range from roughly
+$600\times$ to $28{,}000\times$, but the matched-fit result attributes these
+gaps to attainability, not to a preference among equal-fit solutions. The
+DEQ low-difficulty control fails its relative-gap clause. The maze
+extrapolation-floor comparison passes, but the separate in-distribution
+\texttt{floor\_sound} diagnostic fails, so maze NC2 remains ambiguous. A
+later reused-seed analysis is excluded from the evidentiary chain. The
+supported conclusion is therefore narrow and hedged: exact structured
+computation expands the attainable regime on these controlled, solve-shaped
+tasks, while the inductive-bias explanation is not supported.
+
+The limits are explicit: the evidence is at controlled CPU scale and confined
+to low-treewidth (1-D and quasi-2-D) problems. Exact selected uncertainty,
+implicit gradients near difficult spectra, and certified local-versus-global
+computation remain separate questions requiring mature solver baselines and
+their own protocols (Section~\ref{sec:program}). The results do not extend
+beyond those measured regimes.

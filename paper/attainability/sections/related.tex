@@ -8,8 +8,12 @@ pattern without the full inverse; SelInv \cite{lin2011selinv} and PEXSI
 \cite{lin2013pexsi} do this for general sparse SPD and Hermitian matrices via
 the elimination tree; Gaussian belief propagation is the same
 collect/distribute recurrence and is exact on trees
-\cite{weiss2001correctness,bickson2008gaussian}. This work is not a performance
-competitor to these solvers and claims nothing for the forward pass.
+\cite{weiss2001correctness,bickson2008gaussian}. Recent accelerator systems
+include \texttt{Serinv} for block-tridiagonal arrowhead matrices
+\cite{maillou2025serinv} and tile-parallel selected inversion for structured
+matrices \cite{fattah2025stiles}. This work is a reference PyTorch
+implementation, not a performance competitor to those systems, and claims
+nothing new for the forward recurrence.
 
 \paragraph{Differentiating selected inversion.}
 The reverse-mode adjoint of the matrix inverse,
@@ -19,22 +23,27 @@ constant factor of the forward is the cheap-gradient principle
 \cite{baur1983complexity}; and differentiating a sparse log-determinant
 through selected inversion on the same factorization is done by
 \cite{zhu2019sparse} and is standard in GMRF and sparse-Cholesky learning
-\cite{rue2005gmrf}. These are the scaffolding of
+\cite{rue2005gmrf}. TMB has long combined sparse latent-Gaussian calculations,
+automatic differentiation, and Laplace approximation at large scale
+\cite{kristensen2016tmb}. These results provide the mathematical background for
 Remark~\ref{rem:scaffold}.
 
-\paragraph{Differentiable sparse linear algebra (the nearest neighbour).}
-The closest contemporary system is \texttt{torch-sla} \cite{torchsla2026},
-which ships a GPU differentiable sparse \emph{solve} and its adjoint with
-$\bigO(1)$ autograd-graph nodes and $\bigO(\mathrm{nnz})$ memory. It overlaps
-this package's constant-memory adjoint but does not provide a selected inverse, a
-log-determinant or its gradient, marginal variances or $\diagop(\inv{A})$,
-Gaussian sampling, or a non-symmetric selected-inverse adjoint. The
-defensible surface is therefore not ``a differentiable sparse solver'' but
-the selected-inverse / log-det-gradient / marginal-variance / sampling
-operator family with its unified symmetric and non-symmetric interface, plus
-the pre-registered account (Sections~\ref{sec:maze}--\ref{sec:deq}) of why
-that exactness wins on solve-shaped tasks -- attainability against
-bounded-reach or biased-gradient alternatives, not an inductive-bias effect.
+\paragraph{Differentiable sparse linear algebra.}
+Schwarz--Schur Involution batches direct sparse subdomain operations on GPUs
+and supplies a differentiable solver for PDE-shaped problems
+\cite{wang2025schwarz}. \texttt{torch-sla} unifies differentiable direct,
+iterative, nonlinear, and eigenvalue solvers across CPU, GPU, and distributed
+backends \cite{torchsla2026}. These systems make a generic
+``differentiable sparse solver'' claim untenable. The narrower software
+surface here is selected covariance entries, log determinant, solve, and
+sampling, including a static-pattern non-symmetric selected inverse. The
+paper's scientific contribution is
+instead the pre-registered account
+(Sections~\ref{sec:maze}--\ref{sec:deq}) of why exactness wins on its
+solve-shaped probes: attainability against bounded-reach or biased-gradient
+alternatives, not an inductive-bias effect. Approximate selected-covariance
+methods with estimable confidence bounds \cite{siden2017covariance} are
+important competitors for the prospective uncertainty experiment.
 
 \paragraph{Where the claim lives.}
 The original motivation drew on the lineage of inductive bias for

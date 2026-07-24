@@ -32,16 +32,16 @@ are asserted in the tests.
 
 **No pivoting (the static-pattern regime).** The factorization eliminates in the fixed
 symbolic order with **no pivoting**, which is what keeps the pattern static and the cost
-``O(fill)`` -- but requires every block pivot ``D_v`` to stay non-singular (e.g. block
+front-dependent -- but requires every block pivot ``D_v`` to stay non-singular (e.g. block
 diagonal dominance / the well-scaled regime; ``docs/ROADMAP.md`` "Non-symmetric stability").
-Pivoting would restore stability but destroy the zero-/bounded-fill story; it is a flagged
-research question, not handled here.
+Pivoting would make the symbolic pattern data-dependent; it is not handled here.
 
 **Differentiability.** The core is functional (the block inverses are ``torch.linalg.inv``),
-so reverse-mode autograd through it is the ``S``-local self-adjoint schedule -- the
-non-symmetric analogue of the §8.4 argument (``docs/derivations.md`` §10). A hand-written
-analytic BP-style adjoint is the reserved follow-up; this per-node loop is the correctness
-reference, exactly as :mod:`gabp_sparse_inv.junction` preceded its batched form.
+so reverse-mode autograd through it is the ``S``-local adjoint-up-to-transpose schedule
+-- the non-symmetric analogue of the §8.4 argument. Formally the inversion derivative obeys
+``L_A^* = L_{A^T}``; the VJP is not itself a selected inverse of ``A^T``
+(``docs/derivations.md`` §10). The hand-written analytic backward is shipped in
+:mod:`gabp_sparse_inv.junction_autodiff`.
 
 **Solve sibling.** The same block ``LDU`` factorization yields a linear *solve*
 ``x = A^{-1} b`` (and the transpose ``A^{-T} b``) via standard block triangular substitution:
@@ -390,8 +390,9 @@ def selinv_nonsym_junction(
 
     Identical result to :func:`selected_inverse_nonsym_junction`; the functional forward is
     differentiable, so gradients of any loss over the selected blocks flow to ``diag``,
-    ``edge_lower`` and ``edge_upper`` by reverse-mode -- the non-symmetric ``S``-local
-    self-adjoint schedule (``docs/derivations.md`` §10). No custom backward.
+    ``edge_lower`` and ``edge_upper`` by reverse-mode. For the inversion derivative,
+    ``L_A^*(X) = -A^{-T} X A^{-T} = L_{A^T}(X)``; this is a derivative map, not the
+    selected-inverse value at ``A^T`` (``docs/derivations.md`` §10). No custom backward.
     """
     edge_index = _normalize_edge_index(edge_index)
     return _selinv_nonsym_junction_core(diag, edge_index, edge_lower, edge_upper, order)

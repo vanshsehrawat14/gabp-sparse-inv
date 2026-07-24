@@ -1,5 +1,12 @@
 # Matched-capacity long-range benchmark (Track B / E4)
 
+**Current scientific status (2026-07-22).** This file records exploratory controls that
+motivated the preregistered study; it is not the final verdict. The matched-fit HOLDOUT
+analysis found that the truncated comparators generally did not attain comparable training
+fit in the hard cells. It therefore rejected the intended inductive-bias interpretation and
+supports only a hedged attainability reading under the tested budgets. One preregistered
+negative-control clause also failed. See `archive/docs/CONFIRMATORY_RESULTS.md` and Paper 1.
+
 This note pre-registers and records the experiment that hardens the maze from a
 *capability ablation* into a *matched-capacity* result. Code:
 `gabp_sparse_inv/demos/maze_baselines.py`; tests: `tests/test_maze_baselines.py`.
@@ -64,8 +71,8 @@ But the same well-trained (2000-step) baselines, evaluated out-of-distribution, 
 **2728× / 6879×** (GNN) and **3844× / 9325×** (Transformer) worse than GaBP at 8×8 / 10×10.
 Better in-distribution training does not buy extrapolation.
 
-**Verdict (refined by the controls):** the decisive, training-invariant gap is on the
-**size/diameter-extrapolation** axis - an exact `O(fill)` primitive with *size-independent*
+**Exploratory read before HOLDOUT:** the largest observed gap is on the
+**size/diameter-extrapolation** axis - an exact sparse-direct primitive with *size-independent*
 parameters generalises across problem sizes (GaBP flat `~1e-5` from 6×6 to 10×10), while a
 universal long-range learner - even at >250× capacity and 10× training - cannot (≈7000-9000×
 worse at 10×10). The *in-distribution* gap is partly trainable away (efficiency), so the honest
@@ -136,7 +143,7 @@ supports attributing the gap to the inverse's **globality**, not to architecture
 count: the matched-capacity attribution claim the cross-architecture baselines could only
 approximate.
 Gated in `tests/test_maze_grid.py`
-(`test_matched_capacity_causal_dose_response`); figure `maze_causal` in `paper/attainability/make_figures.py`.
+(`test_matched_capacity_causal_dose_response`); figure `maze_causal` in `archive/paper/make_figures.py`.
 
 ## Scope and honest caveats (what this does *not* yet show)
 
@@ -168,8 +175,8 @@ Gated in `tests/test_maze_grid.py`
    `run_curve` aggregate median + per-seed spread, and the **effective-resistance** task
    broadens the claim past the exact function any single solve computes.
 2. ~~A real fixed-point / DEQ impact demo where the inverse is load-bearing~~ - **done**
-   ([DEQ.md](DEQ.md)): the non-symmetric selected inverse as the exact `O(fill)` DEQ backward,
-   robust as ρ(J)→1. The other demonstration rung; moves the story from attribution to impact.
+   ([DEQ.md](DEQ.md)): the non-symmetric sparse-direct solve as an exact DEQ backward,
+   compared with finite Neumann truncations on a controlled sweep.
 3. ~~The architecture confound (the gap could be architecture, not the inverse)~~ - **done**:
    the within-architecture **matched-capacity control** (above) holds the model identical
    and varies only the solve's reach, giving a monotone dose-response with only the exact global

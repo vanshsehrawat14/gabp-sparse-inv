@@ -1,127 +1,80 @@
-\section{A falsifiable program: where exactness should and should not help}
+\section{Limits and questions left open}
 \label{sec:program}
 
-The two probes at controlled scale (Sections~\ref{sec:maze}
-and~\ref{sec:deq}) resolved to attainability, not inductive bias: the
-pre-registered matched-fit design found the exact solve wins because the
-alternatives cannot fit the task, not because it tips training toward a
-better solution among equally-attainable ones. What survives is the
-operator's classical, verified numerical properties -- exact, deterministic,
-$\bigO(\text{fill})$ -- against incumbents that are stochastic, iterative, or
-conditioning-dependent. This section states that operator gap, the
-benchmark-scale experiments that would show it matters (or does not), the
-negative control, and the single prerequisite that gates all of them. None of
-what follows claims inductive bias; each hypothesis below is a numerical or
-capability claim, stated so it can be wrong.
+The two probes resolve to attainability under the tested budgets, not
+inductive bias among equally fit models. That conclusion is narrower than the
+original hypothesis, and it does not turn the reference implementation into a
+performance result. This section separates the paper's evidence from three
+questions that remain legitimate but require new protocols.
 
-\paragraph{The operator gap (what scalable differentiable-sparse methods must match).}
-Three capabilities anchor the claim; each is exact and deterministic where the
-incumbents are stochastic, iterative, or conditioning-dependent.
-\begin{itemize}
-  \item \textbf{M1: exact, deterministic} gradient of $\log\det A$ and exact
-        on-pattern blocks and diagonal of $\inv{A}$, at $\bigO(\text{fill})$.
-        Incumbent: the conjugate-gradient plus stochastic-Lanczos-quadrature
-        gradient of GPyTorch \cite{gardner2018gpytorch,ubaru2017fast} is
-        variance-laden and $\kappa$-biased, with no exact $\diagop(\inv{A})$
-        at scale.
-  \item \textbf{M2: conditioning-independent, constant-memory adjoint.} A
-        direct factorization gives an $\bigO(\text{fill})$-memory,
-        iteration-free adjoint whose accuracy does not degrade with $\kappa$
-        or $\rho(J)$ (Section~\ref{sec:deq}). Incumbents: unrolled iterative
-        adjoints store $\bigO(K)$ states; implicit CG and AMG adjoints
-        reintroduce $\kappa$-dependent iteration and gradient bias.
-  \item \textbf{M3: a one-layer, exact, differentiable global graph
-        functional} (resolvent, effective resistance, commute time), where
-        bounded-depth message passing provably needs $\Omega(\text{diameter})$
-        depth and transformers approximate without extrapolating
-        (Section~\ref{sec:maze}).
-\end{itemize}
+\paragraph{What is established.}
+On solve-shaped targets, a model containing the exact structured solve can
+reach solutions that the tested finite Jacobi or Neumann alternatives do not
+reach. The within-architecture interventions locate the difference in the
+global solve or its backward, and the matched-fit read shows that the hard
+cells are not equal-fit comparisons. The finite fp32 precision sweep provides
+no robust accuracy advantage over a well-ordered dense factorization.
 
-\paragraph{Benchmark-scale experiments.}
-Each attacks one capability on real, non-toy data, with a falsification bar
-that should be fixed before the benchmark is run.
-\begin{itemize}
-  \item \textbf{E2 (M1): exact deterministic gradients for calibrated UQ.}
-        Hypothesis: exact marginal-likelihood gradients and exact posterior
-        marginal variances give better-calibrated uncertainty and more stable
-        hyperparameter optimization than CG plus SLQ, with the gap widening as
-        the noise tends to zero and $\kappa$ grows. Competitors: GPyTorch
-        \cite{gardner2018gpytorch}, SKI/KISS-GP \cite{wilson2015kernel},
-        Vecchia approximations \cite{katzfuss2021general}, and SVGP
-        \cite{hensman2013gaussian}. Data: ERA5/NOAA spatial GMRFs and PeMS
-        state-space GPs. \emph{Falsified if} SLQ/CG gradients are within noise
-        of exact on real data at feasible cost.
-  \item \textbf{E1 (M2): constant-memory, conditioning-independent adjoints
-        for differentiable physics.} Hypothesis: on high-contrast 2-D
-        PDE-constrained learning, the exact sparse-direct adjoint gives
-        gradients whose error and backward memory are flat in the condition
-        number, where unrolled CG runs out of memory and implicit AMG adjoints
-        stall or bias. Competitors: unrolled CG and implicit CG/AMG adjoints.
-        Data: high-contrast Darcy flow on SPE10 permeability (contrast up to
-        $10^7$); a sparse-observation inverse problem. \emph{Falsified if}
-        AMG-preconditioned implicit adjoints stay accurate and cheap at $10^7$
-        contrast.
-  \item \textbf{E3 (M3): the exact resolvent layer vs.\ over-squashing and
-        size extrapolation.} Hypothesis: one exact differentiable resolvent
-        layer computes global functionals that bounded-depth message passing
-        cannot, removing over-squashing
-        \cite{alon2021bottleneck,topping2022understanding} and generalizing
-        across graph sizes where GNNs, rewiring, and graph transformers
-        degrade. This is the benchmark-scale version of
-        Section~\ref{sec:maze}. Competitors: strong MPNNs, graph rewiring
-        (SDRF \cite{topping2022understanding}, FoSR \cite{karhadkar2023fosr}),
-        graph transformers (GPS \cite{rampasek2022recipe}, Exphormer
-        \cite{shirzad2023exphormer}), and implicit GNNs \cite{gu2020implicit}.
-        Data: the Long Range Graph Benchmark \cite{dwivedi2022long} and real
-        road networks with train-small/test-large splits. \emph{Falsified if}
-        a graph transformer matches both in distribution and across the
-        extrapolation sweep.
-  \item \textbf{E4 (M2, deepest): training at the edge of stability.} The
-        benchmark-scale version of Section~\ref{sec:deq}: does the exact
-        backward let one train structured equilibrium models at near-critical
-        $\rho(J)\to1$, a regime that phantom-gradient \cite{geng2021training}
-        and Anderson/Broyden adjoints
-        \cite{anderson1965iterative,broyden1965class} cannot reach, for a
-        learned-capability gain (longer effective range)? \emph{Falsified if} phantom-gradient
-        DEQs train fine without ever needing high $\rho$, i.e.\ the useful
-        regime is not stiff.
-\end{itemize}
+\paragraph{What is not established.}
+The experiments do not show that sparse direct is uniformly faster or more
+accurate than iterative methods; that exactness helps on targets not shaped by
+the operator; that a finite Transformer cannot learn these functions with
+different data, optimization, or architecture; or that the sparse-direct
+backward has condition-independent error. The implementation is a PyTorch
+reference, not a systems competitor to mature sparse-direct solvers.
 
-\paragraph{The negative control.}
-Every generalization experiment includes a task \emph{not} reducible to a
-structured global solve, where any exactness-specific explanation,
-attainability included, predicts the advantage
-must vanish. A persistent gap there would mean the effect is a confound
-(capacity, optimization, data leakage), not exactness; its absence is what
-supports the attribution reading of Section~\ref{sec:maze} at scale.
+\paragraph{Question 1: exact selected uncertainty.}
+Selected inversion provides deterministic on-pattern covariance entries and
+the log-determinant gradient. Whether that changes learned uncertainty
+quantification is a separate causal question: the model, parameterization,
+optimizer, data split, precision, and stopping rule must be held fixed while
+only the exact versus approximate computation changes. CG/SLQ is the matched
+computational comparison \cite{gardner2018gpytorch,ubaru2017fast};
+variational or Vecchia methods change the statistical model and must be
+reported separately \cite{hensman2013gaussian,katzfuss2021general}. A valid
+study reports accuracy at matched wall time and memory, not ``exact'' as a
+synonym for better.
 
-Two pre-registered negative controls have already been run at small scale,
-and neither passed cleanly, which is exactly why Sections~\ref{sec:maze}
-and~\ref{sec:deq} resolve to the conservative attainability reading rather
-than a confirmed inductive bias. On the maze held-out seeds, a
-short-correlation-length variant of the routing task ($\varepsilon=2.0$,
-where the solve's reach should barely matter) still showed the exact solve
-beating the compute-matched truncation at every size -- a disclosed limitation
-of the matched-compute cost story. On the DEQ held-out seeds, the low-$\rho$
-silent control's relative-gap clause failed at near-machine-precision loss
-levels, though its independent function-distance clause held by more than
-four orders of magnitude (Section~\ref{sec:deq}). Per the frozen rule, a
-failed negative control voids a clean positive reading; neither probe gets
-one. The benchmark-scale negative controls above carry the same commitment:
-if they fail, the failure is reported, and a future benchmark-scale
-inductive-bias test would need a cleaner control (keyed on function distance,
-not relative gap, at near-machine-precision cells) before it could confirm
-anything.
+\paragraph{Question 2: implicit gradients near difficult spectra.}
+The four-cell DEQ diagnostic compares sparse direct with finite Neumann
+truncations. A benchmark claim would require strong Krylov and preconditioned
+solvers, phantom gradients \cite{geng2021training}, and accelerated fixed-point
+methods \cite{anderson1965iterative,broyden1965class}, all scored at matched
+gradient residual, memory, and time. The sparse-direct advantage is
+iteration-independent work after factorization; its floating-point error still
+depends on conditioning and factor growth.
 
-\paragraph{The one prerequisite, and the one falsification that sinks it.}
-All of the above need problems larger than today's per-node Python-loop CPU
-ceiling. The gating item is a single, already-scoped engineering build, a
-GPU-batched junction kernel, not new theory; until it runs, the claim is
-established only at the controlled scale of Sections~\ref{sec:maze}
-and~\ref{sec:deq}. One outcome would bound the whole program: if real
-low-treewidth problems are mostly well-conditioned (where iterative and
-stochastic gradients are good enough) and real stiff problems are mostly dense
-3-D (multigrid territory), then the operator gap lands where it is not needed.
-E1 and E2 are designed so that their failure pins down that
-boundary, in which case the result is a characterization of where exactness
-matters.
+\paragraph{Question 3: certified local versus global computation.}
+For targets whose output depends on evidence at graph distance $d$, a strictly
+local message-passing network needs at least $d$ layers for that evidence to
+arrive. This does not imply a lower bound for Transformers or rewired graph
+networks. A stronger future question is whether a local approximation can
+carry a certificate that its downstream decision equals the exact global
+answer, with exact fallback only when the certificate fails. Such a claim
+would need proof, adversarial oracle checks, and comparisons with residual
+stopping, adaptive message passing, graph rewiring, and graph Transformers
+\cite{topping2022understanding,karhadkar2023fosr,rampasek2022recipe,
+shirzad2023exphormer}.
+
+\paragraph{Controls and evidence boundary.}
+The first matched-fit HOLDOUT read passed the DEQ high-difficulty
+attainability checks, but the DEQ low-difficulty relative-gap control failed;
+its function-distance clause passed. For maze, the $K=256$ extrapolation-floor
+comparison passed while the separately recorded in-distribution
+\texttt{floor\_sound} diagnostic failed ($2.70\times10^{-5}$ mean loss gap,
+$44\%$ of the exact evaluation loss, against a $5\%$ diagnostic). The
+preregistration did not unambiguously choose between those two maze checks, so
+NC2 is treated as ambiguous. The conservative result is therefore hedged. A
+later reused-seed bootstrap branch is excluded from the evidentiary chain
+(Appendix~\ref{app:integrity}). Any future task needs a non-solve-shaped
+negative control: a persistent advantage there would identify a confound
+rather than an exactness-specific mechanism.
+
+\paragraph{Structural boundary.}
+For later-neighbour counts $w_v$, the numeric storage scale is
+$F=\sum_v(1+w_v)$ blocks while clique work is
+$W=\sum_v(1+w_v^2)$. Exact sparse direct is attractive only when the fronts
+remain manageable and reuse justifies factorization. If useful stiff problems
+have fronts too large for direct factorization, or accurate iterative methods
+reach the required tolerance more cheaply, the correct conclusion is that
+exactness is unnecessary in that regime.

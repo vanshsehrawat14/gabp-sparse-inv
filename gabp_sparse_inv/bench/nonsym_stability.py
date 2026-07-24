@@ -2,7 +2,8 @@
 
 The non-symmetric junction kernel (``selected_inverse_nonsym_junction``, ``derivations.md`` §10)
 eliminates in a **fixed symbolic order with no pivoting** - that is what keeps the pattern
-static and the cost ``O(fill)``, but it requires every Schur-complement pivot ``D_v`` to stay
+static, but its work still follows the squared front sizes. It requires every
+Schur-complement pivot ``D_v`` to stay
 non-singular. §10.4 names the safe regime: block diagonal dominance / the well-scaled input the
 project targets. This harness measures **where that regime ends**.
 
@@ -21,8 +22,8 @@ record, against a dense fp64 oracle:
 The honest reading (§10.4): while block-diagonally dominant (``alpha >~ 1``) the no-pivot kernel
 is at **parity** with pivoted LU and tracks ``kappa * u``; as dominance is lost the Schur floor
 collapses and ``err_nopivot`` departs from ``kappa * u`` while pivoted LU does not - the boundary
-of the static-pattern regime. Pivoting would fix it but breaks the static-``S`` / ``O(fill)``
-story, so it is deliberately out of scope (``docs/ROADMAP.md`` "Non-symmetric stability"). Like
+of the static-pattern regime. Pivoting would fix it but makes the symbolic pattern
+data-dependent, so it is deliberately out of scope (``docs/ROADMAP.md``). Like
 the rest of ``bench/`` these are dtype/BLAS-dependent **diagnostics** - recorded, not asserted.
 
     python -m gabp_sparse_inv.bench.nonsym_stability

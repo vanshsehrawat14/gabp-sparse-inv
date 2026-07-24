@@ -8,10 +8,12 @@ backward pass needs, by the implicit function theorem,
     (I - J)^T u = dL/dz* ,        J = df/dz |_{z*}      (the adjoint/VJP solve)
 
 a **non-symmetric** linear solve with the equilibrium Jacobian. When ``f``'s coupling is
-sparse on a graph (the regime this whole project targets -- low treewidth, ``O(fill)``),
-that solve is exactly :func:`~gabp_sparse_inv.nonsym_junction_solve` on ``A = I - J``: the
-block ``LDU`` of ``docs/derivations.md`` §10, one factorization, ``O(fill)``, and the
-*transpose* of the same factors gives the adjoint with no refactorization.
+sparse on a low-treewidth graph, that solve is exactly
+:func:`~gabp_sparse_inv.nonsym_junction_solve` on ``A = I - J``: the block ``LDU`` of
+``docs/derivations.md`` §10, one front-dependent factorization, and the *transpose* of the
+same factors gives the adjoint with no refactorization. For fixed block size and bounded
+front width the work is linear in the number of graph nodes; in general it is
+``Theta(sum_v (1 + w_v**2) b**3)``.
 
 Two things this module demonstrates, both honestly scoped:
 
@@ -20,13 +22,14 @@ Two things this module demonstrates, both honestly scoped:
    an affine fixed point it is literally autograd through :func:`nonsym_junction_solve`; for a
    nonlinear DEQ it is the custom IFT backward in :func:`deq_fixed_point`.
 
-2. **Robustness as ``rho(J) -> 1`` (the result).** Standard DEQ backprop solves ``(I-J)^T u =
+2. **A finite stiff-regime mechanism check.** Standard DEQ backprop solves ``(I-J)^T u =
    g`` *iteratively* (Neumann / Richardson: ``u_{k+1} = J^T u_k + g``), which converges like
-   ``rho(J)^k`` -- arbitrarily slow as the equilibrium stiffens. The structured solve is
-   one-shot and stays machine-accurate at every ``rho``. :func:`backward_accuracy_sweep`
-   sweeps ``rho`` and shows the exact selected-inverse backward flat at ``~1e-12`` while the
-   ``K``-step iterative backward's gradient error tracks ``rho^K`` -- the stiff fixed-point
-   regime where iterative adjoints are slow.
+   ``rho(J)^k`` in the normal/contraction construction used here. The structured solve is
+   one-shot. :func:`backward_accuracy_sweep` checks four finite ``rho`` values and shows the
+   direct backward agreeing closely with the dense oracle while the ``K``-step Neumann
+   truncation worsens as stiffness increases. This finite grid neither proves
+   condition-independent floating-point accuracy nor compares against Krylov,
+   preconditioned, or accelerated implicit-gradient methods.
 
 **Honest scope.** The advantage is for fixed-point layers whose Jacobian is **graph-
 structured / low-treewidth**; for a dense Jacobian the ``LDU`` is ``O(n^3)`` and an iterative

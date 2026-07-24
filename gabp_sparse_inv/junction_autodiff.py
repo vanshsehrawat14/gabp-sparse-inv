@@ -2,8 +2,10 @@
 
 The autograd-facing :func:`~gabp_sparse_inv.selinv_junction` and
 :func:`~gabp_sparse_inv.selinv_nonsym_junction` already give exact gradients by reverse-mode
-through the functional forward -- which *is* the self-adjoint schedule of
-``docs/derivations.md`` §8.4 / §10.3. This module is the **tape-free** version: a custom
+through the functional forward. The symmetric map has the projected self-adjoint schedule of
+``docs/derivations.md`` §8.4; the non-symmetric inversion derivative satisfies
+``L_A^*(X) = -A^{-T} X A^{-T} = L_{A^T}(X)`` as described in §10.3. This module is the
+**tape-free** version: a custom
 ``torch.autograd.Function`` whose backward runs the explicit reverse two-sweep clique
 recurrence directly on the saved factors ``(chol/Dinv, ell/Lf/Uf, G|_S)``, with **no autograd
 tape** over the per-node loop. It is the filled-pattern generalization of the tree analytic
@@ -22,9 +24,11 @@ factors but the same structure):
   pivot reverses produce the input cotangents ``barA`` on the diagonal and on the original edges
   (fill blocks are not inputs, so they carry no gradient).
 
-Each block touched lies in ``S`` (chordality), so the schedule is ``O(fill)`` time and memory
-like the forward -- the §8.4 self-adjoint cost, now realized without the autograd tape's
-intermediates. Validated block-for-block against the autograd path (machine precision) and by
+Each block touched lies in ``S`` (chordality). With ``w_v=|U_v|``, its arithmetic is
+``Theta(sum_v(1+w_v^2) b^3)`` and numeric block storage is
+``Theta(sum_v(1+w_v) b^2)``; the current flattened level-set metadata is also
+``Theta(sum_v(1+w_v^2))``. This matches the forward's structural work while avoiding the
+autograd tape's intermediates. Validated block-for-block against the autograd path and by
 ``gradcheck`` in ``tests/test_junction_autodiff.py``.
 
 **First-order only** (the standard custom-``Function`` contract: ``backward`` runs under
@@ -195,7 +199,9 @@ def selinv_junction_analytic(
 
     Same forward result as :func:`~gabp_sparse_inv.selinv_junction`, but gradients flow through
     the explicit reverse two-sweep clique recurrence of ``docs/derivations.md`` §8.4 (no autograd
-    tape over the per-node loop), reusing the forward factors. ``O(fill)`` time and memory.
+    tape over the per-node loop), reusing the forward factors. With later-front sizes ``w_v``,
+    work is ``Theta(sum_v(1+w_v^2) b^3)`` and numeric storage is
+    ``Theta(sum_v(1+w_v) b^2)``; the current level-set metadata is also quadratic in ``w_v``.
     Gradients to ``diag`` and ``edge_val``; **first-order only** (use the functional
     :func:`~gabp_sparse_inv.selinv_junction` for Hessian-vector products).
     """
@@ -365,7 +371,8 @@ def selinv_nonsym_junction_analytic(
     Same forward result as :func:`~gabp_sparse_inv.selinv_nonsym_junction`, but gradients flow
     through the explicit reverse two-sweep clique recurrence of ``docs/derivations.md`` §10.3 --
     the non-symmetric analogue of the §8.4 schedule, carrying independent lower/upper factor
-    cotangents -- with no autograd tape. ``O(fill)`` time and memory. Gradients to ``diag``,
+    cotangents -- with no autograd tape. It has the same front-dependent work and numeric
+    factor storage as the symmetric routine above. Gradients to ``diag``,
     ``edge_lower`` and ``edge_upper``; **first-order only** (use the functional
     :func:`~gabp_sparse_inv.selinv_nonsym_junction` for Hessian-vector products).
     """

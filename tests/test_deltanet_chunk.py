@@ -4,7 +4,7 @@ Two things are gated. (1) **Forward correctness**: the chunked ``(I - A)^{-1}`` 
 equals the token-by-token sequential delta rule exactly, at every chunk size (the chunking is an
 algebraic identity, and the larger the chunk the larger the genuine triangular inverse). (2) The
 **drop-in equivalence** that is the point of the demo: computing the chunk inverse with
-``selinv_tril`` (analytic self-adjoint backward) vs the stock ``solve_triangular`` baseline
+``selinv_tril`` (analytic transpose-form VJP) vs the stock ``solve_triangular`` baseline
 (autograd) gives the same forward *and the same gradients* through the whole multi-chunk layer,
 and a layer trains identically through either. Capability / equivalence result, not SOTA -- see
 the module docstring and ``docs/ROADMAP.md``.
@@ -92,7 +92,7 @@ def test_chunk_inverse_apply_rejects_bad_method():
 def test_forward_and_gradient_methods_agree():
     fwd_err, grad_err = equivalence_check(d=8, L=12, chunk_size=4, batch=4, seed=0)
     assert fwd_err < 1e-12, fwd_err            # identical by construction
-    assert grad_err < 1e-9, grad_err           # analytic self-adjoint backward == autograd
+    assert grad_err < 1e-9, grad_err           # analytic transpose-form VJP == autograd
 
 
 def test_gradcheck_layer_selinv():

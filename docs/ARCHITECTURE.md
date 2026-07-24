@@ -1,4 +1,4 @@
-# Architecture & orientation
+# Architecture and orientation
 
 The 60-second map of the codebase: what each piece does, the pattern every kernel follows,
 and where the math / status / scope live. Read this alongside `PROJECT_STATUS.md` (what's
@@ -8,13 +8,26 @@ done) and `ROADMAP.md` (where it's going).
 
 A PyTorch package for the **selected inverse** of sparse block-structured matrices: the
 blocks of `A⁻¹` that lie on `A`'s own (or its *filled*) sparsity pattern, computed **without
-forming the dense inverse**, in `O(n)` (low treewidth) / `O(n + fill)`, and
+forming the dense inverse**, in `O(n)` on fixed-width families and with
+front-dependent sparse-direct cost more generally, and
 **differentiably**. The organizing fact (proved in `derivations.md`): selected inversion on a
 **tree** = Gaussian Belief Propagation = the Takahashi recurrence, and its **reverse-mode
 adjoint is the same two-pass schedule on the same structure** - it is *self-adjoint*. The code
 realizes this across a generality ladder: chain → star → tree → junction tree (general sparse
 SPD); and a non-symmetric ladder: lower-bidiagonal → dense `(I−A)⁻¹` chunk → general LU.
-The exact engine is classical; **the novelty is the differentiable thread.**
+The exact engine and its broad reverse-mode identities are classical. This repository's verified
+contribution is an integrated, correctness-first PyTorch implementation.
+
+For a fixed elimination order, let `w_v` be the number of later neighbours of node `v`.
+Keep the two structural sizes separate:
+
+- `F = sum_v (1 + w_v)` counts numeric factor/selected blocks, so numeric storage is
+  `Theta(F b^2)`;
+- `W = sum_v (1 + w_v^2)` counts dense clique work, so factorization and selected
+  inversion cost `Theta(W b^3)`.
+
+`F` and `W` are proportional only at bounded width. The checked level-set path currently
+pre-materializes clique-pair indices and therefore also carries `Theta(W)` symbolic metadata.
 
 ## Module map (`gabp_sparse_inv/`)
 
@@ -24,7 +37,7 @@ The exact engine is classical; **the novelty is the differentiable thread.**
 | `_linalg.py` | shared batched SPD helpers: `cholesky_spd` (informative SPD-failure message), `inv_via_chol` |
 | `generators.py` | seeded test-matrix generators with a **monotone κ knob** (`random_spd_chain/star/tree/graph/laplacian`, `random_nonsym_bidiag`) + `grid_edges`, `condition_number` |
 | `chain.py`, `star.py`, `tree.py` | symmetric selected-inverse kernels: path, depth-1 star, general tree (`tree.py` is the reference the others specialize) |
-| `junction.py` | **general sparse SPD** selected inverse on the filled pattern: symbolic elimination + multi-neighbour Takahashi; `junction_solve`, `junction_logdet`; ordering helpers; level-set `batched=True` path; functional ⇒ autograd |
+| `junction.py` | **general sparse SPD** selected inverse on the filled pattern: symbolic elimination + multi-neighbour Takahashi; functional `junction_solve` / `junction_logdet`; ordering helpers; level-set `batched=True` |
 | `nonsym.py` | non-symmetric kernels: lower-bidiagonal + tree (autograd); dense `(I−A)⁻¹` chunk (`selected_inverse_tril` / `selinv_tril`, analytic backward) |
 | `nonsym_junction.py` | general non-symmetric selected inverse and solve on the filled `L+U` pattern (static no-pivot regime) |
 | `junction_autodiff.py` | tape-free analytic filled-pattern backwards for the SPD and non-symmetric junction kernels |
@@ -33,7 +46,7 @@ The exact engine is classical; **the novelty is the differentiable thread.**
 | `gmrf_grid.py` | grid/loopy GMRF via junction kernels (CAR precision, marginal likelihood, posterior variances) |
 | `sampling.py` | exact Gaussian sampling on tree and junction layouts |
 | `demos/maze_tree.py`, `demos/maze_grid.py` | maze demonstrations - architectural ablation, not causal attribution |
-| `bench/` | `metrics.py`, `run.py` (timing: chain/star/tree only), `precision.py`, `stability.py`, `gmrf_scaling.py` |
+| `bench/` | correctness and performance harnesses |
 
 ## Anatomy of a structure (how to add a kernel)
 
@@ -58,10 +71,11 @@ Write the forward **functionally** - out-of-place arithmetic, `torch.linalg.chol
 autograd *through it* IS the self-adjoint schedule (`derivations.md` §8.4): exact gradients for
 free, validated by `gradcheck`. `junction.py` is the canonical example.
 
-The **only** hand-written analytic backward is in `autodiff.py` (the tree kernel), as an
-`O(n)` batched, tape-free optimization. Hand-deriving backwards for new kernels is **reserved**
-(the adjoint proofs are the research) - functional forward + autograd + gradcheck is the
-rigorous, sufficient path for everything else.
+Hand-written analytic backwards live in `autodiff.py` (tree) and
+`junction_autodiff.py` (symmetric and non-symmetric junction kernels). They are first-order,
+tape-free optimizations validated against the functional paths. For a new kernel, begin with a
+functional forward plus autograd and `gradcheck`; add a custom backward only after the
+recurrence is derived and tested against that reference.
 
 > Gotcha: `gradcheck` does **not** catch a wrong *forward* (it checks gradient-vs-numeric of
 > the same function). The **dense oracle** gates the forward; `gradcheck` gates the backward.
@@ -98,8 +112,9 @@ green after every change.
 ## Where everything else lives
 
 - `derivations.md` - theorems, proofs, the **explicit recurrences** (source of truth for the
-  math): §2 tree theorem, §2.1 filled-pattern closure, §2.2 junction forward, §6 stability
-  (tracked-constant), §8 the adjoint, §8.4 filled-pattern adjoint, §9 non-symmetric.
+  math): §2 tree theorem, §2.1 filled-pattern closure, §2.2 junction forward and the `F/W`
+  cost distinction, §6 numerical-stability diagnostics and open global bound, §8 the adjoint,
+  §8.4 filled-pattern adjoint, §9 non-symmetric.
 - `PROJECT_STATUS.md` - what is done and tested (authoritative), incl. the "Known gaps" table.
 - `ROADMAP.md` - the forward program, milestones, open questions, and priority-ordered
   "What's next".

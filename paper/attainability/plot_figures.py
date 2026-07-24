@@ -119,7 +119,7 @@ def deq_robustness() -> None:
     rho = [float(r["rho"]) for r in data]
     x = [1.0 - v for v in rho]
     series = [
-        ("exact", "exact (selinv)", BLACK, "o", "-"),
+        ("exact", "sparse direct", BLACK, "o", "-"),
         ("neumann8", "Neumann-8", ORANGE, "s", "--"),
         ("neumann16", "Neumann-16", BLUE, "^", ":"),
         ("neumann32", "Neumann-32", GREEN, "D", "-."),

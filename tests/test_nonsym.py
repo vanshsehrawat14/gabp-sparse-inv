@@ -273,7 +273,7 @@ def test_tril_gradcheck(N):
 
 
 def test_tril_analytic_vs_autograd_solve():
-    """Analytic self-adjoint backward == autograd through solve_triangular."""
+    """Analytic transpose-form VJP equals autograd through solve_triangular."""
     N = 9
     w = torch.randn(N, N, dtype=torch.float64)
 

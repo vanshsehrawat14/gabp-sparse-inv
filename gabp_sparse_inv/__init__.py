@@ -1,7 +1,10 @@
 """Selected inversion for sparse block-structured matrices.
 
-Returns the blocks of ``A^{-1}`` on a chosen sparsity pattern in ``O(n)`` time / ``O(fill)``
-memory, without ever forming the dense inverse. Kernels (all validated against dense fp64
+Returns the blocks of ``A^{-1}`` on a chosen sparsity pattern without ever forming the dense
+inverse. Trees cost ``O(n b^3)`` work and ``O(n b^2)`` storage. For a general elimination
+order with later-neighbour counts ``w_v``, numeric storage is
+``Theta(sum_v(1+w_v) b^2)`` and clique work is
+``Theta(sum_v(1+w_v^2) b^3)``. Kernels (all validated against dense fp64
 oracles; see ``docs/PROJECT_STATUS.md`` for the authoritative scope):
 
 SPD
@@ -14,7 +17,7 @@ Non-symmetric
     ``selected_inverse_nonsym_tree`` (tree pattern, ``M_{uv} != M_{vu}``), and
     ``selected_inverse_nonsym_junction`` / ``selinv_nonsym_junction`` (general sparse
     non-symmetric on the filled pattern, via block LDU + the two-sided Takahashi /
-    Erisman-Tinney recurrence; no pivoting -- the static-pattern regime), with
+    Erisman-Tinney recurrence; no pivoting, the static-pattern regime), with
     ``nonsym_junction_solve`` the sibling linear solve ``A^{-1} b`` / ``A^{-T} b`` (the
     fixed-point / DEQ implicit-differentiation primitive).
 Applications
@@ -143,4 +146,4 @@ __all__ = [
     "condition_number",
 ]
 
-__version__ = "0.3.2"
+__version__ = "0.3.3"

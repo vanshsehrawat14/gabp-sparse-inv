@@ -21,7 +21,7 @@ is an algebraic identity, validated against :func:`sequential_delta_reference`).
 **What this demonstrates (the drop-in equivalence).** :func:`chunk_inverse_apply` forms ``T``
 two ways inside the same layer:
 
-  * ``method="selinv"`` -- ``selinv_tril`` (the analytic self-adjoint backward
+  * ``method="selinv"`` -- ``selinv_tril`` (the analytic transpose-form VJP
     ``bar_A = tril(T^T bar_T T^T, -1)``, ``docs/derivations.md`` §9.4, no autograd tape over
     the triangular solve), and
   * ``method="solve"`` -- the stock baseline ``torch.linalg.solve_triangular(I - A, I)`` with
@@ -32,10 +32,10 @@ the **analytic backward equals autograd's** through the whole multi-chunk layer 
 ``~1e-12``, gradients to ``~1e-9``), and that a layer **trains identically** through either
 (:func:`fit_teacher_student`). So the op is genuinely hot-swappable.
 
-**Honest scope.** This is a *capability / drop-in-equivalence* result, **not** a DeltaNet
-reimplementation or a SOTA claim (``docs/ROADMAP.md``: "the contribution must be the inversion
-primitive's role, not a re-derivation of DeltaNet"). The dense chunk inverse is ``O(C^3)`` with
-no sparsity win -- the win is the analytic ``O(C^2)`` self-adjoint backward and that the *same*
+**Scope.** This is a *capability / drop-in-equivalence* result, **not** a DeltaNet
+reimplementation or a performance claim. The dense chunk inverse is ``O(C^3)`` with
+no sparsity win. The analytic transpose-form backward avoids taping the triangular solve, but
+forming the full inverse and its dense VJP is still cubic in ``C`` here. The *same*
 selected-inverse op serves both the sparse kernels and this dense triangular case. The toy
 training task is a synthetic teacher-student fit (its job is to show the op trains, not to beat
 a recall benchmark) -- the same honesty bar as ``docs/MAZE.md`` / ``docs/DEQ.md``.
@@ -69,7 +69,7 @@ def chunk_inverse_apply(A: Tensor, rhs: Tensor, *, method: str = "selinv") -> Te
     """Apply the chunk inverse ``(I - A)^{-1} @ rhs``; ``A`` strictly-lower ``[..., C, C]``.
 
     ``method="selinv"`` forms ``T`` with :func:`~gabp_sparse_inv.selinv_tril` (analytic
-    self-adjoint backward); ``method="solve"`` forms it with
+    transpose-form VJP); ``method="solve"`` forms it with
     ``torch.linalg.solve_triangular(I - A, I)`` and lets autograd differentiate the solve.
     Both compute the same ``T`` (only ``A.tril(-1)`` is used) and then the same ``T @ rhs`` --
     the single swapped line is how ``T`` is obtained, so this is a literal drop-in.

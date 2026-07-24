@@ -1,123 +1,136 @@
-# Project Status
+# Project status
 
-This document records the public package status: what is implemented, tested, and deliberately
-out of scope. It is not a benchmark report; hardware-dependent numbers remain diagnostics unless
-called out as tests.
+This is the authoritative public implementation and scope record.
 
-## Implemented
+**Last audited:** 2026-07-23 PDT
+**Version:** 0.3.3
 
-`gabp-sparse-inv` provides PyTorch selected-inverse operators for sparse block-structured
-matrices. Each kernel returns the blocks of `A^{-1}` on the input pattern or on the filled
-factor pattern, without forming the dense inverse.
+## Implemented kernels
 
-### Symmetric Positive-Definite Kernels
+All selected-inverse APIs return requested or filled-pattern blocks of `A^{-1}` without
+materializing the dense inverse.
 
-| Structure | Public API | Status |
+### Symmetric positive-definite
+
+| Structure | API | Differentiation |
 |---|---|---|
-| Block tridiagonal chain | `selected_inverse_chain` | Implemented and tested |
-| Block arrowhead star | `selected_inverse_star` | Implemented and tested |
-| General tree | `selected_inverse_tree` | Implemented and tested |
-| Differentiable tree | `selinv_tree` | Implemented and tested, first-order analytic backward |
-| General sparse SPD / junction tree | `selected_inverse_junction`, `selinv_junction` | Implemented and tested |
-| Tape-free junction backward | `selinv_junction_analytic` | Implemented and tested |
+| Block tridiagonal chain | `selected_inverse_chain` | functional/autograd |
+| Block arrowhead star | `selected_inverse_star` | functional/autograd |
+| General tree | `selected_inverse_tree` | functional/autograd |
+| Tree analytic path | `selinv_tree` | first-order custom backward |
+| General sparse SPD / junction | `selected_inverse_junction`, `selinv_junction` | functional/autograd |
+| Junction analytic path | `selinv_junction_analytic` | first-order custom backward |
 
-The junction kernel symbolically completes the input pattern to the filled Cholesky pattern and
-returns selected inverse blocks on that filled pattern. It also has a level-set `batched=True`
-path that matches the reference path block-for-block.
+The junction result is on the filled Cholesky pattern. Reference and level-set
+`batched=True` paths are tested for agreement.
 
-### Non-Symmetric Kernels
+### Non-symmetric
 
-| Structure | Public API | Status |
+| Structure | API | Boundary |
 |---|---|---|
-| Block lower-bidiagonal | `selected_inverse_bidiag`, `selinv_bidiag` | Implemented and tested |
-| Dense triangular chunk inverse `(I - A)^{-1}` | `selected_inverse_tril`, `selinv_tril` | Implemented and tested |
-| Non-symmetric tree | `selected_inverse_nonsym_tree` | Implemented and tested |
-| General sparse non-symmetric / LU | `selected_inverse_nonsym_junction`, `selinv_nonsym_junction` | Implemented and tested |
-| Non-symmetric sparse solve | `nonsym_junction_solve` | Implemented and tested |
-| Tape-free non-symmetric junction backward | `selinv_nonsym_junction_analytic` | Implemented and tested |
+| Lower bidiagonal | `selected_inverse_bidiag`, `selinv_bidiag` | structured, no pivoting |
+| Triangular chunk `(I-A)^{-1}` | `selected_inverse_tril`, `selinv_tril` | dense triangular |
+| General tree | `selected_inverse_nonsym_tree` | zero fill, nonsingular pivots |
+| Filled-pattern LU | `selected_inverse_nonsym_junction`, `selinv_nonsym_junction` | static structurally symmetric pattern, no pivoting |
+| Analytic filled-pattern LU | `selinv_nonsym_junction_analytic` | first-order custom backward |
+| Transpose/non-transpose solve | `nonsym_junction_solve` | same static no-pivot regime |
 
-The general non-symmetric kernels use a static symbolic pattern and no pivoting. They are intended
-for regimes where the chosen elimination order has nonsingular, numerically usable pivots.
+For the inversion derivative `L_A`, the non-symmetric VJP is `L_A^* = L_{A^T}`. It is a
+same-pattern reverse schedule with independent lower/upper cotangents, not the
+selected-inverse value of `A^T`.
 
-### Solves, Log-Determinants, And Sampling
+## Factor-derived operations
 
-| Capability | Public API | Status |
+| Capability | API / object | Release status |
 |---|---|---|
-| SPD sparse solve | `junction_solve`, `tree_solve` | Implemented and tested |
-| Log determinant | `junction_logdet`, `tree_logdet` | Implemented and tested |
-| Exact Gaussian sampling | `sample_gaussian_tree`, `sample_gaussian_junction` | Implemented and tested |
-| Tree GMRF learning | `gabp_sparse_inv.gmrf` | Implemented and tested |
-| Grid / loopy GMRF learning | `gabp_sparse_inv.gmrf_grid` | Implemented and tested |
+| SPD solve | `tree_solve`, `junction_solve` | public |
+| SPD log determinant | `tree_logdet`, `junction_logdet` | public |
+| Gaussian sampling | `sample_gaussian_tree`, `sample_gaussian_junction` | public |
+| Tree/grid GMRF | `gabp_sparse_inv.gmrf`, `gabp_sparse_inv.gmrf_grid` | public |
 
-### Demonstrations
+The public API exposes separate function calls. Cross-call factor reuse is not part of
+version 0.3.3, and separate calls may refactorize.
 
-| Demonstration | File | Status |
+## Complexity
+
+For a fixed elimination order, let `w_v` be the number of later neighbours of block `v`:
+
+```
+F = sum_v (1 + w_v)
+W = sum_v (1 + w_v^2)
+```
+
+- numeric factor/selected-block storage: `Theta(F b^2)`;
+- factorization plus selected inversion: `Theta(W b^3)`; and
+- current checked level-set symbolic metadata: `Theta(W)`.
+
+For fixed block size and bounded fronts, chains/trees and bounded-treewidth families are linear
+in `n`. General arithmetic is not `O(fill)`. On a 2-D nested-dissection grid,
+`F = Theta(n log n)` and `W = Theta(n^(3/2))`.
+
+## Numerical scope
+
+- SPD paths are algebraically exact up to floating-point rounding and need no pivoting.
+- “Direct” removes convergence truncation; it does not remove `kappa(A) u` sensitivity.
+- Finite equal-precision diagnostics show no systematic selected-inverse precision penalty and
+  no robust advantage against a well-ordered dense factorization.
+- The local primitive error bounds do not prove a global height- or condition-independent
+  structured backward-error theorem.
+- Non-symmetric paths require nonsingular, numerically usable no-pivot Schur pivots.
+
+## Demonstrations
+
+| Demonstration | File | What it establishes |
 |---|---|---|
-| Tree maze | `gabp_sparse_inv/demos/maze_tree.py` | Implemented and tested |
-| Grid maze | `gabp_sparse_inv/demos/maze_grid.py` | Implemented and tested |
-| DEQ / fixed-point backward | `gabp_sparse_inv/demos/deq_fixedpoint.py` | Implemented and tested |
-| DeltaNet chunk inverse | `gabp_sparse_inv/demos/deltanet_chunk.py` | Implemented and tested |
+| Tree routed field | `demos/maze_tree.py` | solve is the only global operator in a controlled proxy |
+| Grid routed field | `demos/maze_grid.py` | same mechanism on a loopy graph/fill pattern |
+| DEQ / fixed point | `demos/deq_fixedpoint.py` | exact sparse-direct implicit gradient vs finite Neumann bias |
+| DeltaNet chunk | `demos/deltanet_chunk.py` | triangular chunk identity and gradient equivalence |
 
-The demonstrations are capability and mechanism checks. They are not claims of state-of-the-art
-model performance.
+These are capability/mechanism checks, not production speed or state-of-the-art learning claims.
+The “maze” task is a routed-field proxy, not a full learned discrete maze solver.
 
-## Verification Bar
+## Verification surface
 
-The test suite covers the supported kernels with dense fp64 oracle checks and structure-specific
-invariants. Where applicable, tests also cover:
+The suite covers, where applicable:
 
-- `torch.autograd.gradcheck` and analytic-vs-autograd adjoints.
-- `gradgradcheck` for functional kernels that support second-order derivatives.
-- Edge cases such as `n=1`, scalar blocks, empty-edge patterns, explicit topologies, and leading
-  batch dimensions.
-- Cross-kernel reductions such as chain-as-tree, star-as-tree, junction-as-tree, and symmetric
-  non-symmetric reductions.
-- `compute_dtype` paths and low-precision storage sanity checks.
-- Order invariance for junction solve and selected inverse outputs.
-- On-pattern residual identities and trace identities.
+- dense fp64 value oracles and on-pattern residual identities;
+- `gradcheck`, analytic-versus-functional VJPs, and `gradgradcheck` for documented functional
+  higher-order paths;
+- singleton/empty-edge/batch/dtype cases;
+- chain/tree/star/junction and symmetric/non-symmetric reductions;
+- order invariance and selected trace identities;
+- maze/DEQ/DeltaNet mechanism invariants; and
+- benchmark helper invariants.
 
 Run:
 
-```bash
-pytest -q
+```powershell
+python -m pytest -q
 ```
 
-## Numerical Characterization
+Higher-order support for a functional implementation does not prove arbitrary-order
+same-pattern closure. Custom analytic backwards are first-order unless explicitly documented
+otherwise.
 
-The precision harness compares selected inversion with dense solves at equal precision, scored
-against fp64 dense oracles on the returned pattern. Current diagnostic reading:
+## Packaging
 
-- Selected inversion shows no systematic precision penalty versus a dense SPD solve.
-- It also shows no robust precision advantage; accuracy is generally comparable to a dense
-  factorization in a good elimination order.
-- The non-symmetric no-pivot path is at parity with pivoted dense LU while pivots remain well
-  conditioned, and degrades when the static no-pivot assumption breaks.
+- Version 0.3.3 builds an sdist and universal wheel for Python `>=3.12`, requiring
+  `torch>=2.2`.
+- Public CI covers Python 3.12/3.13 on Linux and Windows plus Python 3.12 on macOS.
+- The release gate includes metadata validation and an isolated wheel smoke test.
+- Public GPU performance is not published.
+- The corrected Paper 1 source and its tracked data are included under
+  `paper/attainability/`; the JOSS paper remains in preparation.
 
-These are diagnostics, not CI assertions. See `gabp_sparse_inv.bench.precision` and
-`gabp_sparse_inv.bench.nonsym_stability`.
+## Deliberately out of scope
 
-## Packaging Status
-
-- Package metadata, `CITATION.cff`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, changelog, CI, and
-  JOSS paper draft are present.
-- The version is `0.3.2`.
-- PyPI `0.3.2` is published and the local `dist/v0.3.2` artifacts have been checked against
-  the files served by PyPI. The earlier internal `0.3.0` release was removed from PyPI;
-  `0.3.1` remains as the prior clean release.
-- GPU timing is not yet published. The CUDA-compatible level-set paths exist, but the public
-  package does not ship measured GPU benchmark claims.
-- JOSS submission is deferred until the public repository satisfies JOSS's public-development
-  history requirement.
-
-## Deliberately Out Of Scope
-
-The package does not currently claim support for:
-
-- Pivoted non-symmetric / LU selected inversion.
-- Iterative or approximate loopy Gaussian belief propagation.
-- Indefinite, complex Hermitian, or heterogeneous-block-size kernels.
-- Second-order autograd through the custom analytic `selinv_tree`, `selinv_bidiag`, or
-  `selinv_tril` backwards.
-- Raw CPU-performance competition with mature sparse-direct selected-inversion packages.
-
-Use the functional kernels when higher-order derivatives are needed.
+- singular PSD pseudoinverse/gauge handling;
+- pivoted non-symmetric selected inversion;
+- arbitrary directed sparsity without the documented structural pattern;
+- indefinite or complex-Hermitian systems;
+- approximate/iterative loopy GaBP as a package feature;
+- heterogeneous block sizes;
+- arbitrary off-pattern inverse entries;
+- second-order autograd through first-order custom analytic backwards; and
+- performance competition with mature sparse-direct systems without a measured user workload.
