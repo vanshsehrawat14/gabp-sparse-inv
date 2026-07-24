@@ -1,5 +1,13 @@
 # Demonstration: the tree-inverse as the only long-range operator (maze on trees)
 
+**Current scientific status (2026-07-22).** These are controlled capability
+demonstrations. The later preregistered matched-fit HOLDOUT study did not support the stronger
+claim that exactness acts as an inductive bias among comparably fit models: in the hard cells
+the truncated models usually failed the training-fit gate. The defensible result is
+attainability under the tested budgets, with one failed negative-control clause, not general
+task superiority. See `archive/docs/CONFIRMATORY_RESULTS.md` and the current Paper 1
+manuscript.
+
 This note records the **maze-on-trees** demonstration: a clean-room experiment where a
 single differentiable tree-solve layer (the linear-system form of the same
 collect/distribute selected-inversion machinery as `selinv_tree`) is the *only* operator
@@ -35,11 +43,11 @@ handed anything about distant nodes.
 
 | Model | Long-range operator | Can it route? |
 |-------|---------------------|---------------|
-| `gabp` | a per-node MLP -> positive edge weights -> **one `tree_solve`** of `A x = b` | yes - exact global field in `O(n)` |
+| `gabp` | a per-node MLP -> positive edge weights -> **one `tree_solve`** of `A_hat x = b` | yes - exact global field in `O(n)` |
 | `local` (ablation) | `K` rounds of nearest-neighbour averaging (`K << diameter`) | no - blind past `K` hops |
 
 The `gabp` model's encoder reads only the geometry features (not the source), and `softplus`
-keeps the edge weights positive, so its precision `A = L(w_hat) + eps I` is **SPD by
+keeps the edge weights positive, so its precision `A_hat = L(w_hat) + eps I` is **SPD by
 construction** for any encoder output - the flagged maze-conditioning risk is handled by the
 parameterization, not by hoping training stays in a good region.
 
@@ -56,7 +64,7 @@ Complete binary trees; 400 Adam steps; test MSE on held-out mazes/sources:
 The tree-solve model routes the source **near-exactly** (`~1e-5`) at every depth; the local
 ablation sits at or near the predict-mean baseline and the gap **widens with the diameter**,
 exactly the signature of "inversion is the only long-range path." The condition number stays
-bounded (`~200`) throughout, confirming the parameterization keeps `A` well within fp32/fp64
+bounded (`~200`) throughout, confirming the parameterization keeps `A_hat` well within fp32/fp64
 range.
 
 ## Scope and honest caveats
@@ -108,11 +116,11 @@ Both models see, per node, only local information: `[phi_v, weighted_degree_v, b
 
 | Model | Long-range operator | Can it route? |
 |-------|---------------------|---------------|
-| `gabp` | a per-node MLP -> positive potentials -> edge weights -> **one `junction_solve`** of `A x = b` | yes - exact global field on the loopy grid |
+| `gabp` | a per-node MLP -> positive potentials -> edge weights -> **one `junction_solve`** of `A_hat x = b` | yes - exact global field on the loopy grid |
 | `local` (ablation) | `K` rounds of nearest-neighbour averaging (`K << diameter`) | no - blind past `K` hops |
 
 The `gabp` encoder reads only the geometry features (not the source); `softplus` keeps the
-potentials positive, so `A = L(w_hat) + eps I` is **SPD by construction** for any encoder output
+potentials positive, so `A_hat = L(w_hat) + eps I` is **SPD by construction** for any encoder output
  -  the maze-conditioning risk handled by the parameterization.
 
 ## Result (size sweep, CPU, fp64; `python -m gabp_sparse_inv.demos.maze_grid`)
@@ -128,7 +136,7 @@ Square grids; 250 Adam steps; test MSE on held-out mazes/sources:
 The `junction_solve` model routes the source **near-exactly** (`~1e-5`) at every grid size; the
 local ablation plateaus roughly **two orders of magnitude worse** (`~5e-3`), capturing only
 near-source structure and never the global field. The condition number stays bounded (`~200`)
-throughout, confirming the parameterization keeps `A` well within fp32/fp64 range.
+throughout, confirming the parameterization keeps `A_hat` well within fp32/fp64 range.
 
 ## Scope and honest caveats
 
@@ -137,17 +145,18 @@ throughout, confirming the parameterization keeps `A` well within fp32/fp64 rang
   **easier than it looks**: `gen_dataset` puts the true per-node potential `phi` in
   `feats[..., 0]`, so the encoder mainly needs to apply `junction_solve`, not recover geometry
   from scratch. The `local` model does beat predict-mean - it fits the near-source structure,
-  but cannot route globally, which is the whole point. Matched-capacity hardening with
-  fair GNN/Transformer baselines at 280-340x the parameter count shows that the
-  **size/diameter-extrapolation** gap survives capacity, depth, and training-fairness controls
-  (~7000-9000x at 10x10 from a 6x6-trained baseline), while the in-distribution gap is partly
-  an optimisation effect. Multi-seed curves
+  but cannot route globally, which is the whole point. The **matched-capacity hardening** of
+  this ablation - fair GNN/Transformer baselines with 280-340× the parameters - lives in
+  [E4_BASELINES.md](E4_BASELINES.md): the **size/diameter-extrapolation** gap survives capacity,
+  depth, and training-fairness controls (~7000-9000× at 10×10 from a 6×6-trained baseline),
+  while the in-distribution gap is partly an optimisation effect. Multi-seed curves
   (`extrapolation_curve`) and a **held-out effective-resistance task** - a non-linear functional
   of `A⁻¹` using its diagonal, not the routed field - broaden the result past the exact function
   the solve computes; the extrapolation gap holds there too.
-- The junction kernel is a per-node Python loop (no batching yet), so grids are kept **modest**
-  (≤ ~6×6 in the sweep, `b=1`); this is a capability demo, not a speed benchmark. Batching it
-  (roadmap T6) would scale it up.
+- This demo calls the reference `junction_solve`, whose numeric elimination is a Python
+  node loop. A level-set batched selected-inverse/factor path exists elsewhere in the package,
+  but this demo does not use it. Grids are therefore modest (at most about 6-by-6 in the
+  sweep, `b=1`), and no speed or GPU claim follows.
 - Numbers are BLAS/thread-dependent diagnostics; the **test** (`tests/test_maze_grid.py`)
   asserts the machine-independent facts: labels equal the dense solve, the learned precision is
   SPD with `kappa < 1e3`, and `gabp` beats `local` by a wide margin (`gabp < 0.1 * local`).

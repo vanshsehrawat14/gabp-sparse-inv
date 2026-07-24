@@ -35,9 +35,11 @@ The package covers a ladder of structures behind one interface: block **chains**
 (the Rauch-Tung-Striebel / Kalman-smoother form), **stars** (arrowheads), general **trees**,
 **junction trees** for arbitrary sparse SPD matrices (via a symbolic min-degree elimination to the
 filled pattern), and the general **non-symmetric** (LU / Erisman-Tinney [@erismantinney1975])
-selected inverse and its solve. The statistical operators that fall out of the same factorization,
-the **log-determinant**, **Gaussian sampling** $x \sim \mathcal{N}(0, A^{-1})$, and the
-sparse **linear solve** $x = A^{-1}b$, are included. Every numerical kernel is validated against a
+selected inverse and its solve. The companion statistical operations derived from the same
+factorization machinery, the **log-determinant**, **Gaussian sampling**
+$x \sim \mathcal{N}(0, A^{-1})$, and the sparse **linear solve** $x = A^{-1}b$, are included as
+separate function APIs; the current release does not expose a persistent factor object for
+cross-call reuse. Every numerical kernel is validated against a
 dense $\mathcal{O}(n^3)$ oracle, and every differentiable kernel additionally with
 `torch.autograd.gradcheck`.
 
@@ -46,47 +48,57 @@ dense $\mathcal{O}(n^3)$ oracle, and every differentiable kernel additionally wi
 Matrix inversion is increasingly a primitive *inside* machine-learning models, not just a tool used
 to build them: deep equilibrium models [@bai2019deep], linear attention with the delta rule
 [@yang2024parallelizing], and other implicit / fixed-point layers all place a structured linear
-solve in the forward pass and its gradient in the backward pass. The general inverse is
-$\mathcal{O}(n^3)$; the $\mathcal{O}(n)$ low-treewidth *selected* inverse is far less widely used,
-and, to the author's knowledge, no existing library exposes it as a **differentiable** operator. The
-nearest system, `torch-sla` [@torchsla2026], ships a differentiable sparse *solve* with a
-constant-memory adjoint, but no selected inverse, log-determinant gradient, marginal variances,
-or Gaussian sampling.
+solve in the forward pass and its gradient in the backward pass. For low-treewidth structure, the
+*selected* inverse costs far less than the general $\mathcal{O}(n^3)$ inverse, but the surrounding
+software landscape is split by purpose rather than absent. Recent accelerator systems target raw
+throughput: `Serinv` for block-tridiagonal arrowhead matrices [@maillou2025serinv], `sTiles` for
+tile-parallel selected inversion of structured matrices [@fattah2025stiles], and Schwarz--Schur
+Involution for batched differentiable sparse subdomain solves on GPUs [@wang2025schwarz]; none is a
+general-purpose autodiff-framework operator. `torch-sla` [@torchsla2026] ships a differentiable
+sparse *solve* with a constant-memory adjoint inside PyTorch, but no selected inverse,
+log-determinant gradient, marginal variances, or Gaussian sampling. TMB [@kristensen2016tmb] has
+long combined sparse latent-Gaussian calculation, automatic differentiation, and the Laplace
+approximation at scale, and approximate selected-covariance methods with estimable confidence
+bounds exist for the large-sparse-precision setting [@siden2017covariance]; neither is a drop-in
+PyTorch tensor operator.
 
-Mature selected-inversion codes (SelInv [@lin2011selinv], PEXSI [@lin2013pexsi]) target high-performance computing
-in compiled languages and are not differentiable, not written against an autodiff framework, and not
-designed to be dropped into a neural network's forward pass. General-purpose sparse solvers compute
-full factorizations or solves, not the on-pattern inverse blocks, and again expose no gradient.
-`gabp-sparse-inv` fills this gap for the ML setting: drop-in PyTorch operators that return exact
-on-pattern inverse blocks (or log-dets, samples, solves) and exact gradients, so a practitioner can
-swap a symmetric inverse for a non-symmetric one, or a dense solve for a structured selected
-inverse, without leaving the autodiff graph. The intended users are researchers building
-differentiable models over graph-structured Gaussian fields, deep-equilibrium and fixed-point
-layers, and structured-attention mechanisms, as well as anyone needing differentiable marginal
-variances or log-determinants of a sparse Gaussian Markov random field at linear cost.
+Mature selected-inversion codes (SelInv [@lin2011selinv], PEXSI [@lin2013pexsi]) target
+high-performance computing in compiled languages and are not written against an autodiff framework
+or designed to be dropped into a neural network's forward pass. `gabp-sparse-inv` fills the
+correctness-first, PyTorch-native niche in this landscape: drop-in tensor operators that return
+exact on-pattern inverse blocks (or log-dets, samples, solves) and exact gradients as separate
+function calls (the current release does not expose a persistent cross-call factor object), so a
+practitioner can swap a symmetric inverse for a non-symmetric one, or a dense solve for a
+structured selected inverse, without leaving the autodiff graph. The intended users are researchers
+building differentiable models over graph-structured Gaussian fields, deep-equilibrium and
+fixed-point layers, and structured-attention mechanisms, as well as anyone needing differentiable
+marginal variances or log-determinants of a sparse Gaussian Markov random field at low treewidth.
 
-The library is deliberately scoped as a **reference and differentiable** implementation rather than
-a performance competitor to compiled HPC solvers: its niche is the differentiable thread and the
-uniform symmetric / non-symmetric interface, not out-engineering mature direct solvers on raw CPU
-throughput.
+The library is deliberately scoped as a correctness-first reference and differentiable
+implementation, not a performance competitor to the compiled HPC or GPU-accelerator systems above:
+its niche is the differentiable thread and the uniform symmetric / non-symmetric interface, not
+out-engineering mature direct solvers on raw throughput.
 
 # Functionality
 
-- **Selected inverse** on the input (or filled) pattern: `selected_inverse_chain`,
+- Selected inverse on the input (or filled) pattern: `selected_inverse_chain`,
   `selected_inverse_star`, `selected_inverse_tree`, `selected_inverse_junction`, and the
-  non-symmetric `selected_inverse_bidiag` / `selinv_tril` / `selected_inverse_nonsym_tree` /
-  `selected_inverse_nonsym_junction`.
-- **Differentiable** forms (`selinv_*`) with autograd and, for the filled-pattern kernels,
-  hand-written tape-free analytic backwards validated against autograd to machine precision.
-- **Solves and statistics**: `junction_solve`, `nonsym_junction_solve` (with the transpose /
-  implicit-differentiation adjoint), `junction_logdet` / `tree_logdet`, and
+  non-symmetric `selected_inverse_bidiag`, `selinv_tril`, `selected_inverse_nonsym_tree`,
+  and `selected_inverse_nonsym_junction`.
+- Differentiable forms (`selinv_*`) with autograd support and, for the filled-pattern
+  kernels, hand-written tape-free analytic backwards validated against autograd to machine
+  precision.
+- Solves and statistics: `junction_solve`, `nonsym_junction_solve` (with the transpose /
+  implicit-differentiation adjoint), `junction_logdet` and `tree_logdet`, and
   `sample_gaussian_tree` / `sample_gaussian_junction`.
-- **Generators and tooling**: seeded SPD/non-symmetric generators with a condition-number knob,
-  a graph-Laplacian generator for the well-scaled high-$\kappa$ regime, elimination-ordering
-  helpers (min-degree, nested dissection), and reproducible benchmark scripts.
-- **Precision**: native fp64/fp32 and a low-precision storage / higher-precision compute path; an
-  honest characterization shows no accuracy penalty versus a dense solve at equal precision, and no
-  robust accuracy advantage either (the value is cost and differentiability, not precision).
+- Generators and tooling: seeded SPD and non-symmetric generators with a condition-number
+  knob, a graph-Laplacian generator for the well-scaled high-condition regime,
+  elimination-ordering helpers (min-degree, nested dissection), and reproducible benchmark
+  scripts.
+- Precision: native fp64/fp32 and a low-precision storage with higher-precision compute
+  path. A characterization study shows no accuracy penalty versus a dense solve at equal
+  precision, and no robust accuracy advantage either; the value is cost and
+  differentiability, not precision.
 
 # Acknowledgements
 

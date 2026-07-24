@@ -31,15 +31,17 @@ pivots ``D_v`` and factor blocks ``ell_{wv} = A_{wv} D_v^{-1}``:
 ops (``cholesky`` / ``cholesky_solve``), so reverse-mode autograd *through it* is the
 ``S``-local self-adjoint schedule proved in §8.4 -- no custom backward needed for
 correct gradients. :func:`selinv_junction` is that autograd-facing entry point. A
-hand-written analytic clique backward (the §8.3 analogue, which avoids the autograd
-tape's ``O(fill)`` memory) is a tracked follow-up; this per-node loop is the
-correctness reference, exactly as ``tree.py`` preceded the batched ``autodiff.py``.
+hand-written analytic clique backward is shipped in
+:mod:`gabp_sparse_inv.junction_autodiff`; it avoids an operation-by-operation
+autograd tape and is first-order only.
 
 **Scope.** A minimal, dependency-free reference: a greedy **min-degree** elimination
-order and a per-node Python loop with dict-of-blocks sparse storage. No
-supernodal/multifrontal engineering and no external ordering library (AMD/METIS) --
-those are deliberate non-goals (``docs/ROADMAP.md``); a better ordering only changes
-the *amount* of fill, not the result.
+order and a per-node Python loop with dict-of-blocks sparse storage. If
+``w_v = |U_v|``, numeric storage is ``Theta(sum_v(1+w_v) b^2)`` and arithmetic is
+``Theta(sum_v(1+w_v^2) b^3)``. The checked level-set path additionally
+pre-materializes ``Theta(sum_v(1+w_v^2))`` symbolic indices. There is no
+supernodal/multifrontal engineering or external ordering library (AMD/METIS);
+a better ordering changes the factor pattern and work, not the mathematical result.
 """
 
 from __future__ import annotations

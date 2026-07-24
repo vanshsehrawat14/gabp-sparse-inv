@@ -4,26 +4,26 @@
 For the layer to be usable as a learned component it must be trainable. That it is,
 at no asymptotic overhead, is a classical fact, stated once and built on.
 
-\begin{remark}[Selected inversion is a gradient; its adjoint is selected inversion]
+\begin{remark}[Selected inversion is a gradient; its derivative has a sparse reverse schedule]
 \label{rem:scaffold}
-Selected inversion is the gradient of the log-determinant restricted to the
-pattern:
-$\selinv_{\pat}(A) = \nabla_A \log\det A \,|_{\pat}$
-\cite{zhu2019sparse,dwyer1948symbolic}. A gradient field has a symmetric
-Jacobian, so the reverse-mode adjoint of selected inversion is again a
-selected inversion: a structure-preserving two-pass schedule on the same
-elimination tree, with no extra fill. Its cost is a constant multiple of the
-forward cost by the cheap-gradient principle \cite{baur1983complexity},
-i.e.\ $\bigO(\text{fill})$ time and memory, the same asymptotics as the
-forward selected inverse. For symmetric $A$ this is literally self-adjoint;
-for non-symmetric $A$ the adjoint is selected inversion of $A\T$
-(self-adjoint up to transpose), which is why the LU case propagates
-independent lower and upper cotangents. The full statement and proof are in
-Appendix~\ref{app:theorem}.
+Under the full Frobenius inner product on the symmetric matrix subspace,
+selected inversion is the on-pattern gradient of the log-determinant,
+$\selinv_{\pat}(A)=P_{\pat}\nabla_A\log\det A$
+\cite{zhu2019sparse,dwyer1948symbolic}. Its derivative is therefore
+self-adjoint after projection to that subspace. Reverse mode can be evaluated
+by reversing the same elimination and Takahashi primitives, with no denser
+pattern. By the cheap-gradient principle \cite{baur1983complexity}, its
+arithmetic cost is a constant multiple of the forward's
+$\Theta(Wb^3)$ work; the analytic implementation stores the factors and
+selected blocks rather than an operation-by-operation autograd tape. For
+non-symmetric $A$, the adjoint of the inversion derivative at $A$ is the
+derivative at $A\T$, not a selected inverse by itself. This transposes the
+factor roles and requires independent lower and upper cotangents. The full
+statement is in Appendix~\ref{app:theorem}.
 \end{remark}
 
-Remark~\ref{rem:scaffold} is why the exact, global, $\bigO(\text{fill})$ solve of
+Remark~\ref{rem:scaffold} is why the exact, global sparse solve of
 \S\ref{sec:setup} can be used as a layer: embedded in a model and trained
-end-to-end at the same cost as the forward pass, never forming the dense
+end-to-end with the same asymptotic structural work as the forward pass, never forming the dense
 inverse. From here the question is what the exactness of this layer does to
 learning.

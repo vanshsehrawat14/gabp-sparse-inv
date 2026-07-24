@@ -6,7 +6,7 @@ Each paper figure/table is backed either by one of the project's benchmark CLIs
 (``gabp_sparse_inv.demos.*``). This script centralizes the exact invocations the paper
 needs and writes their CSV/JSON into ``paper/attainability/figures/data/`` so every figure
 regenerates from a single command. It emits *data*, not rendered PDFs: the LaTeX consumes the
-CSVs via ``pgfplotstable`` (see paper/README.md). There is no plotting dependency to verify here.
+CSVs; ``plot_figures.py`` renders the committed PDFs.
 
 Usage:
     python paper/attainability/make_figures.py                 # all figures, modest configs
@@ -92,7 +92,7 @@ WIRED = {
     "precision_compare_orders": (precision.main, _precision_compare_orders,
                                  "Ordering controls the apparent tree precision 'edge'."),
     "stability": (stability.main, _stability,
-                  "Backward constant flat across height/kappa; forward ~ kappa*u."),
+                  "Finite structured residual diagnostic across tested height/kappa cells."),
     "nonsym_stability": (nonsym_stability.main, _nonsym_stability,
                          "No-pivot selinv vs pivoted LU across block-diagonal dominance."),
 }

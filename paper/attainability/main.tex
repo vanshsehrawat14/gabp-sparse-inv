@@ -1,34 +1,38 @@
 \documentclass[11pt]{article}
 \ifdefined\XeTeXrevision\else\pdfoutput=1\fi
 
-\usepackage[margin=1.1in]{geometry}
+\usepackage[
+  left=0.85in,
+  right=0.85in,
+  top=0.80in,
+  bottom=0.75in,
+  footskip=0.35in
+]{geometry}
 \usepackage{amsmath,amssymb,amsthm,bm}
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{float}
 \usepackage{microtype}
 \usepackage{caption}
-\captionsetup{font=small,skip=8pt,justification=raggedright,singlelinecheck=false}
+\usepackage{titlesec}
+\captionsetup{font=small,skip=9pt,justification=raggedright,singlelinecheck=false}
 \captionsetup[table]{position=above}
 \input{macros}
 \usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
 \hypersetup{
-  pdftitle={A Differentiable, Exact Selected-Inverse Layer for PyTorch:
-            Size Extrapolation and Stiff-Regime Trainability, Explained by
+  pdftitle={Exact Sparse Operators in Differentiable Models:
             Attainability, Not Inductive Bias},
   pdfauthor={Vanshdeep Sehrawat},
 }
 
 \setlength{\emergencystretch}{1em}
+\linespread{1.25}
 
-% Float placement: prefer page-top floats (clean, journal-style) and pack them
-% so we avoid float-only pages and mid-page gaps.
-\renewcommand{\topfraction}{0.92}
-\renewcommand{\bottomfraction}{0.70}
-\renewcommand{\textfraction}{0.06}
-\renewcommand{\floatpagefraction}{0.75}
-\setcounter{topnumber}{3}
-\setcounter{totalnumber}{4}
+% The body uses named paragraph-level arguments, but run-in headings make the
+% manuscript visually dense. Set them as short display headings instead.
+\titleformat{\paragraph}[block]
+  {\normalfont\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\paragraph}{0pt}{1.15\baselineskip}{0.35\baselineskip}
 
 \raggedbottom
 
@@ -46,16 +50,16 @@
 \begin{center}
 \vspace*{0.2cm}
 
-{\LARGE A Differentiable, Exact Selected-Inverse Layer for PyTorch:\\[0.45em]
-Size Extrapolation and Stiff-Regime Trainability,\\[0.25em]
-Explained by Attainability, Not Inductive Bias\par}
+{\LARGE Exact Sparse Operators in Differentiable Models:\\[0.45em]
+Attainability, Not Inductive Bias\par}
 
 \vspace{0.9cm}
 
 {\large Vanshdeep Sehrawat\footnote{e-mail:
   \texttt{sehrawat@unlv.nevada.edu}, \texttt{vanshdeep.sehrawat@gmail.com};\ ORCID:
   \href{https://orcid.org/0009-0005-8062-1337}{0009-0005-8062-1337}.}}\\[0.35em]
-{\itshape University of Nevada, Las Vegas, USA}
+{\itshape University of Nevada, Las Vegas, USA}\\[0.35em]
+{\small July 2026}
 
 \vspace{0.9em}
 
@@ -70,49 +74,36 @@ File paths cited in this paper are relative to the repository root.}
 \end{center}
 
 \begin{quote}\small
-Any layer built on self-consistency, soft constraint satisfaction, or a fixed
-point pays for a matrix inverse; deep equilibrium models, delta-rule linear
-attention, and implicit graph layers are all of this form. When the coupling
-is sparse on a low-treewidth graph, the \emph{selected} inverse (the blocks of
-$\inv{A}$ on the sparsity pattern of $A$) is exact in $\bigO(n)$ time by
-Gaussian belief propagation and the Takahashi recurrences, and its
-reverse-mode adjoint is again a selected inversion at the same cost. This is
-implemented as differentiable PyTorch operators, symmetric and non-symmetric.
-The operator is classical and buys no precision over a well-ordered dense
-solve (Section~\ref{sec:numerics}). The hypothesis under test was that
-embedding it buys something else: that \emph{exactness is an inductive
-bias} -- that among models reaching comparable training fit, the one
-containing the exact global solve is preferred and generalizes better. Two
-pre-registered probes on $30$ held-out seeds test this directly with a
-matched-fit design that asks not just whether the exact-trained model
-generalizes better, but whether the compared truncated/iterative model can
-even \emph{reach} comparable training fit at all. On both probes it cannot:
-in the high-difficulty cells the truncated model matches the exact model's
-training fit in at most $0$--$23\%$ of seeds against a pre-registered
-$60\%$ bar, so the held-out gap is explained by \emph{attainability} -- the
-approximation cannot fit the task -- not by an implicit preference among
-optima that fit equally well. The inductive-bias reading did not survive on
-either probe. This does not change the raw comparison: the exact model still
-beats matched-or-greater-capacity GNNs and Transformers at every tested
-size, by roughly $600\times$ in distribution and up to $28{,}000\times$
-extrapolating, and the exact selected-inverse
-backward stays at machine precision as a fixed point stiffens
-($\rho(J)\to1$) where iterative adjoints are $77$ to $100\%$ wrong. What
-changes is the explanation for why. One negative control did not fully pass
-its pre-specified clause either, so even the conservative attainability
-reading is reported as hedged, not pristine, per the frozen decision rules.
-The paper specifies where exactness should and should not help at
-benchmark scale and names the one prerequisite, a GPU-batched kernel, that
-gates testing there; that program tests numerical properties (exact
-gradients for calibrated uncertainty, conditioning-independent adjoints, a
-resolvent layer against over-squashing), not inductive bias. The present
-evidence is controlled and CPU-scale.
+Many machine-learning models require a global linear solve. For sparse,
+fixed-width coupling, selected inversion computes inverse blocks on the
+factor's filled pattern in $\bigO(n)$ time, and its projected derivative has
+a reverse schedule with the same asymptotic structural work. We implement
+the classical symmetric and static-pattern non-symmetric operators as
+differentiable PyTorch primitives. The scientific question is whether an
+exact structured solve acts as an \emph{inductive bias}, selecting a
+better-generalizing solution when competing models attain comparable
+training fit. Two pre-registered matched-fit probes test this hypothesis on
+$30$ held-out seeds: routed-field size extrapolation and deep-equilibrium
+training near spectral instability. The exact arms win the raw comparisons,
+but the finite Jacobi and Neumann alternatives match their training fit in
+only $0$--$23\%$ of high-difficulty seeds, below a pre-registered $60\%$
+bar. The equal-fit comparison is therefore absent; under the tested budgets,
+the result is an \emph{attainability/optimization} gap, not an
+inductive-bias effect. In separate diagnostics, the exact routed-field model
+beats larger GNN and Transformer baselines by roughly $600\times$ in
+distribution and up to $28{,}000\times$ under extrapolation. The
+sparse-direct implicit backward remains within $1.1\times10^{-12}$ of a
+dense fp64 oracle on four stiffness cells where finite Neumann adjoints are
+$77$--$100\%$ wrong at $\rho(J)\in\{0.99,0.999\}$; an fp32 sweep finds no
+robust precision advantage over a well-ordered dense factorization. The
+DEQ low-difficulty control fails its pre-specified relative-gap clause, and
+two non-equivalent maze-floor diagnostics disagree. A later reuse of the
+same held-out seeds is excluded. The supported conclusion is therefore
+narrow and hedged: exact structured computation expands the attainable
+regime in these controlled, solve-shaped CPU probes, while the proposed
+inductive-bias explanation is not supported.
 \end{quote}
 
-\vfill
-\begin{center}
-July 2026
-\end{center}
 \end{titlepage}
 \setcounter{page}{2}
 
@@ -127,13 +118,15 @@ July 2026
 \input{sections/conclusion}
 
 \section*{Acknowledgements}
-I thank Isaac Liao (Carnegie Mellon University) for scoping the
-selected-inverse operator, sharpening the target regime, and giving feedback on
-the maze demonstration and research direction.
+I thank Isaac Liao (Carnegie Mellon University) for informal technical
+discussions that identified selected inversion as a useful operator family,
+emphasized the high-condition well-scaled regime and dense-reference precision
+comparisons, and suggested a maze-style attribution test.
 
 \appendix
 \input{sections/appendix}
 
+\small
 \bibliographystyle{plain}
 \bibliography{refs}
 

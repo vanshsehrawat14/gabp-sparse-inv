@@ -28,7 +28,7 @@ is invariant - so the inverse is doing real, correct work, not bookkeeping.
 
 `chunk_inverse_apply` forms `T` two interchangeable ways inside the same layer:
 
-- `method="selinv"` - `selinv_tril`, whose **analytic self-adjoint backward** is
+- `method="selinv"` - `selinv_tril`, whose **analytic transpose-form VJP** is
   `bar_A = tril(Tᵀ bar_T Tᵀ, −1)` ([derivations.md](derivations.md) §9.4) with **no autograd tape**
   over the triangular solve; and
 - `method="solve"` - the stock baseline `torch.linalg.solve_triangular(I − A, I)` with autograd
@@ -56,8 +56,9 @@ the layer unchanged and is indistinguishable, forward and backward, from the aut
   a re-derivation of DeltaNet"). The toy task is a synthetic teacher-student fit - its job is to
   show the op trains, not to beat a recall benchmark - the same honesty bar as [MAZE.md](MAZE.md)
   / [DEQ.md](DEQ.md).
-- **The dense chunk inverse is `O(C³)` with no sparsity win.** Here the value is the analytic
-  `O(C²)` self-adjoint backward (it never tapes the triangular solve) and that the *same*
+- **The dense chunk inverse is `O(C³)` with no sparsity win.** Here the value is a
+  tape-free analytic transpose-form backward. Forming the full inverse and its dense VJP is
+  cubic in `C` in this implementation; no `O(C²)` backward claim is made. The *same*
   selected-inverse op serves both the sparse SPD/non-symmetric kernels and this dense triangular
   case - one primitive, many layers. `selinv_tril` is first-order (the custom-`Function`
   contract); use the functional kernels if higher-order derivatives are needed.

@@ -1,12 +1,11 @@
 \section{Exactness is not accuracy}
 \label{sec:numerics}
 
-Before claiming exactness buys learning, the paper rules out the mundane explanation
-that it buys accuracy. It does not, and this is the hinge of the argument:
-the one axis where an exact method should win, numerical precision, is where
-it does not win, which forces the advantage in Sections~\ref{sec:maze}
-and~\ref{sec:deq} to be a learning-dynamics effect -- the attainability gap
-those sections measure -- rather than a numerical one.
+Before attributing the learning probes to operator structure, the paper checks
+whether this implementation has a floating-point accuracy advantage.
+It does not on the finite precision grid below. This rules out that mundane
+explanation for the reported cells; it is not a universal comparison of
+sparse and dense factorization accuracy.
 
 \paragraph{No robust win in either direction.}
 Scored on the pattern against a 64-bit oracle and swept over conditioning
@@ -22,15 +21,13 @@ elimination-ordering effect: a dense Cholesky run in the kernel's own
 leaf-first order is just as accurate. If exactness conferred an accuracy
 edge, this is where it would appear; it is absent.
 
-\begin{table}[t]
+\begin{table}[H]
   \centering
-  \caption{Selected inverse vs.\ dense Cholesky solve at equal precision
-  (fp32, scored on the pattern against an fp64 oracle; normwise error, medians
-  over 4 seeds per cell; CPU diagnostic). The ratio column is the median of
-  per-seed dense/selinv error ratios (not the quotient of the two median
-  columns). Ratios span $0.3$--$2.0$ with no consistent direction: exactness
-  is not accuracy. Data: \texttt{paper/attainability/figures/data/precision\_*.csv}
-  (\texttt{paper/attainability/make\_figures.py}).}
+  \caption{Selected inverse vs.\ dense Cholesky at equal fp32 precision,
+  scored on-pattern against an fp64 oracle. Entries are medians over four
+  seeds per cell; the ratio is the median per-seed dense/selected-inverse
+  error ratio. Data:
+  \url{paper/attainability/figures/data/precision_*.csv}.}
   \label{tab:precision}
   \begin{tabular}{lcccc}
     \toprule
@@ -46,26 +43,24 @@ edge, this is where it would appear; it is absent.
   \end{tabular}
 \end{table}
 
-\paragraph{What exactness does give: a cheap global operator.}
-The edge is not the value of the number; it is that the operator is exact,
-global, and cheap. Cheapness is what makes the operator usable as a layer:
-Figure~\ref{fig:scaling} shows forward-plus-backward cost scaling as
-$\bigO(n)$, with the measured dense crossover on a block chain, and a
-differentiable GMRF learning at linear cost where dense autograd is
-$\bigO(N^3)$. An exact, whole-graph functional at a price that does not grow
-with problem size or graph diameter is the combination the next two sections
-exploit.
+\paragraph{What exactness does give: a sparse-structured global operator.}
+The edge is not a more accurate rounded number; it is that the operator is
+algebraically exact, global, and sparse-structured. That structure is what
+makes the operator usable as a layer:
+Figure~\ref{fig:scaling} shows forward-plus-backward timings consistent with
+the chain's $\bigO(n)$ operation count, with the measured dense crossover, and
+differentiable GMRF timings consistent with linear tree work where dense autograd is
+$\bigO(N^3)$. The cost still grows with problem size, linearly on the chain
+shown here; it does not acquire an iteration count proportional to graph
+distance. That is the distinction the next two sections exploit.
 
-\begin{figure}[t]
+\begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{figures/scaling.pdf}
-  \caption{The exact global operator is cheap. Left: forward-plus-backward
-  time vs.\ $n$ for the selected inverse on a block chain ($b=8$), with the
-  dense crossover.
-  Right: differentiable GMRF learning at linear cost vs.\ dense
-  $\bigO(N^3)$ autograd. BLAS- and device-dependent CPU diagnostics, reported
-  rather than asserted; GPU wall-clock at scale is the prerequisite of
-  Section~\ref{sec:program}. Data: \texttt{bench\_results.csv} (repository
-  root; $b=8$) and \texttt{paper/attainability/figures/data/gmrf\_scaling.csv}.}
+  \caption{CPU scaling diagnostics. Left: forward-plus-backward time for a
+  block chain ($b=8$) and its dense comparator. Right: differentiable
+  tree-GMRF learning vs.\ dense autograd. These timings are BLAS- and
+  device-dependent; no GPU claim is made. Data: \url{bench_results.csv} and
+  \url{paper/attainability/figures/data/gmrf_scaling.csv}.}
   \label{fig:scaling}
 \end{figure}

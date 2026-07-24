@@ -44,10 +44,11 @@ one. The honest, properly-seeded read (fp32, ``random_spd_tree``, 16 seeds; rati
   * the well-scaled **grid Laplacian** (large kappa, O(1) entries)
     shows **no edge at any kappa** (~0.5x, i.e. parity / slightly worse).
 
-Net: **no precision penalty, and no *robust* precision win** -- accuracy is, in the median,
-that of a well-ordered dense factorization. The structural value is ``O(n)`` time, ``O(fill)``
-memory (never forming the dense inverse), and differentiability -- not accuracy. (See
-``docs/ROADMAP.md`` Thread D for the current interpretation.)
+Net: **no systematic precision penalty or robust precision win on the measured grid** --
+accuracy is, in the median, that of a well-ordered dense factorization. The structural value
+is linear work at bounded width, factor-pattern numeric storage (never forming the dense
+inverse), and differentiability -- not accuracy. (See
+``docs/PROJECT_STATUS.md`` for the current interpretation.)
 Like the rest of the bench these are BLAS/dtype/device-dependent diagnostics -- recorded, not
 asserted.
 

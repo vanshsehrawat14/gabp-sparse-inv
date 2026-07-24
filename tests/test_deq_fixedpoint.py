@@ -94,12 +94,12 @@ def test_affine_backward_matches_dense_implicit_diff():
 
 
 # --------------------------------------------------------------------------- #
-# The result: exact structured backward stays machine-accurate as rho(J) -> 1,
-# while the iterative (Neumann-K) backward degrades like rho^K.
+# Finite-grid mechanism check: direct and dense-oracle backwards agree closely,
+# while the tested Neumann-K truncation degrades as rho(J) increases.
 # --------------------------------------------------------------------------- #
 def test_exact_backward_robust_as_rho_to_one():
     res = backward_accuracy_sweep(grid_edges(3, 3), 9, 2, rhos=(0.5, 0.9, 0.99, 0.999), Ks=(8, 16, 32), seed=0)
-    # (a) the exact selected-inverse backward is machine-accurate at every rho.
+    # (a) direct and dense-oracle backwards agree on the four tested rho values.
     for rho, row in res.items():
         assert row["exact"] < (1e-7 if rho >= 0.999 else 1e-9), (rho, row["exact"])
     # (b) in the stiff regime the iterative backward is orders of magnitude worse.
