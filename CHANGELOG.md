@@ -9,6 +9,22 @@ release.
 
 ## [Unreleased]
 
+## [0.3.4] - 2026-07-28
+
+### Fixed
+
+- Seed the routed-field baseline models before construction, so a requested seed
+  controls both data generation and model initialization. Evaluation now
+  explicitly uses inference mode.
+- Correct the public interpretation of the routed-field and DEQ diagnostics:
+  cross-architecture parameter count is not a capacity match, `K` Jacobi
+  sweeps from zero reach at most `K - 1` edges, the diagonal lift guarantees
+  positive definiteness but does not fix conditioning, and the finite Neumann
+  probe is not a comparison with accelerated or preconditioned solvers.
+- Recompute the tracked maze diagnostics from the corrected seeded harness and
+  add a claim verifier that checks manuscript numbers against committed records.
+  Numerical library kernels and the public API are unchanged.
+
 ## [0.3.3] - 2026-07-23
 
 ### Changed
@@ -84,7 +100,8 @@ First release, prepared for submission to the Journal of Open Source Software.
   expanded project URLs, a JOSS paper draft (`paper/joss/`), and CI across
   Ubuntu / Windows on Python 3.12 and 3.13, and macOS on Python 3.12.
 
-[Unreleased]: https://github.com/vanshsehrawat14/gabp-sparse-inv/compare/v0.3.3...HEAD
+[Unreleased]: https://github.com/vanshsehrawat14/gabp-sparse-inv/compare/v0.3.4...HEAD
+[0.3.4]: https://github.com/vanshsehrawat14/gabp-sparse-inv/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/vanshsehrawat14/gabp-sparse-inv/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/vanshsehrawat14/gabp-sparse-inv/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/vanshsehrawat14/gabp-sparse-inv/compare/v0.3.0...v0.3.1

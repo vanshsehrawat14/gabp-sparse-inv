@@ -3,7 +3,7 @@
 `PROJECT_STATUS.md` records the verified public surface. This file records the
 public package roadmap.
 
-**Last rewritten:** 2026-07-23 PDT
+**Last rewritten:** 2026-07-28 PDT
 
 ## Product principle
 
@@ -13,19 +13,16 @@ the documented matrix families. The underlying recurrences are classical.
 Performance work requires a measured workload and comparison with mature
 sparse-direct software.
 
-## Release 0.3.3
+## Release 0.3.4
 
-Version 0.3.3 is a corrective release. Its scope is:
+Version 0.3.4 is a narrow reproducibility correction. Its scope is:
 
-1. separate factor-pattern storage from clique/front arithmetic in every
-   public complexity statement;
-2. bound floating-point claims to the recorded finite diagnostics;
-3. correct the non-symmetric inversion-adjoint identity;
-4. state the SPD and static no-pivot assumptions explicitly;
-5. describe the routed-field, DEQ, and DeltaNet examples as mechanism or
-   identity demonstrations rather than performance results;
-6. publish the corrected Paper 1 source and tracked evidence references; and
-7. modernize packaging metadata to PEP 639.
+1. seed routed-field baseline models before construction;
+2. regenerate the tracked maze diagnostics from that corrected harness;
+3. distinguish parameter-count control from a capacity or optimization match;
+4. correct the Jacobi reach, conditioning, and finite-Neumann scope language;
+5. publish a verifier that maps Paper 1 quantities to committed records; and
+6. leave the numerical kernels and public API unchanged.
 
 The public numerical kernels are unchanged in this release.
 

@@ -5,22 +5,24 @@ The operator must be available wherever the experiments need it, so the package 
 selected inverse and its adjoint as drop-in PyTorch operators across a small
 generality ladder (Table~\ref{tab:ladder}). The symmetric rung covers the
 block chain (the Rauch--Tung--Striebel / Kalman-smoother form
-\cite{rauch1965maximum}), the star, the
+\citep{rauch1965maximum}), the star, the
 general tree, and, via a symbolic elimination that completes the pattern to
 the chordal $\pat = \mathrm{pattern}(L+L\T)$, the general sparse SPD
 junction-tree case. The non-symmetric rung runs from the triangular chunk
 inverse $(I-A)^{-1}$ (the delta-rule primitive) through the zero-fill
-non-symmetric tree to the general filled-pattern LU (Erisman--Tinney) selected
+non-symmetric tree to the general filled-pattern lower--upper (LU)
+(Erisman--Tinney) selected
 inverse, whose inversion derivative is adjoint up to transpose
 (Remark~\ref{rem:scaffold}). Every operator family is checked against a dense
 oracle on its documented test grid. Differentiable kernels are validated by \texttt{gradcheck}; the
 functional kernels that support higher-order autograd are additionally checked
 by \texttt{gradgradcheck}. The filled-pattern kernels also ship hand-written
-tape-free analytic backwards whose autograd graphs are constant-size regardless
-of $n$; these analytic backwards are first-order operators and are validated
+tape-free analytic backward passes whose autograd graphs are constant-size
+regardless of $n$; these analytic backward passes are first-order operators and are validated
 against the functional paths. The engineering boundary (no pivoting; the
 static-pattern regime) is described in
 Appendix~\ref{app:engine}.
+Here GaBP abbreviates Gaussian belief propagation.
 
 \begin{table}[H]
   \centering

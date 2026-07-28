@@ -2,8 +2,8 @@
 
 This is the authoritative public implementation and scope record.
 
-**Last audited:** 2026-07-23 PDT
-**Version:** 0.3.3
+**Last audited:** 2026-07-28 PDT
+**Version:** 0.3.4
 
 ## Implemented kernels
 
@@ -49,7 +49,7 @@ selected-inverse value of `A^T`.
 | Tree/grid GMRF | `gabp_sparse_inv.gmrf`, `gabp_sparse_inv.gmrf_grid` | public |
 
 The public API exposes separate function calls. Cross-call factor reuse is not part of
-version 0.3.3, and separate calls may refactorize.
+version 0.3.4, and separate calls may refactorize.
 
 ## Complexity
 
@@ -115,13 +115,16 @@ otherwise.
 
 ## Packaging
 
-- Version 0.3.3 builds an sdist and universal wheel for Python `>=3.12`, requiring
+- Version 0.3.4 builds an sdist and universal wheel for Python `>=3.12`, requiring
   `torch>=2.2`.
 - Public CI covers Python 3.12/3.13 on Linux and Windows plus Python 3.12 on macOS.
 - The release gate includes metadata validation and an isolated wheel smoke test.
 - Public GPU performance is not published.
 - The corrected Paper 1 source and its tracked data are included under
   `paper/attainability/`; the JOSS paper remains in preparation.
+- The routed-field baseline harness seeds models before construction; the
+  tracked maze records were regenerated, and `paper/attainability/verify_claims.py`
+  checks the published quantitative claims against the committed records.
 
 ## Deliberately out of scope
 

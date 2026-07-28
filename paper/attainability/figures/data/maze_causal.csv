@@ -1,4 +1,4 @@
-solve_reach_K,test_mse
+jacobi_sweeps_K,test_mse
 1,0.298389583727944
 2,0.2565392965956686
 4,0.21465790594645529

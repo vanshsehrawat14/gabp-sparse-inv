@@ -4,7 +4,7 @@
 The two probes resolve to attainability under the tested budgets, not
 inductive bias among equally fit models. That conclusion is narrower than the
 original hypothesis, and it does not turn the reference implementation into a
-performance result. This section separates the paper's evidence from three
+performance result. This section separates the paper's evidence from two
 questions that remain legitimate but require new protocols.
 
 \paragraph{What is established.}
@@ -28,33 +28,23 @@ Selected inversion provides deterministic on-pattern covariance entries and
 the log-determinant gradient. Whether that changes learned uncertainty
 quantification is a separate causal question: the model, parameterization,
 optimizer, data split, precision, and stopping rule must be held fixed while
-only the exact versus approximate computation changes. CG/SLQ is the matched
-computational comparison \cite{gardner2018gpytorch,ubaru2017fast};
+only the exact versus approximate computation changes. The matched
+computational comparison requires conjugate gradients (CG) for solves and
+stochastic Lanczos quadrature (SLQ) for log determinants
+\citep{gardner2018gpytorch,ubaru2017fast};
 variational or Vecchia methods change the statistical model and must be
-reported separately \cite{hensman2013gaussian,katzfuss2021general}. A valid
+reported separately \citep{hensman2013gaussian,katzfuss2021general}. A valid
 study reports accuracy at matched wall time and memory, not ``exact'' as a
 synonym for better.
 
 \paragraph{Question 2: implicit gradients near difficult spectra.}
 The four-cell DEQ diagnostic compares sparse direct with finite Neumann
 truncations. A benchmark claim would require strong Krylov and preconditioned
-solvers, phantom gradients \cite{geng2021training}, and accelerated fixed-point
-methods \cite{anderson1965iterative,broyden1965class}, all scored at matched
+solvers, phantom gradients \citep{geng2021training}, and accelerated fixed-point
+methods \citep{anderson1965iterative,broyden1965class}, all scored at matched
 gradient residual, memory, and time. The sparse-direct advantage is
 iteration-independent work after factorization; its floating-point error still
 depends on conditioning and factor growth.
-
-\paragraph{Question 3: certified local versus global computation.}
-For targets whose output depends on evidence at graph distance $d$, a strictly
-local message-passing network needs at least $d$ layers for that evidence to
-arrive. This does not imply a lower bound for Transformers or rewired graph
-networks. A stronger future question is whether a local approximation can
-carry a certificate that its downstream decision equals the exact global
-answer, with exact fallback only when the certificate fails. Such a claim
-would need proof, adversarial oracle checks, and comparisons with residual
-stopping, adaptive message passing, graph rewiring, and graph Transformers
-\cite{topping2022understanding,karhadkar2023fosr,rampasek2022recipe,
-shirzad2023exphormer}.
 
 \paragraph{Controls and evidence boundary.}
 The first matched-fit HOLDOUT read passed the DEQ high-difficulty

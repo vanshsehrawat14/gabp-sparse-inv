@@ -20,19 +20,22 @@ The \emph{selected inverse} on a pattern $\pat \supseteq \Gr$ is
   \label{eq:selinv-def}
 \end{equation}
 that is, the blocks of $\inv{A}$ on $\pat$ only, never the dense inverse. For
-SPD $A$ the natural pattern is the pattern of $A$ itself when $\Gr$ is a tree
+symmetric positive-definite (SPD) $A$, the natural pattern is the pattern of
+$A$ itself when $\Gr$ is a tree
 (zero fill), and the filled (chordal) pattern
 $\pat = \mathrm{pattern}(L+L\T)$ otherwise. Most entries of $\inv{A}$ are dense
 and cannot even be materialized at scale; the on-pattern blocks are exactly
-what marginal-variance and log-determinant-gradient computations read.  The
-same sparse factors also supply the solve siblings used for routed fields
-$\inv{A}e_s$ and fixed-point backwards.
+what marginal-variance and log-determinant-gradient computations read. The
+same class of sparse factorization also supports the solve operations used for
+routed fields $\inv{A}e_s$ and fixed-point backward passes; separate public function
+calls may factorize independently.
 
 \paragraph{Why it is global, exact, and structurally sparse.}
-$\inv{A}$ couples every node to every other: $\Gblock{u}{v}$ is a global
-functional of the whole graph, not of a local neighbourhood. Yet if $\Gr$ has
-low treewidth, a fill-reducing elimination order keeps the elimination fronts
-small. More precisely, let $U_v$ be the later neighbours of node $v$ in the
+$\inv{A}$ is generally dense and can couple distant nodes:
+$\Gblock{u}{v}$ is a global functional of the whole graph, not merely of a
+local neighbourhood. Yet if $\Gr$ has low treewidth, a fill-reducing
+elimination order keeps the elimination fronts small. More precisely, let
+$U_v$ be the later neighbours of node $v$ in the
 filled graph, and define
 \[
   F=\sum_v(1+|U_v|),\qquad W=\sum_v(1+|U_v|^2).
@@ -40,8 +43,9 @@ filled graph, and define
 $F$ counts factor-pattern blocks, whereas $W$ counts dense clique work.
 Numeric storage is $\Theta(Fb^2)$ and factorization plus selected inversion is
 $\Theta(Wb^3)$. They are proportional at bounded treewidth, but not in
-general: both are $\Theta(n)$ on trees, while nested dissection on a 2-D grid
-has $F=\Theta(n\log n)$ and $W=\Theta(n^{3/2})$. The Takahashi recurrence
+general: both are $\Theta(n)$ on trees, while nested dissection on a
+two-dimensional grid has $F=\Theta(n\log n)$ and
+$W=\Theta(n^{3/2})$ \citep{george1973nested}. The Takahashi recurrence
 computes \eqref{eq:selinv-def} algebraically exactly, up to floating-point
 rounding, rather than by a convergence-truncated iteration. Its work depends
 on elimination structure, not on the number of message-passing iterations
@@ -49,8 +53,9 @@ needed to traverse the graph.
 
 \paragraph{The target regime.}
 The target is well-scaled operators with large condition number, e.g.\
-graph-Laplacian precisions $A = L(W) + \varepsilon I$ with $\bigO(1)$ entries
-and $\kappa \approx \lambda_{\max}/\varepsilon$. SPD Cholesky needs no
+graph-Laplacian precisions $A = L(w) + \varepsilon I$ with $\bigO(1)$ entries,
+edge weights $w$, and
+$\kappa=(\lambda_{\max}(L(w))+\varepsilon)/\varepsilon$. SPD Cholesky needs no
 pivoting, but its forward accuracy remains condition-sensitive; ``direct''
 means iteration-independent, not condition-independent. The non-symmetric
 kernel additionally assumes a static no-pivot pattern and nonsingular Schur

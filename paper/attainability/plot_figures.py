@@ -6,11 +6,12 @@ this script only draws. Style: Computer Modern mathtext to match the paper,
 Okabe-Ito colorblind-safe palette, distinct markers/linestyles so every series
 survives grayscale print.
 
-    python paper/plot_figures.py
+    python paper/attainability/plot_figures.py
 """
 
 from __future__ import annotations
 
+import argparse
 import csv
 from pathlib import Path
 
@@ -54,6 +55,9 @@ plt.rcParams.update(
         "lines.markersize": 4.5,
         "figure.dpi": 200,
         "savefig.bbox": "tight",
+        # Conference PDFs should not contain Matplotlib's default Type-3 fonts.
+        "pdf.fonttype": 42,
+        "ps.fonttype": 42,
     }
 )
 
@@ -91,23 +95,23 @@ def maze_extrapolation() -> None:
 
 def maze_causal() -> None:
     data = rows("maze_causal.csv")
-    ks = [int(r["solve_reach_K"]) for r in data if r["solve_reach_K"].isdigit()]
-    mses = [float(r["test_mse"]) for r in data if r["solve_reach_K"].isdigit()]
-    exact = next(float(r["test_mse"]) for r in data if r["solve_reach_K"] == "exact")
+    budget_key = "jacobi_sweeps_K"
+    ks = [int(r[budget_key]) for r in data if r[budget_key].isdigit()]
+    mses = [float(r["test_mse"]) for r in data if r[budget_key].isdigit()]
+    exact = next(float(r["test_mse"]) for r in data if r[budget_key] == "exact")
     floor = next(
-        (float(r["test_mse"]) for r in data if r["solve_reach_K"] == "predict_mean"),
+        (float(r["test_mse"]) for r in data if r[budget_key] == "predict_mean"),
         None,
     )
     fig, ax = plt.subplots(figsize=(4.5, 3.0))
-    ax.plot(ks, mses, marker="s", ls="-", color=VERMILLION, label="$K$ Jacobi sweeps")
-    xr = max(ks) * 2
-    ax.plot([xr], [exact], marker="*", ms=11, ls="none", color=BLACK, label="exact solve")
+    xpos = list(range(len(ks) + 1))
+    ax.plot(xpos[:-1], mses, marker="s", ls="-", color=VERMILLION, label="$K$ Jacobi sweeps")
+    ax.plot([xpos[-1]], [exact], marker="*", ms=11, ls="none", color=BLACK, label="exact solve")
     if floor is not None:
         ax.axhline(floor, ls="--", color=GRAY, lw=1.0, label="predict-the-mean floor")
-    ax.set_xscale("log", base=2)
     ax.set_yscale("log")
-    ax.set_xticks(ks + [xr], [str(k) for k in ks] + ["exact"])
-    ax.set_xlabel("solve reach $K$ (sweeps; one hop per sweep)")
+    ax.set_xticks(xpos, [str(k) for k in ks] + ["exact"])
+    ax.set_xlabel("Jacobi sweep budget $K$")
     ax.set_ylabel("test MSE")
     ax.legend(loc="lower left")
     fig.savefig(OUT / "maze_causal.pdf")
@@ -145,6 +149,8 @@ def scaling() -> None:
         t = list(csv.DictReader(f))
     ns: dict[int, dict[str, list[float]]] = {}
     for r in t:
+        if r.get("precision_name") != "fp64":
+            continue
         n = int(r["L"])
         d = ns.setdefault(n, {"selinv": [], "dense": []})
         d["selinv"].append(float(r["time_median_s"]))
@@ -152,11 +158,16 @@ def scaling() -> None:
             d["dense"].append(float(r["dense_chol_time_s"]))
     xs = sorted(ns)
     med = lambda v: sorted(v)[len(v) // 2]
-    ax1.plot(xs, [med(ns[n]["selinv"]) for n in xs], marker="o", color=BLACK,
-             label="selected inverse (fwd+bwd)")
+    ax1.plot(
+        xs,
+        [med(ns[n]["selinv"]) for n in xs],
+        marker="o",
+        color=BLACK,
+        label="selected inverse",
+    )
     xd = [n for n in xs if ns[n]["dense"]]
     ax1.plot(xd, [med(ns[n]["dense"]) for n in xd], marker="s", ls="--",
-             color=ORANGE, label="dense Cholesky")
+             color=ORANGE, label="dense Cholesky inverse")
     ax1.set_xscale("log", base=2)
     ax1.set_yscale("log")
     ax1.set_xlabel("chain length $n$")
@@ -187,8 +198,36 @@ def scaling() -> None:
 
 
 if __name__ == "__main__":
-    maze_extrapolation()
-    maze_causal()
-    deq_robustness()
-    scaling()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--out-dir",
+        type=Path,
+        default=OUT,
+        help="directory for generated PDF figures (default: paper figures directory)",
+    )
+    parser.add_argument(
+        "--only",
+        help="comma-separated figure names; default renders every figure",
+    )
+    args = parser.parse_args()
+
+    figure_functions = {
+        "maze_extrapolation": maze_extrapolation,
+        "maze_causal": maze_causal,
+        "deq_robustness": deq_robustness,
+        "scaling": scaling,
+    }
+    requested = (
+        [name.strip() for name in args.only.split(",") if name.strip()]
+        if args.only
+        else list(figure_functions)
+    )
+    unknown = sorted(set(requested) - set(figure_functions))
+    if unknown:
+        parser.error(f"unknown figure name(s): {', '.join(unknown)}")
+
+    OUT = args.out_dir
+    OUT.mkdir(parents=True, exist_ok=True)
+    for name in requested:
+        figure_functions[name]()
     print("wrote", *[p.name for p in sorted(OUT.glob("*.pdf"))])

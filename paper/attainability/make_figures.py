@@ -82,7 +82,7 @@ def _nonsym_stability(out: str, quick: bool) -> list[str]:
 
 WIRED = {
     "timing_tree": (run_bench.main, _timing_tree,
-                    "Fwd+bwd time vs n on a tree; dense crossover (bench/run.py)."),
+                    "Forward selected-inverse time vs n on a tree (bench/run.py)."),
     "gmrf_scaling": (gmrf_scaling.main, _gmrf_scaling,
                      "Differentiable GMRF: tree O(n) vs dense O(N^3) (bench/gmrf_scaling.py)."),
     "precision_tree": (precision.main, _precision_tree,
@@ -131,7 +131,7 @@ def _demo_maze_causal(out: str, quick: bool) -> int:
     res = causal_solve_sweep(6, 6, steps_list=steps_list, **sw)
     with open(out + ".csv", "w", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["solve_reach_K", "test_mse"])
+        w.writerow(["jacobi_sweeps_K", "test_mse"])
         for K in steps_list:
             w.writerow(["exact" if K is None else K, res[K]])
         w.writerow(["predict_mean", res["baseline"]])
@@ -157,11 +157,11 @@ def _demo_deq_robustness(out: str, quick: bool) -> int:
 
 DEMO = {
     "maze_extrapolation": (_demo_maze_extrapolation,
-                           "Maze extrapolation: gabp vs matched-capacity GNN/Transformer/baseline "
+                           "Maze extrapolation: gabp vs higher-capacity GNN/Transformer/baseline "
                            "vs grid size/diameter (demos/maze_baselines.py)."),
     "maze_causal": (_demo_maze_causal,
                     "Maze matched-capacity causal dose-response: identical model, test MSE vs "
-                    "solve reach K (exact vs K Jacobi hops) (demos/maze_grid.py)."),
+                    "solve budget K (exact vs K Jacobi sweeps) (demos/maze_grid.py)."),
     "deq_robustness": (_demo_deq_robustness,
                        "Fixed-point backward: exact vs Neumann-K gradient error as rho(J)->1 "
                        "(demos/deq_fixedpoint.py)."),

@@ -145,14 +145,14 @@ throughout, confirming the parameterization keeps `A_hat` well within fp32/fp64 
   **easier than it looks**: `gen_dataset` puts the true per-node potential `phi` in
   `feats[..., 0]`, so the encoder mainly needs to apply `junction_solve`, not recover geometry
   from scratch. The `local` model does beat predict-mean - it fits the near-source structure,
-  but cannot route globally, which is the whole point. The **matched-capacity hardening** of
-  this ablation - fair GNN/Transformer baselines with 280-340× the parameters - lives in
-  [E4_BASELINES.md](E4_BASELINES.md): the **size/diameter-extrapolation** gap survives capacity,
-  depth, and training-fairness controls (~7000-9000× at 10×10 from a 6×6-trained baseline),
-  while the in-distribution gap is partly an optimisation effect. Multi-seed curves
-  (`extrapolation_curve`) and a **held-out effective-resistance task** - a non-linear functional
-  of `A⁻¹` using its diagonal, not the routed field - broaden the result past the exact function
-  the solve computes; the extrapolation gap holds there too.
+  but cannot route globally, which is the whole point. Exploratory,
+  cross-architecture GNN/Transformer comparisons with 282--344 times the parameter count live
+  in [E4_BASELINES.md](E4_BASELINES.md). They rule out simple parameter starvation but do not
+  match architecture, optimization difficulty, or effective capacity. A 2026-07-28
+  reproducibility audit found that the historical extrapolation runner seeded after model
+  construction; the dated correction in that file points to the regenerated deterministic
+  record. Paper claims rely on the within-architecture Jacobi intervention and frozen
+  matched-fit study for attribution, not on treating these generic baselines as equivalent.
 - This demo calls the reference `junction_solve`, whose numeric elimination is a Python
   node loop. A level-set batched selected-inverse/factor path exists elsewhere in the package,
   but this demo does not use it. Grids are therefore modest (at most about 6-by-6 in the

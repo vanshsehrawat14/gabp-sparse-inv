@@ -15,13 +15,15 @@
 \usepackage{microtype}
 \usepackage{caption}
 \usepackage{titlesec}
+\usepackage[round,authoryear]{natbib}
 \captionsetup{font=small,skip=9pt,justification=raggedright,singlelinecheck=false}
 \captionsetup[table]{position=above}
 \input{macros}
+\newcommand{\evidencecommit}{\texttt{00c0bf5}}
 \usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
 \hypersetup{
   pdftitle={Exact Sparse Operators in Differentiable Models:
-            Attainability, Not Inductive Bias},
+            Attainability Gaps, Not Evidence for Inductive Bias},
   pdfauthor={Vanshdeep Sehrawat},
 }
 
@@ -51,7 +53,7 @@
 \vspace*{0.2cm}
 
 {\LARGE Exact Sparse Operators in Differentiable Models:\\[0.45em]
-Attainability, Not Inductive Bias\par}
+Attainability Gaps, Not Evidence for Inductive Bias\par}
 
 \vspace{0.9cm}
 
@@ -63,7 +65,7 @@ Attainability, Not Inductive Bias\par}
 
 \vspace{0.9em}
 
-{\small Code, data, and frozen pre-registration records:
+{\small Code, data, and frozen preregistration records:
 \href{https://github.com/vanshsehrawat14/gabp-sparse-inv}{\texttt{github.com/vanshsehrawat14/gabp-sparse-inv}}
 (package \texttt{gabp-sparse-inv} on PyPI).\\
 File paths cited in this paper are relative to the repository root.}
@@ -74,33 +76,35 @@ File paths cited in this paper are relative to the repository root.}
 \end{center}
 
 \begin{quote}\small
-Many machine-learning models require a global linear solve. For sparse,
-fixed-width coupling, selected inversion computes inverse blocks on the
+Many machine-learning models require a global linear solve. For sparse
+coupling with fixed block size and elimination width, selected inversion computes inverse blocks on the
 factor's filled pattern in $\bigO(n)$ time, and its projected derivative has
 a reverse schedule with the same asymptotic structural work. We implement
 the classical symmetric and static-pattern non-symmetric operators as
 differentiable PyTorch primitives. The scientific question is whether an
 exact structured solve acts as an \emph{inductive bias}, selecting a
 better-generalizing solution when competing models attain comparable
-training fit. Two pre-registered matched-fit probes test this hypothesis on
+training fit. Two preregistered matched-fit probes test this hypothesis on
 $30$ held-out seeds: routed-field size extrapolation and deep-equilibrium
-training near spectral instability. The exact arms win the raw comparisons,
+(DEQ) training near spectral instability. The exact arms win the raw comparisons,
 but the finite Jacobi and Neumann alternatives match their training fit in
-only $0$--$23\%$ of high-difficulty seeds, below a pre-registered $60\%$
+only $0$--$23.3\%$ of high-difficulty seeds, below a preregistered $60\%$
 bar. The equal-fit comparison is therefore absent; under the tested budgets,
 the result is an \emph{attainability/optimization} gap, not an
-inductive-bias effect. In separate diagnostics, the exact routed-field model
-beats larger GNN and Transformer baselines by roughly $600\times$ in
-distribution and up to $28{,}000\times$ under extrapolation. The
+inductive-bias effect. A separate three-seed exploratory comparison against
+much larger graph neural network (GNN) and Transformer baselines shows the
+same direction but does not match architecture or optimization. The
 sparse-direct implicit backward remains within $1.1\times10^{-12}$ of a
-dense fp64 oracle on four stiffness cells where finite Neumann adjoints are
-$77$--$100\%$ wrong at $\rho(J)\in\{0.99,0.999\}$; an fp32 sweep finds no
+dense 64-bit floating-point (fp64) oracle on four stiffness cells where finite Neumann adjoints have
+$77.1\%$ and $97.4\%$ relative error at $\rho(J)=0.99$ and $0.999$,
+respectively; a 32-bit floating-point (fp32) sweep finds no
 robust precision advantage over a well-ordered dense factorization. The
-DEQ low-difficulty control fails its pre-specified relative-gap clause, and
+DEQ low-difficulty control fails its prespecified relative-gap clause, and
 two non-equivalent maze-floor diagnostics disagree. A later reuse of the
 same held-out seeds is excluded. The supported conclusion is therefore
 narrow and hedged: exact structured computation expands the attainable
-regime in these controlled, solve-shaped CPU probes, while the proposed
+regime in these controlled, solve-shaped probes on a central processing unit
+(CPU), while the proposed
 inductive-bias explanation is not supported.
 \end{quote}
 
@@ -127,7 +131,7 @@ comparisons, and suggested a maze-style attribution test.
 \input{sections/appendix}
 
 \small
-\bibliographystyle{plain}
+\bibliographystyle{plainnat}
 \bibliography{refs}
 
 \end{document}

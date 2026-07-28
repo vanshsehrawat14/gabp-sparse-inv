@@ -8,8 +8,9 @@ exactly; a range-limited local message-passing model provably cannot.
 
 Task (routing a source through the grid). The operator is a **grid-graph Laplacian plus a
 small diagonal** ``A = L(w) + eps I`` with positive edge weights ``w`` -- a diffusion /
-"maze" operator. A small ``eps`` lifts the constant-mode null space, pinning
-``kappa ~ deg/eps`` and giving ``A^{-1}`` (the grid Green's function) a long correlation
+"maze" operator. A small ``eps`` lifts the constant-mode null space and makes
+``kappa`` scale roughly as ``lambda_max / eps``; it does not fix ``kappa`` when learned
+weights change. The lift gives ``A^{-1}`` (the grid Green's function) a long correlation
 length: the long-range regime. Each example draws a random maze geometry and a random
 **source** node ``s``; the label is the induced field ``x = A^{-1} e_s`` (the potential
 routed out from the source across the lattice), computed with ``junction_solve``.
@@ -55,11 +56,12 @@ __all__ = [
 def _jacobi_solve(diag, i_idx, j_idx, edge_val, b, steps, omega):
     """``steps`` damped-Jacobi sweeps for ``A x = b`` on the grid pattern (``A = L(w)+eps I``).
 
-    Each sweep is one matvec with ``A``, so information travels exactly **one hop per step**:
-    ``K`` steps reach ``K`` hops, and ``K -> infinity`` recovers the exact solve. ``A`` is
-    strictly diagonally dominant (the ``eps`` lift), so plain Jacobi (``omega=1``) converges;
-    damping only slows it. Out-of-place (autograd-safe). Used by the matched-capacity *causal*
-    control: the identical model with its exact solve replaced by a ``K``-hop one.
+    Starting from zero, each sweep expands point-source support by at most one graph edge.
+    After ``K`` sweeps the sharp support bound is ``K - 1`` edges, and ``K -> infinity``
+    recovers the exact solve. ``A`` is
+    strictly diagonally dominant (the ``eps`` lift), so plain Jacobi (``omega=1``)
+    converges. Out-of-place (autograd-safe). Used by the matched-capacity *causal*
+    control: the identical model with its exact solve replaced by ``K`` sweeps.
     """
     x = torch.zeros_like(b)
     for _ in range(steps):
@@ -142,8 +144,8 @@ class GaBPMazeGrid(nn.Module):
         self.register_buffer("j_idx", edge_index[1])
         self.eps = float(eps)
         # solve_steps=None -> the exact junction_solve (the model proper). An int K replaces it
-        # with K Jacobi hops on the SAME learned A: the matched-capacity causal knob (identical
-        # parameters, only the solve's reach changes). See causal_solve_sweep.
+        # with K Jacobi sweeps on the SAME learned A: the matched-capacity causal knob (identical
+        # parameters, only the solve's iteration budget changes). See causal_solve_sweep.
         self.solve_steps = solve_steps
         self.jacobi_omega = float(jacobi_omega)
         self.enc = nn.Sequential(nn.Linear(2, hidden), nn.Tanh(), nn.Linear(hidden, 1))
@@ -152,7 +154,7 @@ class GaBPMazeGrid(nn.Module):
         # Read the maze geometry from the first 2 features only (NOT the source b_v).
         # softplus keeps potentials positive, so w_ij = phi_i phi_j > 0 and the Laplacian
         # stays SPD no matter what the encoder produces -- the conditioning-risk story,
-        # handled by construction (eps pins kappa).
+        # handled by construction (eps guarantees positive definiteness but does not fix kappa).
         phi = torch.nn.functional.softplus(self.enc(feats[..., :2])[..., 0])
         diag, edge_val, _w = grid_laplacian_from_potentials(phi, self.eps, self.i_idx, self.j_idx)
         return diag, edge_val
@@ -161,7 +163,7 @@ class GaBPMazeGrid(nn.Module):
         diag, edge_val = self.build_precision(feats)
         b = feats[..., 2]
         if self.solve_steps is not None:
-            # Causal ablation: the SAME model, but the solve is truncated to K hops of reach.
+            # Causal ablation: the SAME model, but the solve is truncated to K Jacobi sweeps.
             return _jacobi_solve(diag, self.i_idx, self.j_idx, edge_val, b,
                                  self.solve_steps, self.jacobi_omega)
         # The only long-range operator in the model: junction_solve routes the injected
@@ -285,17 +287,17 @@ def causal_solve_sweep(
     jacobi_omega: float = 1.0,
     seed: int = 0,
 ):
-    """Matched-capacity **causal** control: the identical model, intervening on *only* reach.
+    """Matched-capacity **causal** control: the identical model, intervening on the solve budget.
 
     For each ``K`` in ``steps_list`` (``None`` = the exact ``junction_solve``), train and
     evaluate the **same** ``GaBPMazeGrid`` architecture and parameter count with its solve
-    replaced by ``K`` Jacobi sweeps (= ``K`` hops). Architecture, capacity, inputs, data and
+    replaced by ``K`` Jacobi sweeps. Architecture, capacity, inputs, data and
     training schedule are identical across ``K`` -- the single intervened variable is the
-    solve's reach -- so a monotone dose-response in ``K``, with only the exact (global) solve
-    reaching the predict-mean floor, isolates the inverse's **globality** as the causal factor
-    rather than architecture or parameter count. Returns ``{K: test_mse}`` (+ ``"baseline"``,
-    the predict-train-mean floor). Unlike the cross-architecture GNN/Transformer baselines
-    (`maze_baselines.py`), this varies nothing but the one mechanism.
+    solve budget. A monotone dose-response therefore locates the observed difference in
+    solve truncation rather than architecture or parameter count; it does not establish an
+    inductive-bias effect at equal fit. Returns ``{K: test_mse}`` (+ ``"baseline"``, the
+    predict-train-mean floor). Unlike the cross-architecture GNN/Transformer baselines
+    (``maze_baselines.py``), this varies nothing but the one mechanism.
     """
     _ei_tr, feats_tr, y_tr = gen_dataset(rows, cols, n_train, seed=seed, eps=eps)
     _ei_te, feats_te, y_te = gen_dataset(rows, cols, n_test, seed=seed + 1000, eps=eps)
@@ -314,14 +316,14 @@ def causal_solve_sweep(
 
 
 def run_causal(sizes=((6, 6),), steps_list=(1, 2, 4, 8, 16, None), **kw):
-    """Print the matched-capacity causal dose-response: test MSE vs solve depth K (None=exact)."""
+    """Print the matched-capacity causal dose-response: test MSE vs sweep budget K."""
     res = {}
     for (rr, cc) in sizes:
         r = causal_solve_sweep(rr, cc, steps_list=steps_list, **kw)
         res[(rr, cc)] = r
         diam = (rr - 1) + (cc - 1)
-        print(f"grid {rr}x{cc} (diameter {diam}) -- same model + params, vary ONLY solve reach K:")
-        print(f"  {'K hops':>7} {'test MSE':>11}   (None = exact junction_solve = unbounded reach)")
+        print(f"grid {rr}x{cc} (diameter {diam}) -- same model + params, vary ONLY sweep budget K:")
+        print(f"  {'K sweeps':>8} {'test MSE':>11}   (None = exact junction_solve)")
         for K in steps_list:
             label = "exact" if K is None else str(K)
             print(f"  {label:>7} {r[K]:>11.2e}")
