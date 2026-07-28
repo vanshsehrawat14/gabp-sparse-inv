@@ -8,9 +8,9 @@ without forming the dense inverse.
 The organizing principle: when the block structure of `A` is a **tree**, selected
 inversion is a two-pass collect/distribute schedule that is exactly **Gaussian
 Belief Propagation** and equals the Takahashi recurrence. See
-[docs/derivations.md](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.3/docs/derivations.md) for the theorem and proofs.
+[docs/derivations.md](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.4/docs/derivations.md) for the theorem and proofs.
 
-New to the codebase? [docs/ARCHITECTURE.md](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.3/docs/ARCHITECTURE.md) is the module map, the
+New to the codebase? [docs/ARCHITECTURE.md](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.4/docs/ARCHITECTURE.md) is the module map, the
 conventions, and the pattern for adding a kernel.
 
 ## Statement of need
@@ -25,9 +25,9 @@ solves rather than the on-pattern inverse blocks with gradients. `gabp-sparse-in
 drop-in PyTorch operators that return exact on-pattern inverse blocks, plus log-determinant,
 Gaussian-sampling, and solve operations built from the same factorization machinery, with exact
 gradients at the same asymptotic cost as the forward pass, across one uniform symmetric /
-non-symmetric interface. Release 0.3.3 exposes separate function calls rather than a persistent
+non-symmetric interface. Release 0.3.4 exposes separate function calls rather than a persistent
 factor object, so cross-call factor reuse is not claimed for that release. The full statement
-of need is in [paper/joss/paper.md](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.3/paper/joss/paper.md).
+of need is in [paper/joss/paper.md](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.4/paper/joss/paper.md).
 
 Implemented and tested kernels:
 
@@ -46,7 +46,7 @@ Implemented and tested kernels:
   elimination tree (selected inversion is self-adjoint), so the backward costs
   `O((|V|+|E|) b^3)` like the forward. Gradients flow to `diag` and `edge`; an optional
   level-set batched path mirrors the forward batching. Derived in
-  [docs/derivations.md](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.3/docs/derivations.md) §8. The gradient identity itself is classical
+  [docs/derivations.md](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.4/docs/derivations.md) §8. The gradient identity itself is classical
   (Dwyer-Macphail, Giles); this package supplies the PyTorch implementation and tests.
 - **Junction tree / general sparse SPD** (`selected_inverse_junction` / `selinv_junction`).
   An arbitrary block sparsity pattern, symbolically completed to its chordal (filled)
@@ -67,14 +67,14 @@ Implemented and tested kernels:
   analytic backward (`selinv_bidiag`). Fully local -- no collect/distribute sweep -- so
   forward and backward are each one batched block op, `O(n * b^3)` time, `O(n * b^2)`
   storage. The first rung of the non-symmetric ladder; see
-  [docs/derivations.md](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.3/docs/derivations.md) §9.
+  [docs/derivations.md](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.4/docs/derivations.md) §9.
 
 - **Non-symmetric tree** (`selected_inverse_nonsym_tree`). The zero-fill non-symmetric rung
   between the bidiagonal case and the general LU: a general block matrix whose off-diagonal
   graph is a tree but whose two directed edge blocks are independent (`M_{p,v} != M_{v,p}^T`).
   A two-sided Takahashi recurrence returns each node diagonal and both cross blocks exactly;
   functional / autograd-traceable (first- and higher-order), and it reduces block-for-block to
-  the SPD tree kernel in the symmetric case. See [docs/derivations.md](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.3/docs/derivations.md) §9.5.
+  the SPD tree kernel in the symmetric case. See [docs/derivations.md](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.4/docs/derivations.md) §9.5.
 
 - **DeltaNet chunk inverse** (`selected_inverse_tril` / `selinv_tril`). The dense
   triangular instance `T = (I - A)^-1` for strictly-lower `A` -- the chunk inverse of
@@ -91,8 +91,8 @@ counterpart is `selinv_nonsym_junction_analytic`
 functional path. The **general non-symmetric** selected inverse (LU / Erisman-Tinney;
 `selected_inverse_nonsym_junction` / `selinv_nonsym_junction`, forward + autograd adjoint,
 no pivoting) and its **solve sibling** `nonsym_junction_solve` (`A⁻¹b` / `A⁻ᵀb`) are also
-included. The fixed-point and maze demonstrations are documented in [docs/DEQ.md](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.3/docs/DEQ.md)
-and [docs/MAZE.md](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.3/docs/MAZE.md).
+included. The fixed-point and maze demonstrations are documented in [docs/DEQ.md](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.4/docs/DEQ.md)
+and [docs/MAZE.md](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.4/docs/MAZE.md).
 
 ## Install
 
@@ -212,7 +212,7 @@ so autograd gives the same backward); it amortizes kernel-launch latency on GPU.
 
 `junction_solve` is the differentiable sparse SPD linear solve `x = A^-1 b` on the same
 pattern using the same `LDL^T` factorization machinery as the selected inverse. The function call
-below performs its own factorization; release 0.3.3 does not expose a reusable factor object:
+below performs its own factorization; release 0.3.4 does not expose a reusable factor object:
 
 ```python
 from gabp_sparse_inv import random_spd_graph, grid_edges, junction_solve
@@ -304,7 +304,7 @@ u = nonsym_junction_solve(sp.diag, sp.edge_index, sp.edge_val, sp.edge_val.mT, r
 
 The full selected inverse on the `L+U` pattern is `selinv_nonsym_junction` (forward + adjoint), and
 the zero-fill tree rung is `selected_inverse_nonsym_tree`; both keep the two directed edge blocks
-independent. See [docs/derivations.md](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.3/docs/derivations.md) §9-§10.
+independent. See [docs/derivations.md](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.4/docs/derivations.md) §9-§10.
 
 ### Gaussian sampling
 
@@ -321,7 +321,7 @@ x = sample_gaussian_tree(bt.diag, bt.edge, bt.parent, num_samples=8)   # [num_sa
 ```
 
 `junction_logdet` / `tree_logdet` (above) and these samplers are the statistical ops that fall out
-of the shared `LDL^T` factorization. See [docs/APPLICATIONS.md](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.3/docs/APPLICATIONS.md).
+of the shared `LDL^T` factorization. See [docs/APPLICATIONS.md](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.4/docs/APPLICATIONS.md).
 
 ### Application: hierarchical tree-GMRF learning
 
@@ -331,7 +331,7 @@ likelihood and a posterior-variance objective, all `O(n)`, where a dense-autogra
 baseline is `O(N^3)` time / `O(N^2)` memory. The **batched** schedule (`batched=True`)
 beats a naive dense-autograd baseline at every measured size on CPU (113× at n=1023 in one
 fp64 / 1-thread run with 16 fields; a diagnostic, not CI-gated; see
-[docs/APPLICATIONS.md](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.3/docs/APPLICATIONS.md)). The per-node reference loop is slower than
+[docs/APPLICATIONS.md](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.4/docs/APPLICATIONS.md)). The per-node reference loop is slower than
 dense at small n; batched is the path intended for scale.
 
 ```python
@@ -367,7 +367,7 @@ operator that can move information across the graph. A model with that layer rou
 source near-exactly (test MSE `~1e-5`); an otherwise-identical model with only `K`-hop local
 message passing cannot, and the gap widens with the tree diameter. The learned precision is
 kept SPD and well-conditioned (`kappa ~ 200`) by construction, handling the maze-conditioning
-risk. It is the tree proxy for the loopy grid maze (Phase 4). See [docs/MAZE.md](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.3/docs/MAZE.md).
+risk. It is the tree proxy for the loopy grid maze (Phase 4). See [docs/MAZE.md](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.4/docs/MAZE.md).
 
 ```bash
 python -m gabp_sparse_inv.demos.maze_tree     # depth-sweep table: gabp vs local vs baseline
@@ -379,7 +379,7 @@ python -m gabp_sparse_inv.demos.maze_tree     # depth-sweep table: gabp vs local
 lattice, the precision is a grid Laplacian built from learned local features, and a single
 differentiable `junction_solve` layer is the only long-range operator (convolutions are
 strictly local). The loopy graph needs the junction-tree kernel; a tree kernel cannot
-represent cycles. Same clean-attribution story as the tree proxy; see [docs/MAZE.md](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.3/docs/MAZE.md)
+represent cycles. Same clean-attribution story as the tree proxy; see [docs/MAZE.md](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.4/docs/MAZE.md)
 (grid section).
 
 ```bash
@@ -398,7 +398,7 @@ algebraically exact up to rounding. On the four-cell fp64 diagnostic it stays wi
 `1.1e-12` of a dense implicit-differentiation oracle, while the finite Neumann backward
 degrades sharply at the tested `ρ(J) ∈ {0.99, 0.999}`. This is a finite low-treewidth
 mechanism check, not a condition-independent stability theorem or a state-of-the-art claim.
-See [docs/DEQ.md](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.3/docs/DEQ.md).
+See [docs/DEQ.md](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.4/docs/DEQ.md).
 
 ```bash
 python -m gabp_sparse_inv.demos.deq_fixedpoint   # rho-sweep: exact backward vs iterative
@@ -414,7 +414,7 @@ delta rule **exactly** (validated vs an `O(L)` sequential oracle at every chunk 
 `T` with `selinv_tril` (analytic transpose-form backward) vs the stock `solve_triangular` baseline
 (autograd) gives the same forward and **the same gradients** through the whole multi-chunk layer
 (`~3e-15`), and a layer trains identically either way. A capability / drop-in result, not a
-DeltaNet reimplementation or a SOTA claim. See [docs/DELTANET.md](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.3/docs/DELTANET.md).
+DeltaNet reimplementation or a SOTA claim. See [docs/DELTANET.md](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.4/docs/DELTANET.md).
 
 ```bash
 python -m gabp_sparse_inv.demos.deltanet_chunk   # drop-in equivalence + train-both-ways table
@@ -495,17 +495,17 @@ Windows, and macOS with Python 3.12 and 3.13.
 ## Citation
 
 If you use `gabp-sparse-inv` in your research, please cite it. Machine-readable metadata is in
-[CITATION.cff](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.3/CITATION.cff) (GitHub's "Cite this repository" reads it), and a software paper is
+[CITATION.cff](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.4/CITATION.cff) (GitHub's "Cite this repository" reads it), and a software paper is
 in preparation for the Journal of Open Source Software
-([paper/joss/paper.md](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.3/paper/joss/paper.md)).
+([paper/joss/paper.md](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.4/paper/joss/paper.md)).
 
 ## Contributing and support
 
-Contributions, bug reports, and usage questions are welcome. [CONTRIBUTING.md](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.3/CONTRIBUTING.md)
-covers how to contribute, report issues, and get support; [CODE_OF_CONDUCT.md](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.3/CODE_OF_CONDUCT.md)
+Contributions, bug reports, and usage questions are welcome. [CONTRIBUTING.md](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.4/CONTRIBUTING.md)
+covers how to contribute, report issues, and get support; [CODE_OF_CONDUCT.md](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.4/CODE_OF_CONDUCT.md)
 sets the community standards. The package scope and deliberate exclusions are summarized above
 and in the package docstring.
 
 ## License
 
-MIT. See [LICENSE](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.3/LICENSE).
+MIT. See [LICENSE](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.4/LICENSE).

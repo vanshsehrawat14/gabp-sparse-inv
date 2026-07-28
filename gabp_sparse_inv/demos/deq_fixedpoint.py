@@ -22,22 +22,24 @@ Two things this module demonstrates, both honestly scoped:
    an affine fixed point it is literally autograd through :func:`nonsym_junction_solve`; for a
    nonlinear DEQ it is the custom IFT backward in :func:`deq_fixed_point`.
 
-2. **A finite stiff-regime mechanism check.** Standard DEQ backprop solves ``(I-J)^T u =
-   g`` *iteratively* (Neumann / Richardson: ``u_{k+1} = J^T u_k + g``), which converges like
-   ``rho(J)^k`` in the normal/contraction construction used here. The structured solve is
-   one-shot. :func:`backward_accuracy_sweep` checks four finite ``rho`` values and shows the
-   direct backward agreeing closely with the dense oracle while the ``K``-step Neumann
-   truncation worsens as stiffness increases. This finite grid neither proves
+2. **A finite stiff-regime mechanism check.** A transparent iterative DEQ-backward baseline
+   solves ``(I-J)^T u = g`` with Neumann / Richardson iteration,
+   ``u_{k+1} = J^T u_k + g``, which converges like ``rho(J)^k`` in the
+   normal/contraction construction used here. The structured solve is one-shot.
+   :func:`backward_accuracy_sweep` checks four finite ``rho`` values and shows the direct
+   backward agreeing closely with the dense oracle while the ``K``-term Neumann truncation
+   worsens as stiffness increases. This finite grid neither proves
    condition-independent floating-point accuracy nor compares against Krylov,
    preconditioned, or accelerated implicit-gradient methods.
 
 **Honest scope.** The advantage is for fixed-point layers whose Jacobian is **graph-
 structured / low-treewidth**; for a dense Jacobian the ``LDU`` is ``O(n^3)`` and an iterative
-solver is the right tool. ``rho(J) < 1`` is assumed (a contraction -- the fixed point exists
-and is unique), the non-symmetric analogue of the maze's SPD-by-construction. Accelerated
-backward solvers (Anderson/Broyden) cut the iteration count but not the ``rho -> 1`` scaling;
-the structured solve removes it. This is a capability/mechanism result on controlled problems,
-not a SOTA claim -- the same honesty bar as ``docs/MAZE.md``.
+solver may be preferable. The affine diagnostic uses a convergent construction with
+``rho(J) < 1``; the nonlinear helper separately assumes a contraction so that its equilibrium
+is unique. This is the non-symmetric analogue of the maze's SPD-by-construction. More
+sophisticated iterative and accelerated solvers may reduce the cost; they are not evaluated
+here. This is a capability/mechanism result on controlled problems, not a state-of-the-art
+claim -- the same honesty bar as ``docs/MAZE.md``.
 
 Run ``python -m gabp_sparse_inv.demos.deq_fixedpoint`` for the rho-sweep table.
 """
@@ -117,8 +119,9 @@ def random_coupling(n: int, edge_index: Tensor, b: int, *, seed: int, rho: float
     """Random non-symmetric block coupling ``W`` on ``edge_index``, scaled to ``rho(W) = rho``.
 
     Returns ``(Wd, Wl, Wu)`` (node-diagonal blocks and the two independent edge orientations).
-    The fixed point of ``z = W z + b`` exists and is unique iff ``rho(W) < 1``; scaling all
-    blocks by one scalar sets the spectral radius exactly while keeping the pattern.
+    ``rho(W) < 1`` is sufficient for a unique fixed point and convergence of the Neumann
+    series; uniqueness alone only requires that 1 is not an eigenvalue of ``W``. Scaling
+    all blocks by one scalar sets the spectral radius exactly while keeping the pattern.
     """
     g = torch.Generator().manual_seed(seed)
     m = edge_index.shape[1]
@@ -138,7 +141,7 @@ def im_minus_jac_blocks(Wd: Tensor, edge_index: Tensor, Wl: Tensor, Wu: Tensor,
     ``s = None`` is the affine case ``J = W`` (``s = 1``). Returns ``(Adiag, Alower, Aupper)``
     in the :func:`nonsym_junction_solve` layout.
     """
-    n, b = Wd.shape[-3], Wd.shape[-1]
+    b = Wd.shape[-1]
     eye = torch.eye(b, dtype=Wd.dtype, device=Wd.device)
     if s is None:
         Adiag = eye - Wd
@@ -172,9 +175,9 @@ def neumann_adjoint(Wd: Tensor, edge_index: Tensor, Wl: Tensor, Wu: Tensor, g: T
                     K: int) -> Tensor:
     """``K``-term Neumann approximation of the adjoint solve ``(I - W^T) u = g``.
 
-    The standard iterative DEQ backward: ``u_{k+1} = W^T u_k + g``, i.e. ``u_K = sum_{k<K}
-    (W^T)^k g``. Converges like ``rho(W)^K`` -- the baseline the structured solve beats as
-    ``rho -> 1``.
+    A transparent iterative DEQ-backward baseline:
+    ``u_{k+1} = W^T u_k + g``, i.e. ``u_K = sum_{k<K} (W^T)^k g``. Its asymptotic
+    rate is governed by ``rho(W)^K``; non-normality affects constants and transients.
     """
     u = g
     term = g

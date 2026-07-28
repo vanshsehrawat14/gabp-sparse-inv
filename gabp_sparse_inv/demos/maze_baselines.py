@@ -1,33 +1,35 @@
-"""Matched-capacity long-range baselines for the grid maze (Track B / E4).
+"""Exploratory long-range baselines for the grid maze (Track B / E4).
 
 The grid maze (``maze_grid.py``) pits one global ``junction_solve`` (``GaBPMazeGrid``)
 against a deliberately myopic ``K``-hop averaging model (``LocalMazeGrid``). That is an
 *architectural ablation*: the local model is range-limited **by construction**, so its
 failure is structural -- not evidence the inverse buys a *capability*. This module adds
-**fair** long-range baselines that *can* route globally, to test the honest question:
+higher-capacity long-range baselines that *can* route globally, to test the descriptive
+question:
 
-    Does the exact selected inverse buy something a matched-or-over-matched universal
-    long-range learner cannot get from data?
+    How does the operator-containing model compare with these tested long-range learners
+    when trained on the same local inputs?
 
-Baselines (both share the same strictly-local per-node inputs ``[phi_v, deg_v, b_v]`` as
-``GaBPMazeGrid``, so the only difference is the long-range mechanism):
+Baselines (both share the same strictly local per-node inputs
+``[phi_v, deg_v, b_v]`` as ``GaBPMazeGrid``). They differ in architecture and
+capacity, so these are cross-architecture diagnostics; the within-architecture
+Jacobi intervention in ``maze_grid.py`` is the causal control:
   * ``GNNMaze`` -- ``depth`` rounds of (self + mean-neighbour) message passing with
-    residuals. A fair long-range operator (unlike the fixed ``K=2`` local model): with
+    residuals. A long-range operator (unlike the fixed ``K=2`` local model): with
     ``depth >= diameter`` it can route -- but that *is* an unrolled iterative solver, with
     ``O(diameter)`` depth and a ``depth``-hop receptive field.
   * ``TransformerMaze`` -- full self-attention over the ``n`` nodes with a non-parametric
-    2-D sinusoidal positional encoding. Global reach at every layer; the strongest fair
-    fixed-capacity baseline.
+    2-D sinusoidal positional encoding. It has global reach at every layer.
 
-Both have **>> the (65-param) GaBP encoder's** capacity, so "matched capacity" is the easy
-direction -- the test is whether the over-resourced learner still can't match the solve.
+Both have **>> the (65-param) GaBP encoder's** parameter count. This rules out simple
+parameter starvation, but it does not match architecture, optimization difficulty, or
+effective capacity. The within-architecture Jacobi intervention controls those factors.
 
-Two axes:
+Two axes (the pre-registration lives in ``docs/E4_BASELINES.md``):
   * **Extrapolation (headline).** The GaBP encoder is size-independent and the solve is
-    exact at any size, so weights trained on a small grid transfer and stay accurate on a
-    larger one. A fixed-capacity GNN/Transformer trained small should degrade as the test
-    diameter grows. ``evaluate_extrapolation`` trains at one size and evaluates every model
-    on a range of (larger) sizes by transferring the size-independent weights.
+    exact at any size, so weights trained on a small grid can transfer to a larger one.
+    ``evaluate_extrapolation`` tests whether the learned baselines degrade as test diameter
+    grows by training at one size and transferring size-independent weights.
   * **Capacity (control).** ``capacity_sweep`` varies a baseline's width at a fixed size to
     check the in-distribution gap does not close as capacity grows.
 
@@ -66,7 +68,7 @@ __all__ = [
 
 
 def count_params(model: nn.Module) -> int:
-    """Number of trainable parameters (the capacity-matching currency)."""
+    """Number of trainable parameters (a size control, not a capacity equivalence)."""
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
@@ -199,7 +201,8 @@ class GaBPResistance(GaBPMazeGrid):
     Same size-independent encoder as :class:`GaBPMazeGrid` (so weights transfer across sizes),
     but the readout is the deterministic effective-resistance formula. It *contains* the two
     selected-inverse ops the task needs, so it computes ``R`` near-exactly once the encoder
-    recovers the geometry -- the inductive-bias point, now for a non-linear inverse functional.
+    recovers the geometry. This is an operator-containment diagnostic, not evidence of an
+    inductive-bias effect at matched training fit.
     """
 
     def forward(self, feats: Tensor) -> Tensor:
@@ -239,6 +242,7 @@ def _transfer_params(dst: nn.Module, src: nn.Module) -> None:
 
 
 def train_model(model: nn.Module, feats: Tensor, y: Tensor, *, steps=300, lr=0.01) -> nn.Module:
+    model.train()
     opt = torch.optim.Adam(model.parameters(), lr=lr)
     for _ in range(steps):
         opt.zero_grad()
@@ -273,8 +277,18 @@ def evaluate_extrapolation(
     rr, cc = train_size
     _ei, feats_tr, y_tr = gen(rr, cc, n_train, seed=seed, eps=eps)
 
+    torch.manual_seed(seed)
+    models = build_models(
+        rr,
+        cc,
+        eps=eps,
+        hidden=hidden,
+        gnn_depth=gnn_depth,
+        tf_layers=tf_layers,
+        task=task,
+    )
     trained, params = {}, {}
-    for name, model in build_models(rr, cc, eps=eps, hidden=hidden, gnn_depth=gnn_depth, tf_layers=tf_layers, task=task).items():
+    for name, model in models.items():
         torch.manual_seed(seed)
         model = model.double()
         params[name] = count_params(model)
@@ -288,6 +302,7 @@ def evaluate_extrapolation(
         for name, fresh in build_models(tr, tc, eps=eps, hidden=hidden, gnn_depth=gnn_depth, tf_layers=tf_layers, task=task).items():
             fresh = fresh.double()
             _transfer_params(fresh, trained[name])  # size-independent weights transfer
+            fresh.eval()
             with torch.no_grad():
                 mse[(name, (tr, tc))] = float(torch.mean((fresh(feats_te) - y_te) ** 2))
     return mse, params
@@ -304,9 +319,8 @@ def extrapolation_curve(
     """Multi-seed extrapolation curve: median + per-seed (min, max) over ``seeds``.
 
     Runs :func:`evaluate_extrapolation` for each seed and aggregates. Returns ``(curve,
-    params)`` where ``curve[(name, size)] = (median, lo, hi)`` over seeds. The headline read is
-    that the GaBP median stays flat and below every baseline at every size, and that the
-    *spreads do not overlap* at the largest grid -- a seed-robust separation, not a lucky seed.
+    params)`` where ``curve[(name, size)] = (median, lo, hi)`` over seeds. The min--max range
+    is a descriptive summary of the supplied seeds, not an uncertainty interval.
     """
     runs = [evaluate_extrapolation(train_size, test_sizes, seed=s, task=task, **kw) for s in seeds]
     mses = [r[0] for r in runs]
@@ -334,6 +348,7 @@ def capacity_sweep(size=(6, 6), hiddens=(16, 32, 64), *, model="transformer", ep
         torch.manual_seed(seed)
         m = (GNNMaze(rr, cc, hidden=h) if model == "gnn" else TransformerMaze(rr, cc, hidden=h)).double()
         train_model(m, feats_tr, y_tr, steps=steps)
+        m.eval()
         with torch.no_grad():
             out[h] = (count_params(m), float(torch.mean((m(feats_te) - y_te) ** 2)))
     return out

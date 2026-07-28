@@ -1,5 +1,19 @@
 # Matched-capacity long-range benchmark (Track B / E4)
 
+> **Editorial correction (2026-07-28).** The historical
+> `evaluate_extrapolation` runs below instantiated model weights before setting
+> the advertised seed. Their numerical tables are therefore not reproducible
+> under the stated seeds and must not support a paper claim. The generator now
+> seeds before model construction; the corrected three-seed routed-field
+> record is
+> `paper/attainability/figures/data/maze_extrapolation.csv`. Its medians give
+> GNN/`gabp` and Transformer/`gabp` error ratios of 212--903 at `6x6` and
+> 9,448--11,242 at `10x10`. This correction affects the exploratory
+> cross-architecture diagnostic, not the separately frozen matched-fit HOLDOUT
+> study or the within-architecture Jacobi sweep. The historical preregistration
+> and first-read text is retained below rather than rewritten.
+>
+
 **Current scientific status (2026-07-22).** This file records exploratory controls that
 motivated the preregistered study; it is not the final verdict. The matched-fit HOLDOUT
 analysis found that the truncated comparators generally did not attain comparable training

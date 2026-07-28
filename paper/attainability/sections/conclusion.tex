@@ -9,12 +9,13 @@ has no robust accuracy advantage over a well-ordered dense solve.
 
 The tested hypothesis was that exact structured computation acts as an
 inductive bias among models with comparable training fit. In both
-pre-registered probes over $30$ held-out seeds, the finite alternative fails
+preregistered probes over $30$ held-out seeds, the finite alternative fails
 to attain comparable fit in the high-difficulty cells: bounded Jacobi sweeps
 in Section~\ref{sec:maze} and finite Neumann adjoints in
-Section~\ref{sec:deq}. The diagnostic test-error ratios range from roughly
-$600\times$ to $28{,}000\times$, but the matched-fit result attributes these
-gaps to attainability, not to a preference among equal-fit solutions. The
+Section~\ref{sec:deq}. In a separate three-seed exploratory diagnostic, the
+tested cross-architecture error ratios range from $212\times$ to
+$11{,}242\times$, but the matched-fit result attributes these gaps to
+attainability, not to a preference among equal-fit solutions. The
 DEQ low-difficulty control fails its relative-gap clause. The maze
 extrapolation-floor comparison passes, but the separate in-distribution
 \texttt{floor\_sound} diagnostic fails, so maze NC2 remains ambiguous. A
@@ -24,8 +25,8 @@ computation expands the attainable regime on these controlled, solve-shaped
 tasks, while the inductive-bias explanation is not supported.
 
 The limits are explicit: the evidence is at controlled CPU scale and confined
-to low-treewidth (1-D and quasi-2-D) problems. Exact selected uncertainty,
-implicit gradients near difficult spectra, and certified local-versus-global
-computation remain separate questions requiring mature solver baselines and
+to low-treewidth (one-dimensional and quasi-two-dimensional) problems. Exact
+selected uncertainty and implicit gradients near difficult spectra remain
+separate questions requiring mature solver baselines and
 their own protocols (Section~\ref{sec:program}). The results do not extend
 beyond those measured regimes.

@@ -2,63 +2,66 @@
 \label{sec:related}
 
 \paragraph{The exact engine.}
-The Takahashi equations \cite{takahashi1973} and Erisman--Tinney
-\cite{erismantinney1975} compute inverse entries on the Cholesky factor's
-pattern without the full inverse; SelInv \cite{lin2011selinv} and PEXSI
-\cite{lin2013pexsi} do this for general sparse SPD and Hermitian matrices via
+The Takahashi equations \citep{takahashi1973} and Erisman--Tinney
+\citep{erismantinney1975} compute inverse entries on the Cholesky factor's
+pattern without the full inverse; SelInv \citep{lin2011selinv} and the pole
+expansion and selected inversion method (PEXSI)
+\citep{lin2013pexsi} do this for general sparse SPD and Hermitian matrices via
 the elimination tree; Gaussian belief propagation is the same
 collect/distribute recurrence and is exact on trees
-\cite{weiss2001correctness,bickson2008gaussian}. Recent accelerator systems
+\citep{weiss2001correctness,bickson2008gaussian}. Recent accelerator systems
 include \texttt{Serinv} for block-tridiagonal arrowhead matrices
-\cite{maillou2025serinv} and tile-parallel selected inversion for structured
-matrices \cite{fattah2025stiles}. This work is a reference PyTorch
+\citep{maillou2025serinv} and tile-parallel selected inversion for structured
+matrices \citep{fattah2025stiles}. This work is a reference PyTorch
 implementation, not a performance competitor to those systems, and claims
 nothing new for the forward recurrence.
 
 \paragraph{Differentiating selected inversion.}
 The reverse-mode adjoint of the matrix inverse,
 $\cotan{A}=-\inv{A}\cotan{G}\inv{A}$, is folklore
-\cite{dwyer1948symbolic,giles2008collected}; that its evaluation costs a
+\citep{dwyer1948symbolic,giles2008collected}; that its evaluation costs a
 constant factor of the forward is the cheap-gradient principle
-\cite{baur1983complexity}; and differentiating a sparse log-determinant
-through selected inversion on the same factorization is done by
-\cite{zhu2019sparse} and is standard in GMRF and sparse-Cholesky learning
-\cite{rue2005gmrf}. TMB has long combined sparse latent-Gaussian calculations,
+\citep{baur1983complexity}. \citet{zhu2019sparse} differentiate a sparse
+log-determinant through selected inversion on the same factorization; this is
+standard in GMRF and sparse-Cholesky learning \citep{rue2005gmrf}. Template
+Model Builder (TMB) has
+long combined sparse latent-Gaussian calculations,
 automatic differentiation, and Laplace approximation at large scale
-\cite{kristensen2016tmb}. These results provide the mathematical background for
+\citep{kristensen2016tmb}. These results provide the mathematical background for
 Remark~\ref{rem:scaffold}.
 
 \paragraph{Differentiable sparse linear algebra.}
 Schwarz--Schur Involution batches direct sparse subdomain operations on GPUs
 and supplies a differentiable solver for PDE-shaped problems
-\cite{wang2025schwarz}. \texttt{torch-sla} unifies differentiable direct,
+\citep{wang2025schwarz}. \texttt{torch-sla} unifies differentiable direct,
 iterative, nonlinear, and eigenvalue solvers across CPU, GPU, and distributed
-backends \cite{torchsla2026}. These systems make a generic
+backends \citep{torchsla2026}. These systems make a generic
 ``differentiable sparse solver'' claim untenable. The narrower software
 surface here is selected covariance entries, log determinant, solve, and
 sampling, including a static-pattern non-symmetric selected inverse. The
 paper's scientific contribution is
-instead the pre-registered account
+instead the preregistered account
 (Sections~\ref{sec:maze}--\ref{sec:deq}) of why exactness wins on its
 solve-shaped probes: attainability against bounded-reach or biased-gradient
 alternatives, not an inductive-bias effect. Approximate selected-covariance
-methods with estimable confidence bounds \cite{siden2017covariance} are
+methods with estimable confidence bounds \citep{siden2017covariance} are
 important competitors for the prospective uncertainty experiment.
 
 \paragraph{Where the claim lives.}
 The original motivation drew on the lineage of inductive bias for
 generalization and size or length extrapolation; the evidence in this paper
-instead lands on the expressivity limits of bounded-depth message passing --
-the over-squashing line \cite{alon2021bottleneck,topping2022understanding}
-and graph rewiring \cite{topping2022understanding,karhadkar2023fosr},
-implicit and steady-state GNNs \cite{gu2020implicit}, and graph transformers
-\cite{rampasek2022recipe,shirzad2023exphormer} -- since the matched-fit
-result says the alternatives cannot represent or attain the target, an
+instead lands on the expressivity limits of bounded-depth message passing,
+including the over-squashing line
+\citep{alon2021bottleneck,topping2022understanding}
+and graph rewiring \citep{topping2022understanding,karhadkar2023fosr},
+implicit and steady-state graph neural networks \citep{gu2020implicit}, and
+graph transformers \citep{rampasek2022recipe,shirzad2023exphormer}. Since the
+matched-fit result says the tested alternatives do not attain the target, the
+evidence supports an
 expressivity/attainability story rather than a generalization-preference
-one. Section~\ref{sec:program} engages this literature directly as the
-competitor set for the resolvent-layer experiment (E3), which is explicitly
-an expressivity-separation claim, not an inductive-bias claim. The consumers
+one. These methods are the relevant comparator set for any future
+expressivity-separation claim. The consumers
 that make a differentiable selected inverse useful, deep equilibrium models
-\cite{bai2019deep} and delta-rule linear-attention layers
-\cite{yang2024parallelizing}, supply the structured symmetric and
+\citep{bai2019deep} and delta-rule linear-attention layers
+\citep{yang2024parallelizing}, supply the structured symmetric and
 non-symmetric solves of Section~\ref{sec:deq} and the appendix.

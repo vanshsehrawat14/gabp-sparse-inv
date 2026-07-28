@@ -1,22 +1,24 @@
 \section{Introduction}
 \label{sec:intro}
 
-Anywhere a model relies on self-consistency, soft constraint satisfaction, or a
-fixed point, it pays for a matrix inverse. Deep equilibrium models
-differentiate through an equilibrium with the implicit function theorem
-\cite{bai2019deep}; linear-attention and delta-rule layers mix tokens with a
-triangular solve \cite{yang2024parallelizing}; implicit and steady-state graph
-layers solve for a fixed point. In each case the forward pass, and almost
-always the backward pass, is a linear solve. The general inverse is
-$\bigO(n^3)$. When the coupling is sparse on a low-treewidth graph, the
+Many models built around self-consistency, soft constraints, or fixed points
+require a linear solve. Deep equilibrium (DEQ) models differentiate through an
+equilibrium with the implicit function theorem \citep{bai2019deep};
+linear-attention and delta-rule layers mix tokens with a triangular solve
+\citep{yang2024parallelizing}; implicit and steady-state graph layers solve for
+a fixed point. In these examples, either the forward computation or the
+implicit backward contains a linear solve. For an $N\times N$ matrix, a
+conventional dense factorization costs $\bigO(N^3)$. When the coupling is
+sparse on a low-treewidth graph, the
 \emph{selected} inverse, meaning only the blocks of $\inv{A}$ on the factor's
-filled sparsity pattern, is computable in $\bigO(n)$ on fixed-width families
-and $\bigO(n^{1.5})$ on 2-D
-grids via Gaussian belief propagation and the Takahashi recurrence
-\cite{takahashi1973,erismantinney1975}, never forming the dense inverse.
+filled sparsity pattern, is computable in $\bigO(n)$ at fixed block size and
+elimination width
+and $\bigO(n^{1.5})$ on two-dimensional grids with nested dissection and the
+Takahashi recurrence \citep{george1973nested,takahashi1973,erismantinney1975},
+never forming the dense inverse.
 Recent selected-inversion and differentiable-sparse-solver systems establish
 that this is an active implementation area
-\cite{maillou2025serinv,fattah2025stiles,wang2025schwarz,torchsla2026};
+\citep{maillou2025serinv,fattah2025stiles,wang2025schwarz,torchsla2026};
 the present paper does not claim a new forward algorithm or a performance
 record.
 
@@ -24,8 +26,8 @@ record.
 Sparse direct computation removes iteration truncation, but it does not imply
 greater floating-point accuracy. On the finite precision grid in
 Section~\ref{sec:numerics}, selected inversion and a well-ordered dense solve
-perform comparably when scored on the selected pattern against an fp64
-oracle. The question examined here is instead:
+perform comparably when scored on the selected pattern against a 64-bit
+floating-point (fp64) oracle. The question examined here is instead:
 \begin{quote}
 \emph{When does the exactness of a structured linear-algebra primitive change
 what a neural network can learn or generalize, as opposed to merely how fast
@@ -35,25 +37,27 @@ or how accurately it computes a fixed quantity?}
 \paragraph{Hypothesis and adjudicated outcome.}
 The hypothesis was that an exact, size-agnostic global solve supplies an
 inductive bias: among models with comparable training fit, it selects a
-solution that generalizes better. Two pre-registered probes test this on
+solution that generalizes better. Two preregistered probes test this on
 $30$ held-out seeds with matched-fit rules
 (\url{archive/docs/CONFIRMATORY_RESULTS.md}). In the high-difficulty cells,
 the finite alternatives match the exact arm's training fit in only
-$0$--$23\%$ of seeds, below the pre-registered $60\%$ bar. The equal-fit
+$0$--$23.3\%$ of seeds, below the preregistered $60\%$ bar. The equal-fit
 comparison required by the hypothesis does not arise. The first-read
 evidence therefore supports an attainability/optimization interpretation,
 not an inductive-bias effect.
 \begin{itemize}
   \item \emph{Size extrapolation.} A $65$-parameter model containing the
         exact solve remains accurate as the routed-field grid grows, while
-        larger GNN and Transformer baselines approach the predict-the-mean
+        larger graph neural network (GNN) and Transformer baselines approach
+        the predict-the-mean
         floor. Replacing only the solve with $K$ Jacobi sweeps produces a
-        monotone reach-dependent gap, but none of the tested truncations
-        attains the exact arm's training fit (Section~\ref{sec:maze}).
+        monotone reach-dependent gap, while the preregistered $K=7$ arm
+        does not attain the exact arm's training fit
+        (Section~\ref{sec:maze}).
   \item \emph{Stiff-regime training.} On four diagnostic cells, the
         sparse-direct implicit backward agrees with a dense fp64 oracle to
         within $1.1\times10^{-12}$, whereas finite Neumann adjoints degrade
-        as $\rho(J)$ approaches one. In the pre-registered training study,
+        as $\rho(J)$ approaches one. In the preregistered training study,
         the iterative-adjoint arm does not attain comparable fit in the
         stiff cells (Section~\ref{sec:deq}).
 \end{itemize}
@@ -63,16 +67,16 @@ extrapolation-floor comparison passes, but a separate in-distribution
 
 \paragraph{Contribution.}
 The exact forward engine is classical
-\cite{takahashi1973,erismantinney1975,lin2011selinv,weiss2001correctness}.
+\citep{takahashi1973,erismantinney1975,lin2011selinv,weiss2001correctness}.
 That its differentiable reverse schedule has forward-order structural work
 is also not new: selected inversion is the projected gradient of a log-determinant
-\cite{zhu2019sparse,dwyer1948symbolic}, so reverse mode costs a constant
-multiple of the forward \cite{baur1983complexity}. Both are stated once, as
+\citep{zhu2019sparse,dwyer1948symbolic}, so reverse mode costs a constant
+multiple of the forward \citep{baur1983complexity}. Both are stated once, as
 mathematical background (Section~\ref{sec:theorem}). The contributions are:
 \begin{enumerate}
   \item an integrated PyTorch operator family for differentiable selected
         inversion and its solve siblings;
-  \item two pre-registered matched-fit studies that distinguish an
+  \item two preregistered matched-fit studies that distinguish an
         equal-fit preference from a failure to attain comparable training
         fit; and
   \item a boundary analysis separating the measured result from claims that
@@ -81,12 +85,14 @@ mathematical background (Section~\ref{sec:theorem}). The contributions are:
 \end{enumerate}
 
 \paragraph{Scope.}
-The present evidence is at controlled, CPU scale: routing grids up to
+The present evidence comes from controlled central processing unit (CPU)
+experiments: routing grids up to
 $10\times10$ for the baseline comparison and up to $48\times48$ for the
 held-out matched-compute control, and deep-equilibrium fixed points at
 $n\le16$. The structural win is confined
-to low-treewidth (1-D and quasi-2-D) problems; general 3-D problems have
-prohibitive frontal growth for the claimed direct regime. The benchmark-scale
+to low-treewidth (one-dimensional and quasi-two-dimensional) problems;
+general three-dimensional problems can have frontal growth that makes the
+claimed direct regime impractical at scale. The benchmark-scale
 questions in Section~\ref{sec:program} require
 separate protocols, mature sparse-direct backends, and matched accuracy/cost
 comparisons; they are not evidence in this paper.

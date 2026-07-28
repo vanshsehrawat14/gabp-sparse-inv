@@ -1,9 +1,9 @@
-\section{The selected-inverse schedule and its adjoint (full statement)}
+\section{The tree selected-inverse schedule and its projected adjoint}
 \label{app:theorem}
 
 This appendix states the classical machinery used in
-Section~\ref{sec:theorem}: the recurrences that make the layer exact, global,
-and cheaply differentiable.
+Section~\ref{sec:theorem}: the tree recurrence that makes the layer exact and
+global, and the projected-Hessian argument for its first-order adjoint.
 
 \subsection{Forward: a two-pass schedule on the elimination tree}
 
@@ -24,8 +24,9 @@ and $\Gblock{r}{r} = \inv{\piv{r}}$; \textbf{(c) distribute
 \]
 This produces every block of $\selinv(A)$ exactly in
 $\bigO((|V|+|E|)\,b^3)$ time and $\bigO((|V|+|E|)\,b^2)$ memory. Steps
-(b)--(c) are the Gaussian-BP collect/distribute recurrence and equal the
-Takahashi recurrence.
+(b)--(c) are the tree specialization of the classical Gaussian-BP
+collect/distribute and Takahashi recurrences
+\citep{weiss2001correctness,takahashi1973}.
 \end{theorem}
 
 \subsection{Why the derivative has a same-pattern reverse schedule}
@@ -37,13 +38,14 @@ matrices, $\selinv_{\pat}(A) = P_{\pat}\nabla_A \log\det A$.
 Consequently the Fr\'echet derivative
 $D\,\selinv|_A = P_{\pat}\,L_A\,\iota_{\pat}$ (with
 $L_A: X\mapsto -\inv{A}X\inv{A}$ the derivative of inversion and $P_{\pat}$
-the on-pattern projection) is self-adjoint: it is the projected Hessian of a
+the on-pattern projection, and $\iota_{\pat}$ the inclusion of symmetric
+on-pattern perturbations) is self-adjoint: it is the projected Hessian of a
 scalar potential, and a gradient field has a symmetric Jacobian (symmetry of
 second derivatives).
-Hence the reverse-mode map $\cotan{G}\mapsto\cotan{A}$ equals the forward
-derivative map, and is realized by the reverse of the schedule of
-Theorem~\ref{thm:tree-forward} at the same structural work
-(cheap-gradient principle \cite{baur1983complexity}).
+Hence, for the tree schedule above, the reverse-mode map
+$\cotan{G}\mapsto\cotan{A}$ equals the forward derivative map and is realized
+by reversing the schedule of Theorem~\ref{thm:tree-forward} at the same structural work
+(cheap-gradient principle \citep{baur1983complexity}).
 \end{theorem}
 
 \begin{remark}[Self-adjoint up to transpose; the non-symmetric correction]
@@ -93,7 +95,7 @@ which is why they are not in the body. Data:
 \paragraph{DeltaNet chunk inverse (a drop-in capability note).}
 The differentiable triangular chunk inverse $(I-A)^{-1}$ drops, unchanged,
 into a chunked delta-rule linear-attention layer
-\cite{yang2024parallelizing}: the within-chunk delta rule \emph{is} that
+\citep{yang2024parallelizing}: the within-chunk delta rule \emph{is} that
 triangular solve. It reproduces the token-by-token delta rule exactly, and
 its analytic backward equals autograd through the whole multi-chunk layer.
 Because the forward is identical by construction, this demonstrates
@@ -106,37 +108,59 @@ evidence.
 \section{Confirmatory evidence chronology}
 \label{app:integrity}
 
-The matched-fit protocol used for this paper was frozen at repository commit
-\texttt{00c0bf5} on 29 June 2026 before the first aggregate read of HOLDOUT
-seeds 1000--1029. The first-read verdict and per-seed records are
-\url{archive/docs/CONFIRMATORY_RESULTS.md} and
-\url{archive/results/CONFIRMATORY/matched_fit_taskA/}. Those records,
-and only those records, support the paper's confirmatory interpretation.
+At repository commit \evidencecommit{}, the matched-fit protocol was frozen
+on 29 June 2026, before the first aggregate read of HOLDOUT seeds 1000--1029.
+The evidentiary records are \url{archive/docs/CONFIRMATORY_RESULTS.md} and
+\url{archive/results/CONFIRMATORY/matched_fit_taskA/}; only these support the
+paper's confirmatory interpretation.
 
-A separate branch later froze a bootstrap protocol on 30 June and reused the
-same HOLDOUT seeds after the matched-fit read. Its branch-local statement that
-the seeds were untouched was false in wall-clock chronology. That second use
-cannot be an independent confirmation; this manuscript excludes its verdict
-and effect-size claims. Both protocol files retain dated provenance notes so
-the contradiction remains visible.
+On 30 June, a later branch froze a bootstrap protocol and reused the same
+HOLDOUT seeds. Its assertion that the seeds were untouched is false in
+wall-clock chronology, so that use is not an independent confirmation and
+its verdict and effect-size claims are excluded. Both protocol files retain
+dated provenance notes.
 
-The first-read \texttt{summary.json} has a top-level
+The first-read \texttt{summary.json} records a top-level
 \texttt{run\_tag=CONFIRMATORY}, the HOLDOUT seed list, and a confirmatory
-output path, but two nested payloads say \texttt{EXPLORATORY}. Inspection of
-\url{archive/bench/matched_fit_taskA.py} shows those nested labels came
-from a module-level constant while the seed guard and output routing used the
-confirmatory function argument. This is a metadata defect, not a changed
-metric, and is disclosed rather than silently repaired in the frozen record.
+output path, but two nested payloads say \texttt{EXPLORATORY}. In
+\url{archive/bench/matched_fit_taskA.py}, those labels come from a module-level
+constant; seed guarding and output routing use the confirmatory function
+argument. This metadata defect does not change a metric and remains disclosed
+in the frozen record.
 
-The maze summary contains a second adjudication ambiguity. Its
-\texttt{floor\_sound} field is \texttt{false}: at the in-distribution size,
-the $K=256$ floor arm's mean evaluation-loss gap from exact is
-$2.70\times10^{-5}$, versus a $3.07\times10^{-6}$ threshold from the
-implementation's $5\%$ diagnostic. The results prose nevertheless marked
-maze NC2 as passing because the $K=256$ extrapolation gaps were 2--4 orders
-below the $K=7$ gaps, the narrower check implemented by
+The maze summary contains a second ambiguity. Its \texttt{floor\_sound} field
+is \texttt{false}: at the in-distribution size, the $K=256$ floor arm's mean
+evaluation-loss gap from exact is $2.70\times10^{-5}$, versus the
+implementation's $3.07\times10^{-6}$ threshold. Results prose nevertheless
+marked maze NC2 as passing because its mean absolute extrapolation gaps were
+3.8--4.6 orders below the $K=7$ gaps, the narrower check implemented by
 \texttt{confirmatory\_decision}. The preregistration required collapse in
 ``function/extrapolation distance'' and did not specify which of these
 non-equivalent summaries controlled. This manuscript does not retroactively
 choose the favorable one: maze NC2 is ambiguous, and no positive conclusion
 depends on treating it as a pass.
+
+A third defect is structural and was found in a 2026-07-25 re-audit of the
+frozen adjudication code. The preregistration defines
+$F=\max(2M_{\mathrm{null}},2\times10^{-6})$, where
+$M_{\mathrm{null}}$ is the near-exact cell's own matched function distance,
+and applies $F$ to both that cell's C2 collapse test and the rival
+inductive-bias branch. At high difficulty, $K=32$ is the only arm reaching
+the $60\%$ matchability bar and thus the only adjudicable equal-fit arm; it
+also sets $M_{\mathrm{null}}$, so its distance is compared with twice itself.
+In
+\url{archive/bench/matched_fit_taskA.py}, the verdict is \textsc{survive} when
+the matched distance's confidence interval (CI) lower bound exceeds $F$,
+\textsc{collapse} when its mean is at most $F$, and \textsc{ambiguous}
+otherwise. With $F=2\times$ that mean, \textsc{collapse} is forced and
+\textsc{survive} is unreachable. C2's recorded pass is therefore
+uninformative, and the inductive-bias branch could not have fired on these
+data regardless of the measurements. Measured instead against the
+preregistration's absolute optimization-noise scale $2\times10^{-6}$,
+calibrated on development seeds where the largest silent-cell matched distance
+was $1.46\times10^{-6}$, the two near-exact distances
+($9.11\times10^{-4}$ at $\rho=0.98$ and $1.83\times10^{-4}$ at $\rho=0.99$)
+are $455\times$ and $91\times$ larger, and the $\rho=0.98$ CI lower bound
+($3.84\times10^{-4}$) also exceeds it. We report the frozen rule unchanged.
+Thus, the evidence does not support an inductive-bias reading where the finite
+arms cannot fit and leaves it untested where they can.

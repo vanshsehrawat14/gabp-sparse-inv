@@ -2,8 +2,8 @@
 
 These assert the **machine-independent** facts of the benchmark harness -- not the
 hardware/seed-dependent MSE numbers (those are diagnostics from `run_benchmark`). The tests check
-that the fair baselines are over-parameterised relative to the tiny GaBP encoder (so a
-surviving gap cannot be a capacity artifact), that the size-independent weights transfer
+that the baselines are over-parameterised relative to the tiny GaBP encoder (so parameter
+count alone does not starve them), that the size-independent weights transfer
 across grid sizes (the extrapolation mechanism works mechanically), and that the exact
 solve still beats the predict-mean baseline on an *extrapolated* (larger) grid.
 """
@@ -14,7 +14,6 @@ import math
 
 import torch
 
-from gabp_sparse_inv import grid_edges
 from gabp_sparse_inv.demos.maze_baselines import (
     build_models,
     count_params,
@@ -28,9 +27,9 @@ torch.manual_seed(0)
 
 
 def test_baselines_over_parameterised_vs_gabp():
-    # Capacity matching is the easy direction: the GaBP "model" is just an 81-param encoder
-    # plus the parameter-free solve, so any fair baseline dwarfs it. Gate that so a measured
-    # gap is never explainable as "the baseline was starved of capacity".
+    # The GaBP model is a 65-parameter encoder plus the parameter-free solve, so each
+    # cross-architecture baseline dwarfs it. Gate the conservative parameter-count control;
+    # it does not remove architecture or optimization differences.
     models = build_models(6, 6)
     p = {k: count_params(m) for k, m in models.items()}
     assert p["gnn"] >= p["gabp"]

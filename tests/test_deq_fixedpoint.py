@@ -3,8 +3,8 @@
 The deep-equilibrium backward is a non-symmetric solve with the equilibrium Jacobian
 ``(I - J)``; this module shows it is (a) **exact** via the structured selected-inverse
 factorization (matches a dense implicit-diff oracle and autograd through an unrolled solver to
-machine precision) and (b) **robust as ``rho(J) -> 1``**, where the standard iterative
-(Neumann) backward degrades like ``rho^K``. Both the affine equilibrium (autograd through
+machine precision) and (b) **accurate on the tested cells as ``rho(J) -> 1``**, where the
+finite Neumann backward degrades. Both the affine equilibrium (autograd through
 ``nonsym_junction_solve``) and the nonlinear DEQ (custom IFT backward) are gated here.
 """
 
