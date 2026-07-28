@@ -35,7 +35,7 @@ size and $9{,}448\times$--$11{,}242\times$ at $10\times10$. These are
 diagnostic comparisons, not lower bounds on what other GNN or Transformer
 architectures could attain.
 
-\begin{table}[H]
+\begin{table}[htbp]
   \centering
   \caption{Size-extrapolation mean-squared error (MSE) after training at
   $6\times6$. The
@@ -57,7 +57,7 @@ architectures could attain.
   \end{tabular}
 \end{table}
 
-\begin{figure}[H]
+\begin{figure}[htbp]
   \centering
   \includegraphics[width=0.72\textwidth]{figures/maze_extrapolation.pdf}
   \caption{Test error vs.\ grid size. Lines are medians over seeds 0--2, and
@@ -67,6 +67,7 @@ architectures could attain.
   \url{paper/attainability/figures/data/maze_extrapolation.csv}.}
   \label{fig:maze}
 \end{figure}
+\FloatBarrier
 
 \paragraph{Within-architecture control: the effect is the solve's globality, not the
 architecture.}
@@ -95,7 +96,7 @@ finite truncations tested do not reproduce the globally coupled target.
 It is not evidence that exactness biases training toward a
 better solution among equally attainable ones.
 
-\begin{table}[H]
+\begin{table}[htbp]
   \centering
   \caption{Within-architecture Jacobi-budget control at $6\times6$; only the solve
   changes. Central processing unit (CPU), 64-bit floating-point (fp64), seed
@@ -112,7 +113,7 @@ better solution among equally attainable ones.
   \end{tabular}
 \end{table}
 
-\begin{figure}[H]
+\begin{figure}[htbp]
   \centering
   \includegraphics[width=0.72\textwidth]{figures/maze_causal.pdf}
   \caption{Within-architecture Jacobi-budget control. Test error decreases with
@@ -121,6 +122,7 @@ better solution among equally attainable ones.
   \url{paper/attainability/figures/data/maze_causal.csv}.}
   \label{fig:maze-causal}
 \end{figure}
+\FloatBarrier
 
 \paragraph{Preregistered matched-fit result on held-out seeds.}
 The confirmatory test ran the routed-field task at sizes $6\times6$ to
@@ -212,7 +214,7 @@ Separate unit tests validate the nonlinear implicit-function-theorem
 backward against autograd through an unrolled solver
 (\url{tests/test_deq_fixedpoint.py}).
 
-\begin{table}[H]
+\begin{table}[htbp]
   \centering
   \caption{Parameter-gradient relative error against a dense
   implicit-differentiation oracle as $\rho(J)\to1$. One deterministic instance
