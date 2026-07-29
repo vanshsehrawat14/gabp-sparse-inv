@@ -57,9 +57,10 @@ architectures could attain.
   \end{tabular}
 \end{table}
 
-\begin{figure}[htbp]
+\providecommand{\mazeextrapolationwidth}{0.72\textwidth}
+\begin{figure}[t]
   \centering
-  \includegraphics[width=0.72\textwidth]{figures/maze_extrapolation.pdf}
+  \includegraphics[width=\mazeextrapolationwidth]{figures/maze_extrapolation.pdf}
   \caption{Test error vs.\ grid size. Lines are medians over seeds 0--2, and
   bands span the corresponding minima and maxima. The exact-solve median
   remains below $10^{-4}$; the tested GNN and Transformer approach the
@@ -113,16 +114,16 @@ better solution among equally attainable ones.
   \end{tabular}
 \end{table}
 
+\providecommand{\mazecausalwidth}{0.72\textwidth}
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.72\textwidth]{figures/maze_causal.pdf}
+  \includegraphics[width=\mazecausalwidth]{figures/maze_causal.pdf}
   \caption{Within-architecture Jacobi-budget control. Test error decreases with
   Jacobi depth $K$, but the finite variants do not attain the exact arm's
   training fit. Data:
   \url{paper/attainability/figures/data/maze_causal.csv}.}
   \label{fig:maze-causal}
 \end{figure}
-\FloatBarrier
 
 \paragraph{Preregistered matched-fit result on held-out seeds.}
 The confirmatory test ran the routed-field task at sizes $6\times6$ to
@@ -140,10 +141,15 @@ the confirmatory arm, supporting an attainability reading rather than a
 preference among equally fit models. The
 as-trained gap also shrinks with size ($8.17\times10^{-2}$ at size $6$ to
 $1.30\times10^{-3}$ at size $48$), so there is no growing-extrapolation
-signal beyond the attainability gap itself. Full verdict and per-seed
-records: \url{archive/docs/CONFIRMATORY_RESULTS.md} (Maze section),
+signal beyond the attainability gap itself.
+\providecommand{\tmlrevidencestart}{}
+\providecommand{\tmlrevidenceend}{}
+\tmlrevidencestart
+Full verdict and per-seed records:
+\url{archive/docs/CONFIRMATORY_RESULTS.md} (Maze section),
 \url{archive/results/CONFIRMATORY/matched_fit_taskA/maze_matched_fit.json},
 and \url{archive/results/CONFIRMATORY/matched_fit_taskA/maze_seeds/}.
+\tmlrevidenceend
 The $K=256$ floor arm's mean absolute extrapolation gaps are 3.8--4.6 orders
 below the $K=7$ gaps, which is the comparison the frozen results prose used to mark
 maze NC2 as passing. However, the same first-read JSON records
