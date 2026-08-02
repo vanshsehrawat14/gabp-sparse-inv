@@ -7,7 +7,9 @@ The Takahashi equations \citep{takahashi1973} and Erisman--Tinney
 pattern without the full inverse; SelInv \citep{lin2011selinv} and the pole
 expansion and selected inversion method (PEXSI)
 \citep{lin2013pexsi} do this for general sparse SPD and Hermitian matrices via
-the elimination tree; Gaussian belief propagation is the same
+the elimination tree, and \citet{jacquelin2018pselinv} carry the same
+distributed algorithm to non-symmetric $A$ with the selection confined by the
+pattern of $A\T$; Gaussian belief propagation is the same
 collect/distribute recurrence and is exact on trees
 \citep{weiss2001correctness,bickson2008gaussian}. Recent accelerator systems
 include \texttt{Serinv} for block-tridiagonal arrowhead matrices
@@ -35,10 +37,16 @@ Schwarz--Schur Involution batches direct sparse subdomain operations on GPUs
 and supplies a differentiable solver for PDE-shaped problems
 \citep{wang2025schwarz}. \texttt{torch-sla} unifies differentiable direct,
 iterative, nonlinear, and eigenvalue solvers across CPU, GPU, and distributed
-backends \citep{torchsla2026}. These systems make a generic
-``differentiable sparse solver'' claim untenable. The narrower software
-surface here is selected covariance entries, log determinant, solve, and
-sampling, including a static-pattern non-symmetric selected inverse. The
+backends \citep{torchsla2026}. Closest to the operator surface here,
+\citet{boudaoud2026adelia} register a hand-derived \texttt{custom\_vjp} in JAX
+covering factorization, triangular solve, and selected inversion, for the INLA
+objective on symmetric block-tridiagonal arrowhead precision matrices. These
+systems make a generic ``differentiable sparse solver'' claim untenable, and a
+differentiable selected inverse is not by itself unoccupied. The narrower
+software surface here is selected covariance entries, log determinant, solve,
+and sampling on a general filled pattern, exposed as a trainable PyTorch layer
+and including a static-pattern non-symmetric selected inverse rather than a
+symmetric inference backend. The
 paper's scientific contribution is
 instead the preregistered account
 (Sections~\ref{sec:maze}--\ref{sec:deq}) of why exactness wins on its
@@ -64,4 +72,13 @@ expressivity-separation claim. The consumers
 that make a differentiable selected inverse useful, deep equilibrium models
 \citep{bai2019deep} and delta-rule linear-attention layers
 \citep{yang2024parallelizing}, supply the structured symmetric and
-non-symmetric solves of Section~\ref{sec:deq} and the appendix.
+non-symmetric solves of Section~\ref{sec:deq} and the appendix. That
+literature also argues the other way: Jacobian-free backpropagation drops the
+Jacobian term outright and reports accuracy competitive with prior implicit
+networks at matched parameter count \citep{fung2022jfb}, and phantom gradients
+report an inexact update direction that is empirically preferable
+\citep{geng2021training}. Neither estimator is a fixed-$K$ Neumann truncation
+and neither is evaluated with $\rho(J)$ near one, which is where
+Section~\ref{sec:deq} places its hard cells. The attainability reading is
+scoped to that estimator in that regime, not to inexact implicit gradients in
+general.

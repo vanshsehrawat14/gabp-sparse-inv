@@ -1,3 +1,42 @@
+> **EDITORIAL NOTE (2026-07-22; the frozen result below is unchanged).** This
+> matched-fit run was the first aggregate read of HOLDOUT seeds `1000-1029` and is the only
+> confirmatory evidence used by the current Paper 1 manuscript. A different branch reused
+> those seeds on 2026-06-30 for a bootstrap analysis after this read; that later analysis is
+> not an independent confirmation and its verdict/effect-size claims are excluded from the
+> paper. In the first-read `summary.json`, the top-level tag and path are `CONFIRMATORY`, but
+> the nested DEQ/maze payloads say `EXPLORATORY`: `matched_fit_taskA.py` returned a
+> module-level constant in those nested fields even though its seed guard and output routing
+> used the confirmatory argument. This is a provenance-label defect, not a scalar
+> recomputation. A strict final audit found one further ambiguity: the maze JSON records
+> `floor_sound: false` at the in-distribution size (mean `K=256` minus exact evaluation-loss
+> gap `2.70e-5`, 44% of exact's mean loss, versus the code's 5% diagnostic), while the frozen
+> prose below marks NC2 pass using only the 2--4-orders-smaller extrapolation gaps. The
+> preregistration's "function/extrapolation distance" wording does not settle which
+> non-equivalent check controls. The current manuscript therefore reports maze NC2 as
+> ambiguous and does not depend on a pass. See Paper 1 Appendix `app:integrity`.
+
+> **EDITORIAL NOTE (2026-07-25; the frozen result below is unchanged).** A re-audit of
+> `archive/bench/matched_fit_taskA.py` against this record found that the **C2 pass recorded
+> below is uninformative**, and that the inductive-bias branch was unfalsifiable on these data.
+> The preregistration's FIX 2 sets `F = max(2 x M_null, F_abs)` with `M_null` the near-exact
+> cell's own matched function distance, and C2 then tests that same cell against `F`. Since
+> `2 x M_null > F_abs = 2e-6` at both high-`rho` cells, C2 evaluates `mean <= 2 x mean`, which
+> holds identically: the recorded values are exactly half their floors
+> (`9.11e-4` vs `1.82e-3`; `1.84e-4` vs `3.68e-4`, ratio `2.000000`). The verdict rule is
+> `SURVIVE` if `ci_low > F` and `COLLAPSE` if `mean <= F`, so with `F = 2 x mean` the
+> `COLLAPSE` verdict is forced and `SURVIVE` is unreachable. `K=32` is also the **only**
+> high-`rho` arm clearing `m_min = 0.60` (`22/30`, `19/30`; every `K in {1,2,4,8,16}` cell is
+> below), so it is the only arm whose equal-fit comparison is adjudicable, and it is the arm
+> that defines the threshold. Therefore
+> `bias = any(verdict.startswith("SURVIVE") ...)` in `confirmatory_decision` is identically
+> `False` by construction, independent of the measurements. Against the DEV-calibrated absolute
+> scale `F_abs = 2e-6` (largest DEV silent-cell matched distance `1.46e-6`) the same two
+> distances are `456x` and `92x` larger, and the `rho=0.98` CI lower bound `3.84e-4` also
+> exceeds it. **No number below is retracted and the frozen rule is not amended**: the
+> conservative attainability verdict stands, but its support is C1/C3 and NC1's failure, not
+> C2. The correct reading is that the equal-fit question is *unresolved* at the near-exact
+> cells rather than answered negatively.
+
 # Confirmatory results (HOLDOUT)
 
 **Status: CONFIRMATORY.** Produced under
