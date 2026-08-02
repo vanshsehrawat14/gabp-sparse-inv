@@ -121,7 +121,9 @@ otherwise.
 - The release gate includes metadata validation and an isolated wheel smoke test.
 - Public GPU performance is not published.
 - The corrected Paper 1 source and its tracked data are included under
-  `paper/attainability/`; the JOSS paper remains in preparation.
+  `paper/attainability/`. The JOSS-format draft is retained, but current JOSS
+  policy requires more than six months of active public history and
+  demonstrated research use; the project is not yet eligible.
 - The routed-field baseline harness seeds models before construction; the
   tracked maze records were regenerated, and `paper/attainability/verify_claims.py`
   checks the published quantitative claims against the committed records.

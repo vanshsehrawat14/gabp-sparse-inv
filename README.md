@@ -495,9 +495,12 @@ Windows, and macOS with Python 3.12 and 3.13.
 ## Citation
 
 If you use `gabp-sparse-inv` in your research, please cite it. Machine-readable metadata is in
-[CITATION.cff](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.4/CITATION.cff) (GitHub's "Cite this repository" reads it), and a software paper is
-in preparation for the Journal of Open Source Software
-([paper/joss/paper.md](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.4/paper/joss/paper.md)).
+[CITATION.cff](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.4/CITATION.cff)
+(GitHub's "Cite this repository" reads it). A
+[JOSS-format software-paper draft](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.3.4/paper/joss/paper.md)
+is maintained, but the project is not yet eligible for JOSS: current policy
+requires more than six months of active public history and demonstrated
+research use.
 
 ## Contributing and support
 
