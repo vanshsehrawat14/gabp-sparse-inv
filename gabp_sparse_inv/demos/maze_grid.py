@@ -34,6 +34,8 @@ Run ``python -m gabp_sparse_inv.demos.maze_grid`` for the size-sweep table.
 
 from __future__ import annotations
 
+from collections import deque
+
 import torch
 from torch import Tensor, nn
 
@@ -50,6 +52,8 @@ __all__ = [
     "run_demo",
     "causal_solve_sweep",
     "run_causal",
+    "hop_distance",
+    "reach_floor_sweep",
 ]
 
 
@@ -329,6 +333,57 @@ def run_causal(sizes=((6, 6),), steps_list=(1, 2, 4, 8, 16, None), **kw):
             print(f"  {label:>7} {r[K]:>11.2e}")
         print(f"  {'mean':>7} {r['baseline']:>11.2e}   (predict-train-mean floor)")
     return res
+
+
+def hop_distance(edge_index, n_nodes: int, source: int):
+    """BFS hop distance from ``source`` on the undirected sparsity pattern."""
+    adj = [[] for _ in range(n_nodes)]
+    for i, j in zip(edge_index[0].tolist(), edge_index[1].tolist()):
+        adj[i].append(j)
+        adj[j].append(i)
+    dist = [-1] * n_nodes
+    dist[source] = 0
+    q = deque([source])
+    while q:
+        v = q.popleft()
+        for u in adj[v]:
+            if dist[u] < 0:
+                dist[u] = dist[v] + 1
+                q.append(u)
+    return dist
+
+
+def reach_floor_sweep(
+    rows: int,
+    cols: int,
+    *,
+    budgets=(1, 2, 4, 7, 8, 16, 32),
+    n_test: int = 64,
+    seed: int = 1000,
+    eps: float = 0.05,
+):
+    """Exact-field energy outside the reach ball: a test-MSE floor for the covered class.
+
+    A rule that starts from ``x_0 = 0`` and spends ``P = K - 1`` products with ``A`` on
+    vectors it has already formed from ``b`` has support inside ``hop_P(supp b)``, so at
+    every vertex outside that ball its error is exactly the field's value there. The mean of
+    that beyond-reach energy is therefore a lower bound on the test MSE of **every** rule the
+    reach proposition covers, at any parameter count and after any amount of training. It
+    turns the support statement into a loss statement without fitting anything.
+
+    Returns ``{K: floor_mse}`` plus ``"total"`` (the field's mean squared value, the floor a
+    zero-product rule faces) and ``"diameter"``. A floor of ``0`` means the budget already
+    reaches the whole grid, and there the proposition constrains nothing.
+    """
+    edge_index, feats, target = gen_dataset(rows, cols, n_test, seed=seed, eps=eps)
+    n = rows * cols
+    src = feats[..., 2].argmax(dim=-1)              # b = e_s, one source per example
+    dist = torch.tensor([hop_distance(edge_index, n, int(s)) for s in src])
+    out = {"total": float(torch.mean(target ** 2)), "diameter": (rows - 1) + (cols - 1)}
+    for K in budgets:
+        beyond = (dist > K - 1).to(target.dtype)
+        out[K] = float(torch.mean((target * beyond) ** 2))
+    return out
 
 
 if __name__ == "__main__":

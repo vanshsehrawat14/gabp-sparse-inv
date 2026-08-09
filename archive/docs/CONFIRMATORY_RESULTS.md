@@ -35,7 +35,61 @@
 > exceeds it. **No number below is retracted and the frozen rule is not amended**: the
 > conservative attainability verdict stands, but its support is C1/C3 and NC1's failure, not
 > C2. The correct reading is that the equal-fit question is *unresolved* at the near-exact
-> cells rather than answered negatively.
+> cells rather than answered negatively. Propagated to Paper 1 Appendix `app:integrity`, the
+> DynaFront cut, and the project's internal failure ledger and audit records.
+
+> **EDITORIAL NOTE (2026-08-08; the frozen result below is unchanged, and so is the
+> 2026-07-25 note above it).** The absolute-scale sensitivity introduced in that note
+> (`456x` and `92x` above `F_abs = 2e-6`) is a **mean-only reading**, and the same records
+> point the other way on the median. `armA_matched_fdist` stores both. At `rho=0.98, K=32`
+> the mean is `9.1136e-4` and the median `5.4651e-8`; at `rho=0.99, K=32` the mean is
+> `1.8386e-4` and the median `3.2554e-8`. The medians are `37x` and `61x` **below** the same
+> `F_abs`, and the mean exceeds the median by `16,676x` and `5,648x` (4.22 and 3.75 orders).
+> The `rho=0.99` interval `[7.75e-8, 5.51e-4]` straddles `F_abs` outright, from `26x` below
+> to `276x` above. The skew is specific to these two adjudicable cells and is not a property
+> of the metric: at the low-difficulty control cells `rho=0.5, K=1` and `K=2` the mean/median
+> ratios are `2.6x` and `1.4x`. **Nothing is retracted and the frozen rule is still not
+> amended.** The preregistration specified the mean, so the frozen verdict remains the
+> mean-based one. What changes is the standing of the 2026-07-25 sensitivity: it does not
+> establish that the near-exact arms fail to collapse, because the direction of that
+> conclusion depends on the location statistic and `n=22`/`n=19` matched seeds cannot
+> separate the two readings. The 2026-07-25 conclusion, that the equal-fit question is
+> *unresolved* at the near-exact cells, is unchanged and now has a second, independent
+> reason. Only `armA_matched_fdist` carries a recorded median, so this check does not extend
+> to the `as_trained_fdist_mean` separations used by the NC1 function-distance clause; the
+> per-seed HOLDOUT records were deliberately **not** reopened to extend it, because those
+> seeds are retired under the project's holdout ledger. Propagated to Paper 1 Appendix
+> `app:integrity`, the DynaFront cut §"The conservative reading remains hedged" and its
+> control table, `paper/attainability/verify_claims.py` (which now asserts both statistics),
+> and the internal failure ledger (D31). Found during an independent review of the frozen
+> records.
+
+> **EDITORIAL NOTE (2026-08-08, second of the day; the frozen result below is unchanged, and
+> so are all three notes above it).** A fourth defect at the same `K=32` cells is independent
+> of the three above and is structural rather than statistical. The DEQ probe trains on
+> `chain_edges(n)` with `n=16` and block size `1`, so the system being solved is
+> **16-dimensional**, and the adjudicable arm is `K=32`. A Krylov space
+> `span{b, Jb, ..., J^(K-1) b}` has dimension at most `n` and contains `A^-1 b` once
+> `K >= n`, so at `K=32` on a 16-dimensional system the residual-optimal `K`-matvec rule *is*
+> an exact solve. The cell therefore cannot distinguish "the budget is too small" from
+> "truncated Neumann is a poor polynomial", and could not have done so even if `F` had been
+> sound and even if mean and median had agreed. **Each of the three reasons voids the cell on
+> its own.** The same threshold applies to the exploratory gradient sweep behind Table
+> `tab:deq`: `make_figures.py` uses `rows, cols, b = 3, 3, 2`, an **18-dimensional** system,
+> at `Ks = (8, 16, 32)`, so its `K=32` column is past saturation and every column is past the
+> `3x3` grid's 4-hop diameter. Those entries are now reported in the manuscripts as properties
+> of the truncated-Neumann rule, not of the matvec budget. **Nothing below is retracted.** The
+> predeclared hard cells `K in {1,2,4}` are at most a quarter of the dimension and reach at
+> most 3 of the chain's 15 hops, and the maze `K_match = 7` on 36 nodes reaches 6 of 10 hops
+> at the training size, so the conservative attainability verdict this record supports is
+> untouched. The consequence for future work is that **any successor experiment comparing
+> solve rules at a matched budget must run at `n >> K_max`**; at `n <= K_max` the strongest
+> competitor degenerates into the exact arm and the comparison is vacuous by construction.
+> Propagated to Paper 1 Appendix `app:reach` (new, carrying `Proposition 1` and the saturation
+> remark), Appendix `app:integrity`, the DynaFront cut §2 and its Appendix B,
+> `paper/attainability/verify_claims.py` (`verify_budget_window`, which recomputes
+> `K_match = 7` from `n_match` and reads both probe sizes off their sources), and
+> the internal failure ledger (D32).
 
 # Confirmatory results (HOLDOUT)
 

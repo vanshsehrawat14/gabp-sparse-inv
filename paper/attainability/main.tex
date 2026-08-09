@@ -8,6 +8,10 @@
   bottom=0.75in,
   footskip=0.35in
 ]{geometry}
+% Latin Modern: the scalable Type1 successor to Computer Modern. Same letterforms
+% and the same page count, but microtype cannot expand a bitmap face, and arXiv
+% asks for Type1 anyway.
+\usepackage{lmodern}
 \usepackage{amsmath,amssymb,amsthm,bm}
 \usepackage{graphicx}
 \usepackage{booktabs}
@@ -22,7 +26,7 @@
 \newcommand{\evidencecommit}{\texttt{00c0bf5}}
 \usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
 \hypersetup{
-  pdftitle={Exact Sparse Operators in Differentiable Models:
+  pdftitle={Exact Sparse Computation in Differentiable Models:
             Attainability Gaps, Not Evidence for Inductive Bias},
   pdfauthor={Vanshdeep Sehrawat},
 }
@@ -40,6 +44,7 @@
 
 \theoremstyle{plain}
 \newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
 \newtheorem{lemma}{Lemma}
 \newtheorem{corollary}{Corollary}
 \theoremstyle{remark}
@@ -52,7 +57,7 @@
 \begin{center}
 \vspace*{0.2cm}
 
-{\LARGE Exact Sparse Operators in Differentiable Models:\\[0.45em]
+{\LARGE Exact Sparse Computation in Differentiable Models:\\[0.45em]
 Attainability Gaps, Not Evidence for Inductive Bias\par}
 
 \vspace{0.9cm}
@@ -79,9 +84,9 @@ File paths cited in this paper are relative to the repository root.}
 Many machine-learning models require a global linear solve. For sparse
 coupling with fixed block size and elimination width, selected inversion computes inverse blocks on the
 factor's filled pattern in $\bigO(n)$ time, and its projected derivative has
-a reverse schedule with the same asymptotic structural work. We implement
-the classical symmetric and static-pattern non-symmetric operators as
-differentiable PyTorch primitives. The scientific question is whether an
+a reverse schedule with the same asymptotic structural work. Using a reference
+PyTorch implementation of the classical symmetric and static-pattern
+non-symmetric operators, we ask whether an
 exact structured solve acts as an \emph{inductive bias}, selecting a
 better-generalizing solution when competing models attain comparable
 training fit. Two preregistered matched-fit probes test this hypothesis on
@@ -89,9 +94,11 @@ $30$ held-out seeds: routed-field size extrapolation and deep-equilibrium
 (DEQ) training near spectral instability. The exact arms win the raw comparisons,
 but the finite Jacobi and Neumann alternatives match their training fit in
 only $0$--$23.3\%$ of high-difficulty seeds, below a preregistered $60\%$
-bar. The equal-fit comparison is therefore absent; under the tested budgets,
-the result is an \emph{attainability/optimization} gap, not an
-inductive-bias effect. A separate three-seed exploratory comparison against
+bar. The equal-fit comparison is therefore absent; for the truncated-Neumann
+and $K$-sweep Jacobi rules at the tested budgets the result is an
+\emph{attainability/optimization} gap, not an inductive-bias effect, and a
+reach argument extends the routed-field half to every rule that touches the
+operator only through products against vectors generated from the source. A separate three-seed exploratory comparison against
 much larger graph neural network (GNN) and Transformer baselines shows the
 same direction but does not match architecture or optimization. The
 sparse-direct implicit backward remains within $1.1\times10^{-12}$ of a
@@ -102,10 +109,11 @@ robust precision advantage over a well-ordered dense factorization. The
 DEQ low-difficulty control fails its prespecified relative-gap clause, and
 two non-equivalent maze-floor diagnostics disagree. A later reuse of the
 same held-out seeds is excluded. The supported conclusion is therefore
-narrow and hedged: exact structured computation expands the attainable
-regime in these controlled, solve-shaped probes on a central processing unit
-(CPU), while the proposed
-inductive-bias explanation is not supported.
+narrow and hedged: against the truncated rules tested, exact structured
+computation expands the attainable regime in these controlled, solve-shaped
+probes on a central processing unit (CPU), while the proposed inductive-bias
+explanation is not supported and residual-optimal rules are left to a
+registered successor study.
 \end{quote}
 
 \end{titlepage}

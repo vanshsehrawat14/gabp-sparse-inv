@@ -1,32 +1,28 @@
 \section{Conclusion}
 \label{sec:conclusion}
 
-Selected inversion is a classical global operator whose cost is governed by
-the elimination fronts. Its log-determinant relationship gives the projected
-derivative a reverse schedule with the same asymptotic structural work. On
-the finite precision grid in Section~\ref{sec:numerics}, this implementation
-has no robust accuracy advantage over a well-ordered dense solve.
+Selected inversion is classical. On the measured finite-precision grid, this
+implementation has no robust accuracy advantage over a well-ordered dense
+solve; its role here is the exact structured computation tested in the two
+probes.
 
 The tested hypothesis was that exact structured computation acts as an
 inductive bias among models with comparable training fit. In both
 preregistered probes over $30$ held-out seeds, the finite alternative fails
 to attain comparable fit in the high-difficulty cells: bounded Jacobi sweeps
 in Section~\ref{sec:maze} and finite Neumann adjoints in
-Section~\ref{sec:deq}. In a separate three-seed exploratory diagnostic, the
-tested cross-architecture error ratios range from $212\times$ to
-$11{,}242\times$, but the matched-fit result attributes these gaps to
-attainability, not to a preference among equal-fit solutions. The
-DEQ low-difficulty control fails its relative-gap clause. The maze
-extrapolation-floor comparison passes, but the separate in-distribution
-\texttt{floor\_sound} diagnostic fails, so maze NC2 remains ambiguous. A
-later reused-seed analysis is excluded from the evidentiary chain. The
-supported conclusion is therefore narrow and hedged: exact structured
-computation expands the attainable regime on these controlled, solve-shaped
-tasks, while the inductive-bias explanation is not supported.
+Section~\ref{sec:deq}. The separate three-seed cross-architecture diagnostic
+is exploratory and does not alter this attribution. The DEQ low-difficulty
+control fails its relative-gap clause; the maze extrapolation-floor comparison
+passes but the in-distribution \texttt{floor\_sound} diagnostic fails, leaving
+NC2 ambiguous. The later reused-seed analysis is excluded. The supported
+conclusion is narrow and hedged: against the truncated rules tested, exact
+structured computation expands the attainable regime on these controlled,
+solve-shaped tasks, while the inductive-bias explanation is not supported.
+Proposition~\ref{prop:reach} extends the routed-field half to the class it
+covers; residual-optimal rules on the DEQ side are the successor study.
 
-The limits are explicit: the evidence is at controlled CPU scale and confined
-to low-treewidth (one-dimensional and quasi-two-dimensional) problems. Exact
-selected uncertainty and implicit gradients near difficult spectra remain
-separate questions requiring mature solver baselines and
-their own protocols (Section~\ref{sec:program}). The results do not extend
-beyond those measured regimes.
+The evidence is CPU-scale and confined to low-treewidth problems. Exact selected
+uncertainty and difficult-spectrum implicit gradients require new protocols;
+none of the results extends beyond the measured regimes
+(Section~\ref{sec:program}).

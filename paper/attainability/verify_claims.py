@@ -11,10 +11,13 @@ import csv
 import json
 import math
 import statistics
+import sys
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 PAPER = ROOT / "paper" / "attainability"
 DATA = PAPER / "figures" / "data"
 FROZEN = ROOT / "archive" / "results" / "CONFIRMATORY" / "matched_fit_taskA"
@@ -161,6 +164,25 @@ def verify_frozen_first_read() -> None:
         close(rows[key]["floor_F"], 2 * rows[key]["armA_matched_fdist"]["mean"])
         assert rows[key]["armA_verdict"].startswith("COLLAPSE")
     assert rows[(0.98, 32)]["armA_matched_fdist"]["ci_low"] > 2e-6
+
+    # The absolute-scale sensitivity is direction-dependent: on the mean both
+    # near-exact cells sit above 2e-6, on the median both sit below it. The
+    # appendix reports both, so both are checked here.
+    close(rows[(0.98, 32)]["armA_matched_fdist"]["median"], 5.465129580149062e-8)
+    close(rows[(0.99, 32)]["armA_matched_fdist"]["median"], 3.2554474168122184e-8)
+    for key in ((0.98, 32), (0.99, 32)):
+        stats = rows[key]["armA_matched_fdist"]
+        assert stats["mean"] > 2e-6 > stats["median"]
+        assert stats["mean"] / stats["median"] > 5e3
+    # The rho=0.99 interval straddles the absolute scale, so that cell decides
+    # nothing in either direction.
+    straddle = rows[(0.99, 32)]["armA_matched_fdist"]
+    assert straddle["ci_low"] < 2e-6 < straddle["ci_high"]
+    # Low-difficulty control cells are not skewed the same way; the tail is a
+    # property of the two adjudicable near-exact cells, not of the metric.
+    for k in (1, 2):
+        stats = rows[(0.5, k)]["armA_matched_fdist"]
+        assert stats["mean"] / stats["median"] < 5
     low = [rows[(0.5, k)]["median_rel_train_gap"] for k in (1, 2, 4)]
     assert all(value > 0.1 for value in low)
     high_fdist = max(
@@ -197,6 +219,122 @@ def verify_frozen_first_read() -> None:
     ]
     assert truncated(min(orders), 1) == 3.8
     assert truncated(max(orders), 1) == 4.6
+
+
+def verify_budget_window() -> None:
+    """Recompute the reach and saturation figures the budget-window text quotes.
+
+    One convention throughout: budgets are labelled by sweeps or Neumann terms,
+    and K sweeps from a zero start spend K-1 products with A. The reach bound at
+    K sweeps is therefore K-1 hops, and saturation arrives once the span holds
+    A^-1 b, which happens at the grade of b and so no later than n. A fixed
+    budget is informative only below both thresholds, and the sizes are
+    recomputed from the same generators and FLOP accounting the probes used.
+    """
+    from gabp_sparse_inv.bench.matched_compute import n_match
+    from gabp_sparse_inv.generators import grid_edges
+
+    # Routed field: 6x6 grid, scalar blocks, FLOP-matched Jacobi budget.
+    maze_nodes = 6 * 6
+    k_match = n_match(
+        maze_nodes, grid_edges(6, 6), b=1, k=1,
+        method="jacobi", target="solve_adjoint",
+    )
+    assert k_match == 7, k_match
+    assert k_match == load_json(FROZEN / "maze_matched_fit.json")["K_match"]
+    assert k_match < maze_nodes                      # below saturation
+    grid_diameters = {size: 2 * (size - 1) for size in (6, 12, 24, 48)}
+    assert list(grid_diameters.values()) == [10, 22, 46, 94]
+    products = k_match - 1                           # K sweeps spend K-1 products
+    assert products == 6
+    assert products < min(grid_diameters.values())   # below reach
+
+    # DEQ training probe: 16-node chain, scalar blocks, K up to 32. The runner
+    # lives under archive/, which is deliberately not importable, so the two
+    # sizes are read off its frozen source the way manuscript literals are.
+    runner = (ROOT / "archive" / "bench" / "matched_fit_taskA.py").read_text(
+        encoding="utf-8"
+    )
+    assert "def run_deq(seeds, *, rhos, k_grid, n=16," in runner
+    assert "edge_index = chain_edges(n)" in runner
+    assert "random_coupling(n, edge_index, 1, seed=seed, rho=1.0)" in runner
+    deq = load_json(FROZEN / "deq_matched_fit.json")
+    deq_n = 16
+    chain_diameter = deq_n - 1
+    hard_ks = [1, 2, 4]
+    assert set(hard_ks) <= set(deq["k_grid"])
+    for k in hard_ks:
+        assert k < deq_n and k - 1 < chain_diameter  # K terms spend K-1 products
+        assert k <= deq_n // 4
+    for k in (16, 32):
+        assert k in deq["k_grid"] and k >= deq_n     # past saturation
+    # On a path graph the reach and dimension thresholds coincide.
+    assert chain_diameter + 1 == deq_n
+
+    # Affine gradient sweep: 3x3 grid at block size 2.
+    sweep_src = (PAPER / "make_figures.py").read_text(encoding="utf-8")
+    assert "rows, cols, b = 3, 3, 2" in sweep_src
+    assert "Ks = (8, 16, 32)" in sweep_src
+    assert "backward_accuracy_sweep(edge_index, rows * cols, b," in sweep_src
+    sweep_n = 3 * 3 * 2
+    assert sweep_n == 18
+    assert 32 >= sweep_n > 16 > 8                    # only K=32 is past saturation
+    assert 8 - 1 > 2 * (3 - 1)                       # every K is past reach
+
+    # The Neumann column is the geometric remainder, which is what makes it a
+    # statement about the rule rather than about the budget.
+    row = {float(r["rho"]): r for r in csv_rows(DATA / "deq_robustness.csv")}
+    for rho in (0.99, 0.999):
+        measured = float(row[rho]["neumann32"])
+        assert rho**32 < measured < 1.1 * rho**32
+    assert truncated(0.99**32, 3) == 0.724
+    assert truncated(0.999**32, 3) == 0.968
+
+
+def verify_reach_floor() -> None:
+    """Recompute the reach floor and the ratios Appendix app:floor quotes.
+
+    The floor is the exact field's energy outside the reach ball, so it lower-bounds
+    the test MSE of every rule the reach proposition covers without fitting
+    anything. It is recomputed here from the generator the probe itself uses, then
+    checked against the committed table and against the measured dose-response.
+    Two of the assertions run against the paper: the floor clears predict-the-mean
+    only at the three smallest budgets, and it is vacuous at the two largest.
+    """
+    from gabp_sparse_inv.demos.maze_grid import reach_floor_sweep
+
+    budgets = (1, 2, 4, 7, 8, 16, 32)
+    live = reach_floor_sweep(6, 6, budgets=budgets)
+    assert live["diameter"] == 10
+
+    table = {
+        int(r["jacobi_sweeps_K"]): r
+        for r in csv_rows(DATA / "maze_reach_floor.csv")
+        if int(r["rows"]) == 6
+    }
+    for k in budgets:
+        assert int(table[k]["products_P"]) == k - 1   # K sweeps spend K-1 products
+        close(float(table[k]["floor_mse"]), live[k])
+
+    causal = {
+        r["jacobi_sweeps_K"]: float(r["test_mse"])
+        for r in csv_rows(DATA / "maze_causal.csv")
+    }
+    exact, mean = causal["exact"], causal["predict_mean"]
+
+    # No covered rule attains the exact arm at the FLOP-matched budget.
+    assert round(live[7] / exact) == 1460
+
+    # At the tightest budget the trained arm sits on its own floor, so the
+    # observed failure there is reach and not optimization.
+    assert 1.0 < causal["1"] / live[1] < 1.002
+
+    # The floor is weaker than the measurement past K=4, and says nothing at all
+    # once the reach covers the diameter.
+    for k in (1, 2, 4):
+        assert live[k] > mean
+    assert live[7] < mean and live[8] > 0.0
+    assert live[16] == 0.0 and live[32] == 0.0
 
 
 def verify_manuscript_literals() -> None:
@@ -241,6 +379,8 @@ def main() -> None:
     verify_diagnostics()
     verify_precision_and_scaling()
     verify_frozen_first_read()
+    verify_budget_window()
+    verify_reach_floor()
     verify_manuscript_literals()
     print("Paper 1 quantitative claims verified against committed records.")
 

@@ -79,23 +79,48 @@ computation, the within-architecture intervention holds the \texttt{gabp}
 model identical (same encoder, same
 parameter count, same data and optimizer) and replaces its exact
 \texttt{junction\_solve} with $K$ damped-Jacobi sweeps on the same learned
-precision $A$. Starting from zero, each sweep expands point-source support by
-at most one graph edge; after $K$ sweeps the sharp bound is $K-1$ edges. For
-the convergent splitting used here, $K\to\infty$ recovers the exact solve; the
-intervened variable is the iteration budget. The error decreases monotonically
+precision $A$. For the convergent splitting used here, $K\to\infty$ recovers
+the exact solve; the intervened variable is the iteration budget. What that
+budget can reach is not a property of the splitting.
+
+\begin{proposition}[Reach of a matvec budget]
+\label{prop:reach}
+Let $A=I-J$ have the sparsity pattern of a graph $\Gr$, with hop distance taken
+on the undirected pattern, and let $x$ be produced by any rule that starts from
+$x_0=0$ and accesses $A$ only through $P$ products with $A$ or $A\T$, each
+applied to a vector the rule has already formed from $b$. Then
+$x\in\spn\{b,Jb,\dots,J^{P}b\}$, hence $\supp(x)\subseteq\hop_{P}(\supp b)$,
+the vertices within $P$ hops of $\supp b$. Consequently, if a vertex $v$ at
+graph distance $d>P$ from $\supp b$ has $(\inv{A}b)_v\neq0$, then $x_v=0$ and
+the error at $v$ is $|(\inv{A}b)_v|$. Both hypotheses bind.
+Appendix~\ref{app:reach} proves the proposition, gives the counterexample to
+each, and states the complementary bound at large $P$.
+\end{proposition}
+
+Within the class it covers, the bound belongs to the budget rather than to the
+sweep: truncated Neumann, damped Jacobi, GMRES, conjugate gradients, and, at
+the standard identity initialization, Anderson \citep{anderson1965iterative}
+and Broyden \citep{broyden1965class} all form their iterates from products
+taken against vectors already generated from $b$, and inherit it. Budgets here
+are labelled by sweeps: $K$ damped-Jacobi sweeps from a zero start spend $K-1$
+products and reach $K-1$ hops. The preregistered routed-field budget is the
+FLOP-matched $K=7$, reaching $6$ hops, while the $6\times6$ training grid has
+hop diameter $10$ and the size-$12$, $24$, and $48$ test grids have diameters
+$22$, $46$, and $94$. No rule in this class carries point-source information
+across these grids at that budget, so the dose-response below constrains the
+budget as a class rather than the particular sweep chosen.
+Appendix~\ref{app:floor} converts that support statement into a loss bound read
+off the labels alone: at $K=7$ no covered rule can beat $1460$ times the exact
+arm's test error, while at $K\geq16$ the bound is vacuous on this grid and the
+dose-response there rests on measurement. The error decreases monotonically
 with that budget
-(Table~\ref{tab:maze-causal}, Figure~\ref{fig:maze-causal}): every displayed
+(Table~\ref{tab:maze-causal}, plotted as Figure~\ref{fig:maze-causal}): every displayed
 finite-budget variant is worse than predict-the-mean (a truncated solve yields
 a confidently wrong near-source field), and only the exact, global solve is
 below that baseline. Its error is more than three orders of magnitude below
-the deepest truncation. A matched-fit check on the held-out seeds (below)
-shows why: the
-preregistered $K=7$ arm cannot reach the exact arm's \emph{training} fit
-(median relative train-loss gap $\sim2000\times$), so this
-dose-response is best read as an attainability/optimization gap: the
-finite truncations tested do not reproduce the globally coupled target.
-It is not evidence that exactness biases training toward a
-better solution among equally attainable ones.
+the deepest truncation. The held-out matched-fit check below shows why this is
+an attainability/optimization gap and not evidence that exactness biases
+training toward a better solution among equally attainable ones.
 
 \begin{table}[htbp]
   \centering
@@ -113,17 +138,6 @@ better solution among equally attainable ones.
     \bottomrule
   \end{tabular}
 \end{table}
-
-\providecommand{\mazecausalwidth}{0.72\textwidth}
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=\mazecausalwidth]{figures/maze_causal.pdf}
-  \caption{Within-architecture Jacobi-budget control. Test error decreases with
-  Jacobi depth $K$, but the finite variants do not attain the exact arm's
-  training fit. Data:
-  \url{paper/attainability/figures/data/maze_causal.csv}.}
-  \label{fig:maze-causal}
-\end{figure}
 
 \paragraph{Preregistered matched-fit result on held-out seeds.}
 The confirmatory test ran the routed-field task at sizes $6\times6$ to
@@ -216,8 +230,15 @@ rises as the system becomes nearly singular, as ordinary condition-sensitive
 direct-solve analysis predicts. The iterative
 backward degrades with the Neumann tail: at $\rho=0.99$ even $32$ terms leave
 relative gradient error $77.1\%$, and at $\rho=0.999$ the error is $97.4\%$.
-Separate unit tests validate the nonlinear implicit-function-theorem
-backward against autograd through an unrolled solver
+These are the geometric remainder and nothing more: $0.99^{32}=0.725$ and
+$0.999^{32}=0.969$ bracket the measured values, which is the point of the
+column. This system is $18$-dimensional ($9$ nodes, block size $2$), so its
+$K\ge16$ entries lie past the budget-saturation threshold of
+Appendix~\ref{app:reach}, where an optimal $K$-matvec method is already an
+exact solve; we read the whole column as a property of the truncated-Neumann
+rule, which is what deployed implicit-model backward passes use, and not as a
+property of the budget. Separate unit tests validate the nonlinear
+implicit-function-theorem backward against autograd through an unrolled solver
 (\url{tests/test_deq_fixedpoint.py}).
 
 \begin{table}[htbp]
@@ -241,9 +262,10 @@ backward against autograd through an unrolled solver
   \end{tabular}
 \end{table}
 
+\providecommand{\deqrobustnesswidth}{0.72\textwidth}
 \begin{figure}[t]
   \centering
-  \includegraphics[width=0.72\textwidth]{figures/deq_robustness.pdf}
+  \includegraphics[width=\deqrobustnesswidth]{figures/deq_robustness.pdf}
   \caption{Implicit-gradient error for sparse direct and finite Neumann
   adjoints. One deterministic instance is shown at each spectral radius;
   this is a finite diagnostic, not a
@@ -273,7 +295,11 @@ the conservative attainability/optimization reading. That branch is also
 unreachable at the one high-$\rho$ arm that does clear the matchability bar,
 because that arm calibrates the floor it would have to exceed; this is a
 defect of the frozen rule rather than a finding, and
-Appendix~\ref{app:integrity} states it. The one designed silent
+Appendix~\ref{app:integrity} states it. That same arm is $K=32$ on a
+$16$-dimensional system, so it is past saturation as well: it is uninformative
+for two independent reasons, and we draw nothing from it either way. The hard
+cells that carry the conservative reading, $K\in\{1,2,4\}$, are a quarter of
+the dimension or less and are unaffected. The one designed silent
 control ($\rho=0.5$) did not cleanly pass: its relative-gap clause failed
 (driven by a denominator-scale instability in the relative ratio, with both arms
 converging to losses of order $10^{-8}$--$10^{-9}$), though its
@@ -293,10 +319,11 @@ Appendix~\ref{app:integrity} records the chronology and a nested run-tag
 metadata defect.
 
 \paragraph{Interpretation and scope.}
-The error sweep is a mechanism result at controlled scale ($n=9$): it shows
-the exact sparse-direct backward is accurate on the tested cells where the
-finite Neumann truncation is not, and that the training arms differ in
-attainability under the first-read protocol. The adjudication does not support
+The error sweep is a mechanism result at controlled scale ($18$ dimensions):
+it shows the exact sparse-direct backward is accurate on the tested cells where
+the finite Neumann truncation is not, and that the training arms differ in
+attainability under the first-read protocol. That comparison is with the
+Neumann rule, not with the best possible use of $K$ matrix--vector products. The adjudication does not support
 the stronger claim that this difference reflects an inductive bias among
 equally attainable optima, because the hard cells do not supply an equal-fit
 comparison. On this evidence, the observed difference reflects the iterative
@@ -304,7 +331,12 @@ arm's inability to fit the stiff cells, an attainability/optimization effect
 rather than a preference effect. Neumann iteration is the transparent
 baseline; accelerated solvers (Anderson \citep{anderson1965iterative} and
 Broyden \citep{broyden1965class}) can reduce the iteration count and are
-necessary competitors at scale; they were not evaluated here. The structured
+necessary competitors at scale; they were not evaluated here. Where their
+iterates are formed from products against vectors generated from $b$ they
+inherit Proposition~\ref{prop:reach}, so the routed-field limit binds them as
+well; a preconditioned method is bound only as far as the accumulated reach of
+the operators it applies, which is the direction a serious competitor should
+take. The structured
 direct solve avoids a convergence tolerance but retains ordinary
 conditioning-dependent rounding error. The affine diagnostic uses a
 convergent construction with $\rho(J)<1$; the advantage is for

@@ -4,6 +4,10 @@
 This appendix states the classical machinery used in
 Section~\ref{sec:theorem}: the tree recurrence that makes the layer exact and
 global, and the projected-Hessian argument for its first-order adjoint.
+The formal statements below are confined to that tree specialization and
+projected first-order adjoint. The filled-pattern symmetric and static-pattern
+non-symmetric implementations are tested reference software; this appendix
+does not claim or prove a new general recurrence.
 
 \subsection{Forward: a two-pass schedule on the elimination tree}
 
@@ -105,6 +109,170 @@ sequence models would be a learned-sparse graph-coupled mixer, which belongs
 to the program of Section~\ref{sec:program} rather than to the present
 evidence.
 
+\section{Reach and saturation of a matvec budget}
+\label{app:reach}
+
+This appendix proves Proposition~\ref{prop:reach} and states the complementary
+bound that limits it from above. Together they delimit the range of budgets
+over which a fixed-$K$ experiment carries any information about the budget.
+
+\begin{proof}[Proof of Proposition~\ref{prop:reach}]
+One multiplication by $J$ or $J\T$ moves mass along at most one edge of the
+undirected pattern, so $\supp(J^{i}b)\subseteq\hop_{i}(\supp b)$ by induction
+on $i$. Let $V_p$ denote the span of the vectors the rule has formed after $p$
+products. We show $V_p\subseteq\spn\{b,Jb,\dots,J^{p}b\}$ by induction on $p$.
+Before any product the rule holds only its zero start and the source, so
+$V_0=\spn\{b\}$. If $V_{p-1}\subseteq\spn\{b,\dots,J^{p-1}b\}$, the $p$-th
+product is by hypothesis applied to some $u\in V_{p-1}$, and $Au=u-Ju$ lies in
+$\spn\{b,\dots,J^{p}b\}$ because $A=I-J$ and the identity contributes no hops;
+adjoining $Au$ and closing under linear combination leaves $V_p$ inside that
+span. Hence every $x\in V_P$ has $\supp(x)\subseteq\hop_{P}(\supp b)$. If
+$v\notin\hop_{P}(\supp b)$ then $x_v=0$, and the error at $v$ is
+$|(\inv{A}b)_v|$.
+\end{proof}
+
+The bound is sharp, and needs no genericity. On a path graph with $b=e_1$ and
+every edge weight nonzero, reaching vertex $P+1$ from vertex $1$ in $P$ steps
+requires traversing the unique shortest path, so the hop-$P$ entry of $J^{P}b$
+is the product of those $P$ weights and cannot vanish. Cancellation on a graph
+with cycles can only shrink a support, never extend one, so it does not
+threaten the bound from the other side.
+
+Both hypotheses are load-bearing, and dropping either defeats the conclusion.
+The zero start is not a convenience: an initialization that places the mean of
+$b$ at every vertex costs no product with $A$ and is nonzero everywhere, so a
+rule carrying a global bias, a normalization across nodes, or a pooled term
+escapes the conclusion without spending any budget. The routed-field arm of
+Section~\ref{sec:maze} carries none of these inside its sweep path, and
+\url{tests/test_reach_bound.py} asserts the support property directly on the
+arm rather than on the idealization. The access hypothesis is equally
+necessary. A rule permitted to apply $A$ to arbitrary probe vectors can exploit
+structural orthogonality \citep{curtis1974estimation}: columns whose patterns
+do not overlap are recovered together from one product against their common
+indicator, so a tridiagonal operator is recovered exactly in three products and
+a five-point grid stencil in five, after which the rule solves exactly with no
+further product and returns a globally supported answer at any diameter. Such
+rules reconstruct the operator instead of approximating its inverse from a
+source, and belong on the exact side of the comparison this paper draws.
+
+Within the class it covers, the bound is indifferent to the method, which is
+the point. Damped Jacobi and truncated Neumann are one polynomial in $b$; GMRES
+is the residual-optimal one; conjugate gradients and, at the standard identity
+initialization, Anderson \citep{anderson1965iterative} and Broyden
+\citep{broyden1965class} form their iterates the same way. Preconditioning is
+not a single exception, and sparsity of the preconditioner is the wrong test:
+what matters is the hop reach of the operator actually applied. Diagonal
+scaling adds none and leaves the bound intact; a sparse approximate inverse
+with $k$-hop fill adds $k$ per application; an incomplete-$LU$ preconditioner
+adds the graph diameter despite sparse factors, because back-substitution
+propagates from one end of a factor to the other. A preconditioned rule is
+covered exactly when the accumulated reach of its applied operators stays below
+the relevant distance.
+
+\begin{remark}[Saturation, the complementary bound]
+\label{rem:saturation}
+Let $d$ be the grade of $b$ with respect to $A$, the degree of its minimal
+annihilating polynomial. For nonsingular $A$ that polynomial has nonzero
+constant term, so $\inv{A}b$ is a combination of $b,Ab,\dots,A^{d-1}b$ and a
+residual-optimal rule attains it exactly once it has spent $d-1$ products.
+Since $d\leq n$, a budget of $n$ is already past saturation, and an invariant
+subspace, a minimal polynomial of degree below $n$, and lucky breakdown each
+lower $d$ rather than raise it, so the threshold is conservative in the only
+direction that matters here. A measurement past saturation cannot separate
+``the budget is too small'' from ``this particular polynomial is a poor one,''
+and reach is similarly uninformative once the budget exceeds the graph
+diameter. A fixed budget carries information about the budget only while it is
+below both thresholds. On a path graph of $n$ nodes the two coincide, since the
+diameter is $n-1$.
+\end{remark}
+
+Applied to this paper: the affine gradient sweep of Table~\ref{tab:deq} solves
+an $18$-dimensional system, so its $K=32$ column is past saturation and its
+$K=8$ and $K=16$ columns are past reach on the $3\times3$ grid, whose diameter
+is $4$; the whole table is read as a property of the Neumann rule. The training
+probe of Section~\ref{sec:deq} is a $16$-node chain with scalar blocks,
+so $K\in\{16,32\}$ is past saturation while the preregistered hard cells
+$K\in\{1,2,4\}$ reach at most $3$ of $15$ hops at a quarter of the dimension or
+less. The routed-field probe is $36$-dimensional with a FLOP-matched $K=7$
+reaching $6$ of $10$ hops at the training size and $6$ of $94$ at the largest
+test size, so it is inside the informative range by a wide margin and is the
+one place where the conclusion binds the covered class rather than one rule.
+
+\subsection{From support to loss}
+\label{app:floor}
+
+Proposition~\ref{prop:reach} constrains support, while attainability is a
+statement about loss. The step between them needs no new experiment. A covered
+rule that spends $P$ products predicts zero at every vertex outside
+$\hop_{P}(\supp b)$, so its squared error there is the exact field's own value.
+Averaging over the test set $\mathcal{D}$ of $n$-node instances,
+\begin{equation}
+\label{eq:floor}
+\mathrm{MSE}(x)\;\geq\;F(P)\;:=\;\frac{1}{|\mathcal{D}|\,n}
+\sum_{(A,b)\in\mathcal{D}}\;\sum_{v\,:\,d(v,\,\supp b)>P}
+\bigl(\inv{A}b\bigr)_{v}^{2}.
+\end{equation}
+The bound holds for every covered rule at any parameter count and after any
+amount of training, and $F(P)$ is computed from the labels alone: nothing is
+fitted, and no arm has to be run to evaluate it.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Reach floor on the routed-field probe at $6\times6$ (diameter $10$).
+  $F(P)$ of Equation~\eqref{eq:floor} is a lower bound on the test mean-squared
+  error (MSE) of every rule Proposition~\ref{prop:reach} covers; the measured
+  column is the single trained Jacobi arm of Table~\ref{tab:maze-causal}, whose
+  exact arm reaches $1.16\mathrm{e}{-5}$ and whose predict-mean value is
+  $2.60\mathrm{e}{-2}$. $K=7$ is the FLOP-matched budget and was not part of the
+  preregistered dose-response. Data:
+  \url{paper/attainability/figures/data/maze_reach_floor.csv}.}
+  \label{tab:reach-floor}
+  \begin{tabular}{rrcccc}
+    \toprule
+    $K$ sweeps & $P$ products & $F(P)$ & measured & $F/\text{exact}$ & $F/\text{mean}$ \\
+    \midrule
+    1  & 0  & $2.98\mathrm{e}{-1}$ & $2.98\mathrm{e}{-1}$ & $25743$ & $11.5$ \\
+    2  & 1  & $2.38\mathrm{e}{-1}$ & $2.57\mathrm{e}{-1}$ & $20536$ & $9.16$ \\
+    4  & 3  & $1.15\mathrm{e}{-1}$ & $2.15\mathrm{e}{-1}$ & $9936$  & $4.43$ \\
+    7  & 6  & $1.69\mathrm{e}{-2}$ & n/a                  & $1460$  & $0.65$ \\
+    8  & 7  & $6.69\mathrm{e}{-3}$ & $1.63\mathrm{e}{-1}$ & $578$   & $0.26$ \\
+    16 & 15 & $0$                  & $1.06\mathrm{e}{-1}$ & $0$     & $0$ \\
+    32 & 31 & $0$                  & $5.23\mathrm{e}{-2}$ & $0$     & $0$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Three readings follow, and only the first is a proof of the comparison the
+paper leads with. At the FLOP-matched $K=7$ the floor is $1.69\times10^{-2}$,
+which is $1460$ times the exact arm's test MSE of $1.16\times10^{-5}$: no rule
+the proposition covers attains the exact arm at the matched budget, whatever
+its parameters and however long it trains. At $K=1$ the trained arm reaches
+$2.984\times10^{-1}$ against a floor of $2.981\times10^{-1}$, within $0.1\%$, so
+at the tightest budget the observed failure is reach rather than optimization.
+Third, and against the paper, the floor exceeds the predict-mean value of
+$2.60\times10^{-2}$ only for $K\leq4$. At $K=7$ it is $0.65$ of that value, and
+at $K\geq16$ on this grid it is identically zero because a reach of $15$ hops
+covers a diameter of $10$. The statement that every displayed finite budget is
+worse than predict-the-mean is therefore a measurement and not a corollary of
+the proposition, and the dose-response at $K\in\{16,32\}$ is carried by
+measurement alone. Table~\ref{tab:reach-floor} thus marks the boundary of what
+the proposition buys: it settles non-attainment against the exact arm for the
+whole covered class, and it says nothing at the two largest budgets.
+Figure~\ref{fig:maze-causal} plots the routed-field budget sweep of
+Table~\ref{tab:maze-causal}.
+
+\providecommand{\mazecausalwidth}{0.72\textwidth}
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\mazecausalwidth]{figures/maze_causal.pdf}
+  \caption{Within-architecture Jacobi-budget control. Test error decreases with
+  Jacobi depth $K$, but the finite variants do not attain the exact arm's
+  training fit, and at $K$ sweeps no rule in the class of
+  Proposition~\ref{prop:reach} reaches beyond $K-1$ hops.
+  Data: \url{paper/attainability/figures/data/maze_causal.csv}.}
+  \label{fig:maze-causal}
+\end{figure}
+
 \section{Confirmatory evidence chronology}
 \label{app:integrity}
 
@@ -158,9 +326,47 @@ uninformative, and the inductive-bias branch could not have fired on these
 data regardless of the measurements. Measured instead against the
 preregistration's absolute optimization-noise scale $2\times10^{-6}$,
 calibrated on development seeds where the largest silent-cell matched distance
-was $1.46\times10^{-6}$, the two near-exact distances
-($9.11\times10^{-4}$ at $\rho=0.98$ and $1.83\times10^{-4}$ at $\rho=0.99$)
-are $455\times$ and $91\times$ larger, and the $\rho=0.98$ CI lower bound
-($3.84\times10^{-4}$) also exceeds it. We report the frozen rule unchanged.
-Thus, the evidence does not support an inductive-bias reading where the finite
-arms cannot fit and leaves it untested where they can.
+was $1.46\times10^{-6}$, the two near-exact \emph{mean} distances
+($9.11\times10^{-4}$ at $\rho=0.98$ and $1.84\times10^{-4}$ at $\rho=0.99$)
+are $456\times$ and $92\times$ larger, and the $\rho=0.98$ CI lower bound
+($3.84\times10^{-4}$) also exceeds it.
+
+That absolute-scale reading is not robust to the choice of location statistic,
+and we state the disagreement rather than the favorable half of it. Both
+matched distributions are strongly right-skewed. Their medians are
+$5.47\times10^{-8}$ and $3.26\times10^{-8}$, which are $37\times$ and
+$61\times$ \emph{below} the same absolute scale; the mean therefore exceeds
+the median by factors of $1.7\times10^{4}$ and $5.6\times10^{3}$. On the mean
+the near-exact arms sit above the absolute floor, and on the median they
+collapse beneath it. The $\rho=0.99$ interval spans the floor outright
+($[7.75\times10^{-8},\,5.51\times10^{-4}]$, from $26\times$ below it to
+$276\times$ above), so that cell does not decide the question in either
+direction. With $n=22$ and $n=19$ matched seeds, these data cannot separate a
+genuine equal-fit difference concentrated in a few seeds from a well-behaved
+collapse with a heavy tail.
+
+The preregistration specified the mean, so the frozen verdict is the
+mean-based one and we report the frozen rule unchanged. We do not claim the
+absolute-scale sensitivity rescues what the self-referential floor could not
+settle. Thus, the evidence does not support an inductive-bias reading where
+the finite arms cannot fit, and leaves it genuinely untested where they can.
+Only \texttt{armA\_matched\_fdist} carries a recorded median in the frozen
+summary, so this robustness check is available for the matched distances above
+and not for the as-trained separations quoted elsewhere; we did not reopen the
+per-seed records to extend it.
+
+A fourth defect is independent of the first three and was found in the same
+re-audit. The only adjudicable equal-fit arm is $K=32$, and the training system
+is a $16$-node chain with scalar blocks, so $K$ exceeds the dimension of the
+system being solved. By Remark~\ref{rem:saturation} the Krylov space at that
+budget is the whole space: the residual-optimal $32$-matvec method on this
+system is an exact solve, and the cell cannot distinguish a budget effect from
+a property of the Neumann polynomial even had the floor been sound. The two
+degeneracies are independent -- one is a self-referential threshold, the other
+a saturated budget -- and each alone is sufficient to void the cell. The
+preregistered hard cells $K\in\{1,2,4\}$ are at most a quarter of the dimension
+and reach at most $3$ of the chain's $15$ hops, so the conservative reading does
+not depend on either defect. Any successor experiment comparing solve rules at
+a matched budget must be run at $n\gg K_{\max}$; at $n\le K_{\max}$ the
+strongest competitor degenerates into the exact arm and the comparison is
+vacuous by construction.

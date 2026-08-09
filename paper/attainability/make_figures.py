@@ -138,6 +138,24 @@ def _demo_maze_causal(out: str, quick: bool) -> int:
     return 0
 
 
+def _demo_maze_reach_floor(out: str, quick: bool) -> int:
+    from gabp_sparse_inv.demos.maze_grid import reach_floor_sweep
+    budgets = (1, 2, 4, 7, 8, 16, 32)
+    sizes = ((6, 6),) if quick else ((6, 6), (8, 8), (10, 10), (12, 12))
+    n_test = 32 if quick else 64
+    with open(out + ".csv", "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["rows", "cols", "diameter", "jacobi_sweeps_K", "products_P",
+                    "reach_hops", "floor_mse", "field_energy", "floor_fraction"])
+        for (r, c) in sizes:
+            res = reach_floor_sweep(r, c, budgets=budgets, n_test=n_test)
+            total = res["total"]
+            for K in budgets:
+                w.writerow([r, c, res["diameter"], K, K - 1, K - 1,
+                            res[K], total, res[K] / total])
+    return 0
+
+
 def _demo_deq_robustness(out: str, quick: bool) -> int:
     from gabp_sparse_inv.demos import deq_fixedpoint
     from gabp_sparse_inv.generators import grid_edges
@@ -162,6 +180,10 @@ DEMO = {
     "maze_causal": (_demo_maze_causal,
                     "Maze matched-capacity causal dose-response: identical model, test MSE vs "
                     "solve budget K (exact vs K Jacobi sweeps) (demos/maze_grid.py)."),
+    "maze_reach_floor": (_demo_maze_reach_floor,
+                         "Maze reach floor: exact-field energy beyond the reach ball, a test-MSE "
+                         "lower bound for every rule the reach proposition covers "
+                         "(demos/maze_grid.py)."),
     "deq_robustness": (_demo_deq_robustness,
                        "Fixed-point backward: exact vs Neumann-K gradient error as rho(J)->1 "
                        "(demos/deq_fixedpoint.py)."),
