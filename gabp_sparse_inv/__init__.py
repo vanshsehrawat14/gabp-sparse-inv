@@ -146,4 +146,5 @@ __all__ = [
     "condition_number",
 ]
 
-__version__ = "0.3.4"
+# The public source snapshot is ahead of the published 0.3.4 release.
+__version__ = "0.3.5.dev0"

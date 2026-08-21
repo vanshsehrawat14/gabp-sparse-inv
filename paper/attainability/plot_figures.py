@@ -3,7 +3,7 @@
 
 Data is produced by make_figures.py (which drives the tested bench/demo CLIs);
 this script only draws. Style: Computer Modern mathtext to match the paper,
-Okabe-Ito colorblind-safe palette, distinct markers/linestyles so every series
+navy/light-blue/green palette, distinct markers/linestyles so every series
 survives grayscale print.
 
     python paper/attainability/plot_figures.py
@@ -24,12 +24,13 @@ HERE = Path(__file__).parent
 DATA = HERE / "figures" / "data"
 OUT = HERE / "figures"
 
-# Okabe-Ito (colorblind-safe). Ours/exact is always black.
+# Ours/exact is always black; comparison series take navy, then light blue,
+# then green. The three comparison colors separate by lightness as well as
+# hue, so they survive both dichromatic vision and grayscale print.
 BLACK = "#000000"
-ORANGE = "#E69F00"
+NAVY = "#1F3B73"
 BLUE = "#56B4E9"
 GREEN = "#009E73"
-VERMILLION = "#D55E00"
 GRAY = "#7F7F7F"
 
 plt.rcParams.update(
@@ -72,7 +73,7 @@ def maze_extrapolation() -> None:
     sizes = sorted({int(r["test_rows"]) for r in data})
     series = [
         ("gabp", "gabp (exact solve)", BLACK, "o", "-"),
-        ("gnn", "GNN", ORANGE, "s", "--"),
+        ("gnn", "GNN", NAVY, "s", "--"),
         ("transformer", "Transformer", BLUE, "^", ":"),
     ]
     fig, ax = plt.subplots(figsize=(4.5, 3.0))
@@ -105,7 +106,7 @@ def maze_causal() -> None:
     )
     fig, ax = plt.subplots(figsize=(4.5, 3.0))
     xpos = list(range(len(ks) + 1))
-    ax.plot(xpos[:-1], mses, marker="s", ls="-", color=VERMILLION, label="$K$ Jacobi sweeps")
+    ax.plot(xpos[:-1], mses, marker="s", ls="-", color=NAVY, label="$K$ Jacobi sweeps")
     ax.plot([xpos[-1]], [exact], marker="*", ms=11, ls="none", color=BLACK, label="exact solve")
     if floor is not None:
         ax.axhline(floor, ls="--", color=GRAY, lw=1.0, label="predict-the-mean floor")
@@ -124,7 +125,7 @@ def deq_robustness() -> None:
     x = [1.0 - v for v in rho]
     series = [
         ("exact", "sparse direct", BLACK, "o", "-"),
-        ("neumann8", "Neumann-8", ORANGE, "s", "--"),
+        ("neumann8", "Neumann-8", NAVY, "s", "--"),
         ("neumann16", "Neumann-16", BLUE, "^", ":"),
         ("neumann32", "Neumann-32", GREEN, "D", "-."),
     ]
@@ -167,7 +168,7 @@ def scaling() -> None:
     )
     xd = [n for n in xs if ns[n]["dense"]]
     ax1.plot(xd, [med(ns[n]["dense"]) for n in xd], marker="s", ls="--",
-             color=ORANGE, label="dense Cholesky inverse")
+             color=NAVY, label="dense Cholesky inverse")
     ax1.set_xscale("log", base=2)
     ax1.set_yscale("log")
     ax1.set_xlabel("chain length $n$")
@@ -181,9 +182,9 @@ def scaling() -> None:
     ax2.plot(n2, [float(r["tree_fwdbwd_s"]) for r in g], marker="o", color=BLACK,
              label="selinv (per-node loop)")
     ax2.plot(n2, [float(r["tree_batched_fwdbwd_s"]) for r in g], marker="^", ls=":",
-             color=GREEN, label="selinv (batched)")
+             color=BLUE, label="selinv (batched)")
     ax2.plot(n2, [float(r["dense_fwdbwd_s"]) for r in g], marker="s", ls="--",
-             color=ORANGE, label="dense autograd")
+             color=NAVY, label="dense autograd")
     ax2.set_xscale("log", base=2)
     ax2.set_yscale("log")
     ax2.set_xlabel("GMRF nodes $n$")

@@ -1,28 +1,23 @@
 \section{Conclusion}
 \label{sec:conclusion}
 
-Selected inversion is classical. On the measured finite-precision grid, this
-implementation has no robust accuracy advantage over a well-ordered dense
-solve; its role here is the exact structured computation tested in the two
-probes.
+Selected inversion is classical; here it provides the exact structured
+intervention. In both preregistered 30-seed probes, the finite Jacobi or
+Neumann arm fails to attain comparable fit in the hard cells. The equal-fit
+inductive-bias comparison is therefore absent. The failed DEQ control,
+conflicting maze diagnostics, and excluded reused-seed branch keep that ruling
+hedged. Proposition~\ref{prop:reach} nevertheless certifies the routed-field
+result for its source-generated class: at seven products, its test-error floor
+is $578$ times the exact arm's error.
 
-The tested hypothesis was that exact structured computation acts as an
-inductive bias among models with comparable training fit. In both
-preregistered probes over $30$ held-out seeds, the finite alternative fails
-to attain comparable fit in the high-difficulty cells: bounded Jacobi sweeps
-in Section~\ref{sec:maze} and finite Neumann adjoints in
-Section~\ref{sec:deq}. The separate three-seed cross-architecture diagnostic
-is exploratory and does not alter this attribution. The DEQ low-difficulty
-control fails its relative-gap clause; the maze extrapolation-floor comparison
-passes but the in-distribution \texttt{floor\_sound} diagnostic fails, leaving
-NC2 ambiguous. The later reused-seed analysis is excluded. The supported
-conclusion is narrow and hedged: against the truncated rules tested, exact
-structured computation expands the attainable regime on these controlled,
-solve-shaped tasks, while the inductive-bias explanation is not supported.
-Proposition~\ref{prop:reach} extends the routed-field half to the class it
-covers; residual-optimal rules on the DEQ side are the successor study.
+The later GMRES falsifier makes the DEQ conclusion a lot more specific. At eight
+matched products, GMRES clears the comparable-fit bar in most seeds and reaches
+the exact arm's learned function in the median; Neumann does neither. The first-read ruling remains valid
+for its frozen Neumann arms, but finite access itself does not explain the gap
+at this budget; at four products and below, joint non-attainment remains
+unresolved.
 
-The evidence is CPU-scale and confined to low-treewidth problems. Exact selected
-uncertainty and difficult-spectrum implicit gradients require new protocols;
-none of the results extends beyond the measured regimes
+These are CPU-scale, low-treewidth, solve-shaped tasks. The evidence does not
+support the initial inductive-bias explanation or a performance claim against
+preconditioned or multiscale solvers. Those questions need new protocols
 (Section~\ref{sec:program}).

@@ -68,7 +68,6 @@ architectures could attain.
   \url{paper/attainability/figures/data/maze_extrapolation.csv}.}
   \label{fig:maze}
 \end{figure}
-\FloatBarrier
 
 \paragraph{Within-architecture control: the effect is the solve's globality, not the
 architecture.}
@@ -81,38 +80,49 @@ parameter count, same data and optimizer) and replaces its exact
 \texttt{junction\_solve} with $K$ damped-Jacobi sweeps on the same learned
 precision $A$. For the convergent splitting used here, $K\to\infty$ recovers
 the exact solve; the intervened variable is the iteration budget. What that
-budget can reach is not a property of the splitting.
+budget can reach follows from a source-generated Krylov access model.
 
-\begin{proposition}[Reach of a matvec budget]
+\begin{proposition}[Reach of a source-Krylov budget]
 \label{prop:reach}
-Let $A=I-J$ have the sparsity pattern of a graph $\Gr$, with hop distance taken
-on the undirected pattern, and let $x$ be produced by any rule that starts from
-$x_0=0$ and accesses $A$ only through $P$ products with $A$ or $A\T$, each
-applied to a vector the rule has already formed from $b$. Then
-$x\in\spn\{b,Jb,\dots,J^{P}b\}$, hence $\supp(x)\subseteq\hop_{P}(\supp b)$,
-the vertices within $P$ hops of $\supp b$. Consequently, if a vertex $v$ at
-graph distance $d>P$ from $\supp b$ has $(\inv{A}b)_v\neq0$, then $x_v=0$ and
-the error at $v$ is $|(\inv{A}b)_v|$. Both hypotheses bind.
-Appendix~\ref{app:reach} proves the proposition, gives the counterexample to
-each, and states the complementary bound at large $P$.
+Let $A$ be nonsingular with source $b$, and let $M$ have the sparsity pattern
+of a graph $\Gr$, with hop distance on the undirected pattern. Let $c$ satisfy
+$\supp(c)\subseteq\supp(b)$. Consider a
+rule whose available vectors before its first product lie in $\spn\{c\}$ and
+which thereafter only takes linear combinations of available vectors or
+applies $M$ to one of them. After $P$ products, every output $x$ lies in
+$\spn\{c,Mc,\dots,M^{P}c\}$ and therefore
+$\supp(x)\subseteq\hop_{P}(\supp b)$. Consequently, against the target
+$y=\inv{A}b$, if a vertex $v$ farther than $P$ hops from $\supp b$ has
+$y_v\neq0$, then $x_v=0$ and the error at $v$ is $|y_v|$.
+Appendix~\ref{app:reach} proves the result,
+records why the access model is necessary, and states the complementary bound
+at large $P$.
 \end{proposition}
 
-Within the class it covers, the bound belongs to the budget rather than to the
-sweep: truncated Neumann, damped Jacobi, GMRES, conjugate gradients, and, at
-the standard identity initialization, Anderson \citep{anderson1965iterative}
-and Broyden \citep{broyden1965class} all form their iterates from products
-taken against vectors already generated from $b$, and inherit it. Budgets here
-are labelled by sweeps: $K$ damped-Jacobi sweeps from a zero start spend $K-1$
-products and reach $K-1$ hops. The preregistered routed-field budget is the
-FLOP-matched $K=7$, reaching $6$ hops, while the $6\times6$ training grid has
+For the routed-field sweep, $M=I-D^{-1}A$ and $c=D^{-1}b$; diagonal scaling
+preserves both the graph and source support. The implementation executes one
+sparse $A$ product on every Jacobi sweep, including $A0$ on the first. Thus
+$K$ zero-start sweeps charge $K$ products but return a polynomial through
+$M^{K-1}c$, reaching at most $K-1$ hops. The same
+bound covers zero-start polynomial and unpreconditioned Krylov rules that obey
+the stated access model, including truncated Neumann, GMRES, and conjugate
+gradients; it does not cover arbitrary probes, global vector transforms, or a
+preconditioner with uncounted nonlocal reach. The preregistered routed-field
+budget is $K=7$, FLOP-matched at the $6\times6$ training size and then held
+fixed for size extrapolation. The literal Jacobi output reaches $6$ hops, while
+the training grid has
 hop diameter $10$ and the size-$12$, $24$, and $48$ test grids have diameters
-$22$, $46$, and $94$. No rule in this class carries point-source information
-across these grids at that budget, so the dose-response below constrains the
-budget as a class rather than the particular sweep chosen.
+$22$, $46$, and $94$. For the class-wide comparison, I grant a generic
+competitor all seven charged products as useful source-generated products and
+ignore any additional Krylov orthogonalization cost. Even under that more
+generous convention, no covered rule carries point-source information across
+these grids.
 Appendix~\ref{app:floor} converts that support statement into a loss bound read
-off the labels alone: at $K=7$ no covered rule can beat $1460$ times the exact
-arm's test error, while at $K\geq16$ the bound is vacuous on this grid and the
-dose-response there rests on measurement. The error decreases monotonically
+off the labels alone. The literal seven-sweep Jacobi support gives a
+$1460\times$ floor, while a generic competitor receiving all seven charged
+product opportunities still has a $578\times$ floor. At $K\geq16$ the Jacobi
+support bound is vacuous on this grid and the dose-response there rests on
+measurement. The error decreases monotonically
 with that budget
 (Table~\ref{tab:maze-causal}, plotted as Figure~\ref{fig:maze-causal}): every displayed
 finite-budget variant is worse than predict-the-mean (a truncated solve yields
@@ -156,14 +166,10 @@ preference among equally fit models. The
 as-trained gap also shrinks with size ($8.17\times10^{-2}$ at size $6$ to
 $1.30\times10^{-3}$ at size $48$), so there is no growing-extrapolation
 signal beyond the attainability gap itself.
-\providecommand{\tmlrevidencestart}{}
-\providecommand{\tmlrevidenceend}{}
-\tmlrevidencestart
 Full verdict and per-seed records:
 \url{archive/docs/CONFIRMATORY_RESULTS.md} (Maze section),
 \url{archive/results/CONFIRMATORY/matched_fit_taskA/maze_matched_fit.json},
 and \url{archive/results/CONFIRMATORY/matched_fit_taskA/maze_seeds/}.
-\tmlrevidenceend
 The $K=256$ floor arm's mean absolute extrapolation gaps are 3.8--4.6 orders
 below the $K=7$ gaps, which is the comparison the frozen results prose used to mark
 maze NC2 as passing. However, the same first-read JSON records
@@ -230,14 +236,14 @@ rises as the system becomes nearly singular, as ordinary condition-sensitive
 direct-solve analysis predicts. The iterative
 backward degrades with the Neumann tail: at $\rho=0.99$ even $32$ terms leave
 relative gradient error $77.1\%$, and at $\rho=0.999$ the error is $97.4\%$.
-These are the geometric remainder and nothing more: $0.99^{32}=0.725$ and
-$0.999^{32}=0.969$ bracket the measured values, which is the point of the
-column. This system is $18$-dimensional ($9$ nodes, block size $2$), so its
-$K\ge16$ entries lie past the budget-saturation threshold of
-Appendix~\ref{app:reach}, where an optimal $K$-matvec method is already an
-exact solve; we read the whole column as a property of the truncated-Neumann
-rule, which is what deployed implicit-model backward passes use, and not as a
-property of the budget. Separate unit tests validate the nonlinear
+The plain geometric scales $0.99^{32}=0.725$ and $0.999^{32}=0.969$ sit just
+below the measured $0.771$ and $0.974$, consistent with a slowly decaying
+Neumann tail whose constants non-normality inflates. This system is $18$-dimensional ($9$ nodes, block size $2$), so only
+its $K=32$ entry lies past the conservative budget-saturation threshold of
+Appendix~\ref{app:reach}. The whole column is treated as a property of the
+truncated-Neumann rule, one transparent finite-series member of the
+approximate implicit-gradient family, and not as a property of the budget. Separate unit tests validate the
+nonlinear
 implicit-function-theorem backward against autograd through an unrolled solver
 (\url{tests/test_deq_fixedpoint.py}).
 
@@ -292,12 +298,14 @@ Neumann arm is matchable in only $0$--$23.3\%$ of seeds
 (relative train gap $+1.45$ to $+13.2$), so the inductive-bias
 (\textsc{survive}) branch has nothing to compare there; the result resolves to
 the conservative attainability/optimization reading. That branch is also
-unreachable at the one high-$\rho$ arm that does clear the matchability bar,
-because that arm calibrates the floor it would have to exceed; this is a
+unreachable at the two high-$\rho$ cells that do clear the matchability bar,
+$K=32$ at $\rho=0.98$ ($22/30$) and at $\rho=0.99$ ($19/30$), because each
+calibrates the floor it would have to exceed; this is a
 defect of the frozen rule rather than a finding, and
-Appendix~\ref{app:integrity} states it. That same arm is $K=32$ on a
-$16$-dimensional system, so it is past saturation as well: it is uninformative
-for two independent reasons, and we draw nothing from it either way. The hard
+Appendix~\ref{app:integrity} states it. Both cells use $K=32$ terms, hence
+$31$ products, on a $16$-dimensional system, so they are past the generic
+exact-termination ceiling as well: they are uninformative
+for two independent reasons, and no inference is drawn from them either way. The hard
 cells that carry the conservative reading, $K\in\{1,2,4\}$, are a quarter of
 the dimension or less and are unaffected. The one designed silent
 control ($\rho=0.5$) did not cleanly pass: its relative-gap clause failed
@@ -318,25 +326,79 @@ confirmation, and none of its verdicts or effect-size claims is used here.
 Appendix~\ref{app:integrity} records the chronology and a nested run-tag
 metadata defect.
 
+\paragraph{Post-hoc residual-optimal adversary.}
+The first-read study cannot distinguish a small operator-product budget from a
+poor Neumann polynomial. A separately frozen exploratory study uses 20 fresh
+development seeds, enlarges the chain to $n=256$, and keeps the exact forward
+common. It compares exact adjoints with $P+1$ Neumann terms and zero-start
+unrestarted GMRES \citep{saad1986gmres}, each spending
+$P\in\{1,2,4,8,16,32\}$ products. Here $n=256\geq8P_{\max}$, so the dimension
+imposes no exact-termination ceiling; a small source grade still could, so the
+runner rejects Arnoldi breakdown, and none occurs. The arms are
+product-matched, not FLOP-matched;
+Arnoldi work and wall time are recorded separately.
+
+At $P\leq4$, neither finite arm clears the descriptive $12/20$ comparable-fit
+bar in either hard population. At $P=8$, GMRES clears it in $18/20$ and $15/20$
+seeds, versus $5/20$ and $4/20$ for Neumann (Table~\ref{tab:deq-gmres}). Its
+median exact-forward test-loss ratios are $1.001$ and $0.996$, and median
+absolute learned-gain differences are below $4.0\times10^{-6}$. End-to-end
+training is $10.6$--$14.7\%$ slower than Neumann, so this is not a speed claim.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Fresh-seed exploratory DEQ adversary at $n=256$. Match counts use
+  the frozen $5\%$ trajectory criterion; $R_N$ and $R_G$ are median final
+  exact-forward test-loss ratios to the exact arm over all 20 seeds. The
+  ratios are continuous diagnostics, not the source of the match labels.
+  Data: \url{paper/attainability/figures/data/deq_gmres_falsifier.csv}.}
+  \label{tab:deq-gmres}
+  \begin{tabular}{rrcccc}
+    \toprule
+    $\rho(J)$ & $P$ & Neumann match & GMRES match & $R_N$ & $R_G$ \\
+    \midrule
+    $0.98$ & 4  & $6/20$ & $8/20$  & $0.956$ & $1.011$ \\
+           & 8  & $5/20$ & $18/20$ & $1.372$ & $1.001$ \\
+           & 16 & $9/20$ & $20/20$ & $1.477$ & $1.000$ \\
+           & 32 & $8/20$ & $20/20$ & $0.262$ & $1.000$ \\
+    $0.99$ & 4  & $1/20$ & $6/20$  & $9.193$ & $2.450$ \\
+           & 8  & $4/20$ & $15/20$ & $1.831$ & $0.996$ \\
+           & 16 & $9/20$ & $19/20$ & $0.998$ & $1.000$ \\
+           & 32 & $5/20$ & $20/20$ & $5.487$ & $1.000$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The terminal match label is not a total ordering: at $(\rho,P)=(0.98,32)$,
+Neumann has lower median final test loss than exact, but only $8/20$
+trajectories enter the narrow matching band. Both prespecified positive
+predictions fail. The best designated training log-ratio is $-0.739$, short of
+the predicted tenfold improvement, and the initial-residual diagnostic was
+mistakenly evaluated at the common initial gain $0.2$ rather than near the
+target $\rho$. The easy control passes; the exact solve agrees with a dense
+check to $2.68\times10^{-16}$; and no Arnoldi breakdown occurs. At eight
+products, the gap belongs to the Neumann rule rather than finite access in
+general. At $P\leq4$, joint non-attainment remains unresolved. The study is
+post-hoc and exploratory; Appendix~\ref{app:integrity} gives its protocol and
+integrity record.
+
 \paragraph{Interpretation and scope.}
 The error sweep is a mechanism result at controlled scale ($18$ dimensions):
 it shows the exact sparse-direct backward is accurate on the tested cells where
 the finite Neumann truncation is not, and that the training arms differ in
-attainability under the first-read protocol. That comparison is with the
-Neumann rule, not with the best possible use of $K$ matrix--vector products. The adjudication does not support
+attainability under the first-read protocol. That adjudication does not support
 the stronger claim that this difference reflects an inductive bias among
 equally attainable optima, because the hard cells do not supply an equal-fit
-comparison. On this evidence, the observed difference reflects the iterative
-arm's inability to fit the stiff cells, an attainability/optimization effect
-rather than a preference effect. Neumann iteration is the transparent
-baseline; accelerated solvers (Anderson \citep{anderson1965iterative} and
-Broyden \citep{broyden1965class}) can reduce the iteration count and are
-necessary competitors at scale; they were not evaluated here. Where their
-iterates are formed from products against vectors generated from $b$ they
-inherit Proposition~\ref{prop:reach}, so the routed-field limit binds them as
-well; a preconditioned method is bound only as far as the accumulated reach of
-the operators it applies, which is the direction a serious competitor should
-take. The structured
+comparison. The later GMRES result shows that this failure is not generic to
+the same product budget once $P=8$: a better polynomial clears the bar in most
+seeds and reaches the exact arm's learned function in the median. The confirmatory conclusion is therefore an
+attainability/optimization effect for the Neumann rule rather than a
+preference effect or a general lower bound. Anderson
+\citep{anderson1965iterative}, Broyden \citep{broyden1965class}, and
+preconditioned solvers remain necessary competitors at scale. Where their
+generated vectors satisfy Proposition~\ref{prop:reach}'s source-Krylov access
+model, the routed-field limit binds them; every preconditioner application must
+be counted by its own reach. The structured
 direct solve avoids a convergence tolerance but retains ordinary
 conditioning-dependent rounding error. The affine diagnostic uses a
 convergent construction with $\rho(J)<1$; the advantage is for

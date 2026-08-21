@@ -2,83 +2,47 @@
 \label{sec:related}
 
 \paragraph{The exact engine.}
-The Takahashi equations \citep{takahashi1973} and Erisman--Tinney
-\citep{erismantinney1975} compute inverse entries on the Cholesky factor's
-pattern without the full inverse; SelInv \citep{lin2011selinv} and the pole
-expansion and selected inversion method (PEXSI)
-\citep{lin2013pexsi} do this for general sparse SPD and Hermitian matrices via
-the elimination tree, and \citet{jacquelin2018pselinv} carry the same
-distributed algorithm to non-symmetric $A$ with the selection confined by the
-pattern of $A\T$; Gaussian belief propagation is the same
-collect/distribute recurrence and is exact on trees
-\citep{weiss2001correctness,bickson2008gaussian}. Recent accelerator systems
-include \texttt{Serinv} for block-tridiagonal arrowhead matrices
-\citep{maillou2025serinv} and tile-parallel selected inversion for structured
-matrices \citep{fattah2025stiles}. This work is a reference PyTorch
-implementation, not a performance competitor to those systems, and claims
-nothing new for the forward recurrence.
+The Takahashi and Erisman--Tinney recurrences are classical
+\citep{takahashi1973,erismantinney1975}; SelInv, PEXSI, and PSelInv extend
+selected inversion through sparse elimination trees
+\citep{lin2011selinv,lin2013pexsi,jacquelin2018pselinv}. Differentiation is also
+occupied: it appears in sparse log-determinants, TMB, and linear-time
+reverse-mode banded operators for TensorFlow and PyTorch
+\citep{zhu2019sparse,kristensen2016tmb,durrande2019banded}. Schwarz--Schur,
+\texttt{torch-sla}, and ADELIA provide broader differentiable sparse-solver
+surfaces \citep{wang2025schwarz,torchsla2026,boudaoud2026adelia}. The
+implementation here is enabling machinery, not the scientific novelty.
 
-\paragraph{Differentiating selected inversion.}
-The reverse-mode adjoint of the matrix inverse,
-$\cotan{A}=-\inv{A}\cotan{G}\inv{A}$, is folklore
-\citep{dwyer1948symbolic,giles2008collected}; that its evaluation costs a
-constant factor of the forward is the cheap-gradient principle
-\citep{baur1983complexity}. \citet{zhu2019sparse} differentiate a sparse
-log-determinant through selected inversion on the same factorization; this is
-standard in GMRF and sparse-Cholesky learning \citep{rue2005gmrf}. Template
-Model Builder (TMB) has
-long combined sparse latent-Gaussian calculations,
-automatic differentiation, and Laplace approximation at large scale
-\citep{kristensen2016tmb}. These results provide the mathematical background for
-Remark~\ref{rem:scaffold}.
+\paragraph{Comparable fit.}
+Comparable-loss comparison is not new
+\citep{mueller2025trajectories,boursier2025simplicity}. What is specific here is
+a preregistered comparable-fit gate for exact-versus-finite numerical
+computation, followed by a negative ruling when it does not open. No broader
+priority claim is made.
 
-\paragraph{Differentiable sparse linear algebra.}
-Schwarz--Schur Involution batches direct sparse subdomain operations on GPUs
-and supplies a differentiable solver for PDE-shaped problems
-\citep{wang2025schwarz}. \texttt{torch-sla} unifies differentiable direct,
-iterative, nonlinear, and eigenvalue solvers across CPU, GPU, and distributed
-backends \citep{torchsla2026}. Closest to the operator surface here,
-\citet{boudaoud2026adelia} register a hand-derived \texttt{custom\_vjp} in JAX
-covering factorization, triangular solve, and selected inversion, for the INLA
-objective on symmetric block-tridiagonal arrowhead precision matrices. These
-systems make a generic ``differentiable sparse solver'' claim untenable, and a
-differentiable selected inverse is not by itself unoccupied. The narrower
-software surface here is selected covariance entries, log determinant, solve,
-and sampling on a general filled pattern, exposed as a trainable PyTorch layer
-and including a static-pattern non-symmetric selected inverse rather than a
-symmetric inference backend. The
-paper's scientific contribution is
-instead the preregistered account
-(Sections~\ref{sec:maze}--\ref{sec:deq}) of why exactness wins on its
-solve-shaped probes: attainability against bounded-reach or biased-gradient
-alternatives, not an inductive-bias effect. Approximate selected-covariance
-methods with estimable confidence bounds \citep{siden2017covariance} are
-important competitors for the prospective uncertainty experiment.
+\paragraph{Local access and its escape classes.}
+Polynomial graph filters are classically hop-local
+\citep{defferrard2016convolutional}, with newer measures of long-range
+interaction \citep{bamberger2025measuring,kemper2025message}.
+Proposition~\ref{prop:reach} instead fixes this experiment's source-generated
+access class and turns support into an instance-specific floor; it is narrower
+than general matrix-vector query lower bounds
+\citep{derezinski2026matrixvector}. Learned multigrid, UGrid, ARMA filters, and
+learned incomplete factorizations are genuine escape classes
+\citep{greenfeld2019multigrid,luz2020amg,han2024ugrid,bianchi2022arma,hausner2025gmres}.
+Their nonlocal setup and application work must be counted separately.
 
-\paragraph{Where the claim lives.}
-The original motivation drew on the lineage of inductive bias for
-generalization and size or length extrapolation; the evidence in this paper
-instead lands on the expressivity limits of bounded-depth message passing,
-including the over-squashing line
-\citep{alon2021bottleneck,topping2022understanding}
-and graph rewiring \citep{topping2022understanding,karhadkar2023fosr},
-implicit and steady-state graph neural networks \citep{gu2020implicit}, and
-graph transformers \citep{rampasek2022recipe,shirzad2023exphormer}. Since the
-matched-fit result says the tested alternatives do not attain the target, the
-evidence supports an
-expressivity/attainability story rather than a generalization-preference
-one. These methods are the relevant comparator set for any future
-expressivity-separation claim. The consumers
-that make a differentiable selected inverse useful, deep equilibrium models
-\citep{bai2019deep} and delta-rule linear-attention layers
-\citep{yang2024parallelizing}, supply the structured symmetric and
-non-symmetric solves of Section~\ref{sec:deq} and the appendix. That
-literature also argues the other way: Jacobian-free backpropagation drops the
-Jacobian term outright and reports accuracy competitive with prior implicit
-networks at matched parameter count \citep{fung2022jfb}, and phantom gradients
-report an inexact update direction that is empirically preferable
-\citep{geng2021training}. Neither estimator is a fixed-$K$ Neumann truncation
-and neither is evaluated with $\rho(J)$ near one, which is where
-Section~\ref{sec:deq} places its hard cells. The attainability reading is
-scoped to that estimator in that regime, not to inexact implicit gradients in
-general.
+\paragraph{Approximate implicit differentiation.}
+Iteration-complexity analyses, inconsistent partial-solve adjoints, and
+differentiable preconditioned Krylov methods already frame approximate implicit
+gradients \citep{grazzi2020iteration,akbarzadeh2020consistent,montoison2026differentiable}.
+Jacobian-free backpropagation, phantom gradients, Broyden reuse, and implicit
+language models report successful inexact training
+\citep{fung2022jfb,geng2021training,nguyen2023efficient,schone2025implicit}.
+One deployed DEQ compares them directly and keeps the inexact estimator, which
+reaches a similar score and cuts training from $56$ hours to $32$
+\citep{zheng2023deqnar}.
+Reversible DEQs report benefits from exact gradients through another
+construction \citep{mccallum2025reversible}. Neither this literature nor this
+paper supports a universal exact-gradient claim. The confirmatory result is
+Neumann-specific, and the GMRES adversary makes that boundary empirical.

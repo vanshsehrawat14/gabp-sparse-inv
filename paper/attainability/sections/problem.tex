@@ -1,12 +1,12 @@
 \section{The primitive: an exact, differentiable global sparse solve}
 \label{sec:primitive}
 
-The vehicle for the operator family under test is a differentiable selected-inverse layer.
-The later sections need three facts about it: it is exact and global
-(\S\ref{sec:setup}), it is differentiable at the asymptotic cost of its
-forward pass (\S\ref{sec:theorem}), and it is available across the matrix
-structures the experiments use (\S\ref{sec:kernels}). None of the three is
-new. Together they make exactness embeddable and trainable.
+The operator family under test runs through a differentiable selected-inverse
+layer. The later sections need three facts about it: it is exact and global
+(\S\ref{sec:setup}), differentiable at the asymptotic cost of its forward
+pass (\S\ref{sec:theorem}), and available across the matrix structures the
+experiments use (\S\ref{sec:kernels}). None of the three is new; together
+they make exactness embeddable and trainable.
 
 \subsection{Selected inversion on a pattern}
 \label{sec:setup}

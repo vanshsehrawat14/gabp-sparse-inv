@@ -18,7 +18,6 @@
 \usepackage{microtype}
 \usepackage{caption}
 \usepackage{titlesec}
-\usepackage[section]{placeins}
 \usepackage[round,authoryear]{natbib}
 \captionsetup{font=small,skip=9pt,justification=raggedright,singlelinecheck=false}
 \captionsetup[table]{position=above}
@@ -38,7 +37,16 @@
 % manuscript visually dense. Set them as short display headings instead.
 \titleformat{\paragraph}[block]
   {\normalfont\normalsize\bfseries}{}{0pt}{}
-\titlespacing*{\paragraph}{0pt}{1.15\baselineskip}{0.35\baselineskip}
+
+% One scale for every heading, measured in body leading. article sets section and
+% subsection spacing in ex, which \linespread does not scale, so at 1.25 leading
+% the defaults leave a paragraph heading more air above it than a section
+% heading. These steps descend: 1.40, 1.00, 0.80, and each keeps the natural
+% stretch and shrink the article defaults carry, so a heading compresses a
+% little rather than being stranded at the foot of a page.
+\titlespacing*{\section}{0pt}{1.40\baselineskip plus 0.20\baselineskip minus 0.15\baselineskip}{0.55\baselineskip}
+\titlespacing*{\subsection}{0pt}{1.00\baselineskip plus 0.15\baselineskip minus 0.12\baselineskip}{0.40\baselineskip}
+\titlespacing*{\paragraph}{0pt}{0.80\baselineskip plus 0.10\baselineskip minus 0.10\baselineskip}{0.30\baselineskip}
 
 \raggedbottom
 
@@ -55,12 +63,12 @@
 \begin{titlepage}
 \renewcommand{\thefootnote}{\fnsymbol{footnote}}
 \begin{center}
-\vspace*{0.2cm}
+\vspace*{0.5em}
 
 {\LARGE Exact Sparse Computation in Differentiable Models:\\[0.45em]
 Attainability Gaps, Not Evidence for Inductive Bias\par}
 
-\vspace{0.9cm}
+\vspace{2.3em}
 
 {\large Vanshdeep Sehrawat\footnote{e-mail:
   \texttt{sehrawat@unlv.nevada.edu}, \texttt{vanshdeep.sehrawat@gmail.com};\ ORCID:
@@ -75,7 +83,7 @@ Attainability Gaps, Not Evidence for Inductive Bias\par}
 (package \texttt{gabp-sparse-inv} on PyPI).\\
 File paths cited in this paper are relative to the repository root.}
 
-\vspace{0.45cm}
+\vspace{1.15em}
 
 {\bfseries Abstract}
 \end{center}
@@ -86,34 +94,32 @@ coupling with fixed block size and elimination width, selected inversion compute
 factor's filled pattern in $\bigO(n)$ time, and its projected derivative has
 a reverse schedule with the same asymptotic structural work. Using a reference
 PyTorch implementation of the classical symmetric and static-pattern
-non-symmetric operators, we ask whether an
+non-symmetric operators, I ask whether an
 exact structured solve acts as an \emph{inductive bias}, selecting a
 better-generalizing solution when competing models attain comparable
 training fit. Two preregistered matched-fit probes test this hypothesis on
 $30$ held-out seeds: routed-field size extrapolation and deep-equilibrium
-(DEQ) training near spectral instability. The exact arms win the raw comparisons,
-but the finite Jacobi and Neumann alternatives match their training fit in
-only $0$--$23.3\%$ of high-difficulty seeds, below a preregistered $60\%$
-bar. The equal-fit comparison is therefore absent; for the truncated-Neumann
-and $K$-sweep Jacobi rules at the tested budgets the result is an
-\emph{attainability/optimization} gap, not an inductive-bias effect, and a
-reach argument extends the routed-field half to every rule that touches the
-operator only through products against vectors generated from the source. A separate three-seed exploratory comparison against
-much larger graph neural network (GNN) and Transformer baselines shows the
-same direction but does not match architecture or optimization. The
-sparse-direct implicit backward remains within $1.1\times10^{-12}$ of a
-dense 64-bit floating-point (fp64) oracle on four stiffness cells where finite Neumann adjoints have
-$77.1\%$ and $97.4\%$ relative error at $\rho(J)=0.99$ and $0.999$,
-respectively; a 32-bit floating-point (fp32) sweep finds no
-robust precision advantage over a well-ordered dense factorization. The
-DEQ low-difficulty control fails its prespecified relative-gap clause, and
-two non-equivalent maze-floor diagnostics disagree. A later reuse of the
-same held-out seeds is excluded. The supported conclusion is therefore
-narrow and hedged: against the truncated rules tested, exact structured
-computation expands the attainable regime in these controlled, solve-shaped
-probes on a central processing unit (CPU), while the proposed inductive-bias
-explanation is not supported and residual-optimal rules are left to a
-registered successor study.
+(DEQ) training near spectral instability. The exact arms win the raw
+comparisons, but the finite Jacobi and Neumann alternatives match their
+training fit in only $0$--$23.3\%$ of high-difficulty seeds, below a
+preregistered $60\%$ bar, so the equal-fit comparison never arises. In the
+routed field, a source-generated support certificate extends the result beyond
+Jacobi: even after granting a generic competitor all seven charged products,
+its label-only test-MSE floor is $578$ times the exact arm's error. The DEQ
+result is more specific. The sparse-direct backward remains within
+$1.1\times10^{-12}$ of a dense 64-bit floating-point (fp64) oracle where
+32-term Neumann adjoints have
+$77.1\%$ and $97.4\%$ relative error at $\rho(J)=0.99$ and $0.999$.
+A post-hoc adversarial study on 20 fresh development seeds and
+$256$-dimensional systems shows that this failure is rule-sensitive. At eight
+matched products, unrestarted GMRES clears the comparable-fit bar in $18/20$
+and $15/20$ hard-cell seeds, versus $5/20$ and $4/20$ for Neumann; its median
+exact-forward test-loss ratios to the exact arm are $1.001$ and $0.996$. Two
+predeclared positive predictions fail, while the easy control passes. A failed
+DEQ control, conflicting maze-floor diagnostics, and a later reused-seed
+analysis keep the causal conclusion hedged. Exact structured computation
+expands what the tested truncations can attain in these solve-shaped CPU
+probes, but the proposed inductive-bias explanation is not supported.
 \end{quote}
 
 \end{titlepage}

@@ -13,11 +13,11 @@ Scored on the pattern against a 64-bit oracle and swept over conditioning
 equal 32-bit floating-point (fp32) precision stay within small constant
 factors of each other across
 structures and $\kappa$: the error ratio ranges from $0.34$ to $1.95$ with no
-consistent direction (at the highest-$\kappa$ grid cell the dense solve is in
-fact the more accurate, by more than $2.8\times$). An initial reading of roughly $1.9\times$
-on trees, growing with $\kappa$, on ill-scaled random matrices turned out,
-over enough seeds (16 for the ordering study), to be a ratio-of-medians
-artifact, and most of the modest, heavy-tailed median gap is an
+consistent direction. At the highest-$\kappa$ grid cell the dense solve is in fact
+the more accurate, by more than $2.8\times$. An initial reading on ill-scaled random matrices suggested roughly
+$1.9\times$ on trees, growing with $\kappa$. Over enough seeds (16 for the
+ordering study) that reading turned out to be a ratio-of-medians artifact. Most
+of what remains, a modest and heavy-tailed median gap, is an
 elimination-ordering effect: a dense Cholesky run in the kernel's own
 leaf-first order has comparable accuracy. No consistent accuracy edge appears
 on this grid. The 16-seed ordering diagnostic is recorded in

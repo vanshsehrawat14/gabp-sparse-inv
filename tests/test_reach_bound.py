@@ -1,12 +1,10 @@
 """Reach bound of the routed-field Jacobi arm (Proposition 1 of the attainability paper).
 
-The reach argument constrains rules that start from zero and touch the operator only
-through products against vectors they have already formed from the source. Both
-hypotheses are load-bearing: an initialisation with global support evades the
-conclusion at zero cost, and a rule free to probe the operator with arbitrary vectors
-escapes the class entirely. The paper therefore asserts that the shipped arm satisfies
-the hypotheses rather than leaning on the idealisation, and these tests check that
-assertion directly on the arm.
+The reach argument constrains source-Krylov rules: before the first product they may
+form only scalar multiples of the source, and thereafter only linear combinations or
+products of the sparse iteration matrix with an available vector. Global transforms,
+arbitrary probes, and uncounted nonlocal preconditioners are outside the class. The
+paper therefore checks the shipped arm rather than relying on the idealization.
 
 ``K`` damped-Jacobi sweeps from a zero start spend ``K - 1`` products with ``A``, so
 the support bound at ``K`` sweeps is ``K - 1`` hops.
@@ -129,3 +127,19 @@ def test_arm_carries_no_global_term():
         assert torch.all(model(feats) == 0), (
             f"K={K} produced a nonzero field from a zero source"
         )
+
+
+def test_old_transpose_power_span_claim_has_a_counterexample():
+    """For nonsymmetric ``J``, one ``A.T`` product need not lie in span{b, Jb}."""
+    J = torch.tensor([[0.0, 1.0], [0.0, 0.0]], dtype=torch.float64)
+    A = torch.eye(2, dtype=torch.float64) - J
+    b = torch.tensor([1.0, 0.0], dtype=torch.float64)
+    assert torch.linalg.matrix_rank(torch.stack([b, J @ b])) == 1
+    assert torch.linalg.matrix_rank(torch.stack([b, A.T @ b])) == 2
+
+
+def test_old_zero_start_claim_did_not_exclude_a_global_transform():
+    """A zero initial iterate alone does not stop a rule from globally pooling ``b``."""
+    b = torch.tensor([1.0, 0.0, 0.0], dtype=torch.float64)
+    globally_pooled = torch.ones_like(b) * b.sum()
+    assert torch.count_nonzero(globally_pooled) == 3

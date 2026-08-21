@@ -1,4 +1,4 @@
-rows,cols,diameter,jacobi_sweeps_K,products_P,reach_hops,floor_mse,field_energy,floor_fraction
+rows,cols,diameter,jacobi_sweeps_K,propagating_products_P,reach_hops,floor_mse,field_energy,floor_fraction
 6,6,10,1,0,0,0.2980814898419876,0.33460661955832244,0.8908415805863386
 6,6,10,2,1,1,0.23778550010177554,0.33460661955832244,0.7106419484935778
 6,6,10,4,3,3,0.11505062276426949,0.33460661955832244,0.3438384539915415

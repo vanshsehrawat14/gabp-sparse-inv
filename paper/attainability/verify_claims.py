@@ -8,6 +8,7 @@ training or consume new seeds.
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
 import math
 import statistics
@@ -21,6 +22,8 @@ if str(ROOT) not in sys.path:
 PAPER = ROOT / "paper" / "attainability"
 DATA = PAPER / "figures" / "data"
 FROZEN = ROOT / "archive" / "results" / "CONFIRMATORY" / "matched_fit_taskA"
+GMRES_RAW = (ROOT / "archive" / "results" / "EXPLORATORY"
+             / "deq_gmres_falsifier")
 
 
 def csv_rows(path: Path) -> list[dict[str, str]]:
@@ -30,6 +33,10 @@ def csv_rows(path: Path) -> list[dict[str, str]]:
 
 def load_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def close(actual: float, expected: float, *, rel_tol: float = 1e-12) -> None:
@@ -224,12 +231,12 @@ def verify_frozen_first_read() -> None:
 def verify_budget_window() -> None:
     """Recompute the reach and saturation figures the budget-window text quotes.
 
-    One convention throughout: budgets are labelled by sweeps or Neumann terms,
-    and K sweeps from a zero start spend K-1 products with A. The reach bound at
-    K sweeps is therefore K-1 hops, and saturation arrives once the span holds
-    A^-1 b, which happens at the grade of b and so no later than n. A fixed
-    budget is informative only below both thresholds, and the sizes are
-    recomputed from the same generators and FLOP accounting the probes used.
+    One convention throughout: K zero-start Jacobi sweeps charge K sparse
+    products, but the first is applied to zero and the returned polynomial has
+    degree K-1. The source-Krylov reach bound is informative only
+    for a localized source; saturation arrives no later than dimension n. The
+    sizes are recomputed from the same generators and FLOP accounting the probes
+    used.
     """
     from gabp_sparse_inv.bench.matched_compute import n_match
     from gabp_sparse_inv.generators import grid_edges
@@ -245,9 +252,14 @@ def verify_budget_window() -> None:
     assert k_match < maze_nodes                      # below saturation
     grid_diameters = {size: 2 * (size - 1) for size in (6, 12, 24, 48)}
     assert list(grid_diameters.values()) == [10, 22, 46, 94]
-    products = k_match - 1                           # K sweeps spend K-1 products
-    assert products == 6
-    assert products < min(grid_diameters.values())   # below reach
+    charged_products = k_match
+    propagating_products = k_match - 1
+    assert charged_products == 7 and propagating_products == 6
+    assert charged_products < min(grid_diameters.values())
+
+    compute_rows = {int(row["side"]): row for row in csv_rows(DATA / "maze_compute_budget.csv")}
+    assert [int(compute_rows[size]["forward_match_K"]) for size in (6, 12, 24, 48)] == [6, 14, 35, 88]
+    assert [int(compute_rows[size]["training_match_K"]) for size in (6, 12, 24, 48)] == [7, 17, 47, 126]
 
     # DEQ training probe: 16-node chain, scalar blocks, K up to 32. The runner
     # lives under archive/, which is deliberately not importable, so the two
@@ -260,16 +272,19 @@ def verify_budget_window() -> None:
     assert "random_coupling(n, edge_index, 1, seed=seed, rho=1.0)" in runner
     deq = load_json(FROZEN / "deq_matched_fit.json")
     deq_n = 16
-    chain_diameter = deq_n - 1
     hard_ks = [1, 2, 4]
     assert set(hard_ks) <= set(deq["k_grid"])
     for k in hard_ks:
-        assert k < deq_n and k - 1 < chain_diameter  # K terms spend K-1 products
+        assert k < deq_n                              # below dimensional saturation
         assert k <= deq_n // 4
-    for k in (16, 32):
-        assert k in deq["k_grid"] and k >= deq_n     # past saturation
-    # On a path graph the reach and dimension thresholds coincide.
-    assert chain_diameter + 1 == deq_n
+    # K denotes Neumann terms, hence K-1 products. Span saturation occurs after
+    # d-1 powers, while a black-box residual-optimal solve is guaranteed by d
+    # products. K=16 is therefore below, and only K=32 exceeds, the n=16 ceiling.
+    assert 16 in deq["k_grid"] and 16 - 1 < deq_n
+    assert 32 in deq["k_grid"] and 32 - 1 >= deq_n
+    # Dense training inputs make the MSE adjoint source generally dense, so the
+    # routed-field reach argument is not used for this probe.
+    assert "b_tr = input_scale * torch.randn(n_train, n, 1" in runner
 
     # Affine gradient sweep: 3x3 grid at block size 2.
     sweep_src = (PAPER / "make_figures.py").read_text(encoding="utf-8")
@@ -278,8 +293,7 @@ def verify_budget_window() -> None:
     assert "backward_accuracy_sweep(edge_index, rows * cols, b," in sweep_src
     sweep_n = 3 * 3 * 2
     assert sweep_n == 18
-    assert 32 >= sweep_n > 16 > 8                    # only K=32 is past saturation
-    assert 8 - 1 > 2 * (3 - 1)                       # every K is past reach
+    assert 32 - 1 >= sweep_n > 16 - 1 > 8 - 1       # only K=32 is past query saturation
 
     # The Neumann column is the geometric remainder, which is what makes it a
     # statement about the rule rather than about the budget.
@@ -313,7 +327,7 @@ def verify_reach_floor() -> None:
         if int(r["rows"]) == 6
     }
     for k in budgets:
-        assert int(table[k]["products_P"]) == k - 1   # K sweeps spend K-1 products
+        assert int(table[k]["propagating_products_P"]) == k - 1
         close(float(table[k]["floor_mse"]), live[k])
 
     causal = {
@@ -322,8 +336,24 @@ def verify_reach_floor() -> None:
     }
     exact, mean = causal["exact"], causal["predict_mean"]
 
-    # No covered rule attains the exact arm at the FLOP-matched budget.
+    # Literal K=7 Jacobi has six propagating powers. A generic source-generated
+    # competitor granted all seven charged products receives the more generous
+    # P=7 floor, which still rules out the exact test error.
     assert round(live[7] / exact) == 1460
+    assert round(live[8] / exact) == 578
+
+    training_rows = list(csv_rows(DATA / "maze_training_support_floor.csv"))
+    assert len(training_rows) == 30
+    ratios_p6 = []
+    ratios_p7 = []
+    for row in training_rows:
+        exact_train = float(row["exact_train_mse"])
+        assert float(row["support_floor_P6"]) > exact_train
+        assert float(row["support_floor_P7"]) > exact_train
+        ratios_p6.append(float(row["ratio_P6_to_exact"]))
+        ratios_p7.append(float(row["ratio_P7_to_exact"]))
+    assert truncated(min(ratios_p6), 1) == 63.3
+    assert truncated(min(ratios_p7), 1) == 24.6
 
     # At the tightest budget the trained arm sits on its own floor, so the
     # observed failure there is reach and not optimization.
@@ -335,6 +365,93 @@ def verify_reach_floor() -> None:
         assert live[k] > mean
     assert live[7] < mean and live[8] > 0.0
     assert live[16] == 0.0 and live[32] == 0.0
+
+
+def verify_deq_gmres() -> None:
+    """Audit the post-hoc GMRES result without upgrading it to confirmation."""
+    rows = {
+        (float(row["rho"]), int(row["products"])): row
+        for row in csv_rows(DATA / "deq_gmres_falsifier.csv")
+    }
+    assert len(rows) == 18
+    assert set(rows) == {
+        (rho, products)
+        for rho in (0.5, 0.98, 0.99)
+        for products in (1, 2, 4, 8, 16, 32)
+    }
+
+    audit = load_json(DATA / "deq_gmres_falsifier_audit.json")
+    assert audit["campaign_uuid"] == "d3d1654b-3f65-4272-8f16-a58e027668d3"
+    assert audit["source_commit"] == "70536f06c63cbf293e99747dbf5186086abeaa2b"
+    assert audit["protocol_sha256"] == (
+        "63e626e179bb8e3650f70dc7c6b5033ced6597fe450446401dd22a8221c63aaf"
+    )
+    assert audit["record_count"] == 20 and audit["cell_count"] == 60
+    assert audit["config"]["n"] == 256
+    assert audit["config"]["products"] == [1, 2, 4, 8, 16, 32]
+    assert audit["independent_summary_matches_runner"] is True
+    assert audit["frozen_predictions"] == {
+        "mechanism": False,
+        "training": False,
+        "control": True,
+    }
+    assert audit["initial_diagnostic_is_hard_spectrum"] is False
+    close(audit["initial_diagnostic_gain_min"], 0.2)
+    close(audit["initial_diagnostic_gain_max"], 0.2)
+    assert audit["structured_exact_vs_dense_relative_error_max"] < 2.68e-16
+    assert audit["minimum_relative_arnoldi_norm"] > 1.0
+    assert set(audit["raw_sha256"]) == {
+        *(f"seed{seed}.json" for seed in range(4000, 4020)),
+        "summary.json",
+    }
+    for name, digest in audit["raw_sha256"].items():
+        assert sha256(GMRES_RAW / name) == digest
+    assert audit["raw_sha256"]["summary.json"] == (
+        "1b1355f57b8973f08df12f8ceb072a640211e9e4a66676cf7413f84750e6ce77"
+    )
+
+    expected_p8 = {
+        0.98: (0.25, 0.90, 1.3720221287815375, 1.0011094393206976,
+               3.775037051012564e-06),
+        0.99: (0.20, 0.75, 1.8310668389541163, 0.9963976427661598,
+               3.973460470541035e-06),
+    }
+    for rho, expected in expected_p8.items():
+        row = rows[(rho, 8)]
+        actual = (
+            float(row["neumann_matchable_fraction"]),
+            float(row["gmres_matchable_fraction"]),
+            float(row["median_neumann_test_loss_ratio_to_exact"]),
+            float(row["median_gmres_test_loss_ratio_to_exact"]),
+            float(row["median_abs_gmres_gain_minus_exact"]),
+        )
+        for got, want in zip(actual, expected):
+            close(got, want)
+        assert row["classification"] == "GMRES_OPENS_COMPARABLE_FIT"
+        runtime_ratio = (
+            float(row["median_gmres_training_seconds"])
+            / float(row["median_neumann_training_seconds"])
+        )
+        assert 1.10 < runtime_ratio < 1.16
+
+    for rho in (0.98, 0.99):
+        for products in (1, 2, 4):
+            assert rows[(rho, products)]["classification"] == (
+                "JOINT_NONATTAINMENT_UNRESOLVED"
+            )
+        for products in (8, 16, 32):
+            assert rows[(rho, products)]["classification"] == (
+                "GMRES_OPENS_COMPARABLE_FIT"
+            )
+    close(float(rows[(0.98, 32)]["median_neumann_test_loss_ratio_to_exact"]),
+          0.2617243493995922)
+    designated = [
+        float(rows[(rho, products)]["median_log10_train_loss_gmres_over_neumann"])
+        for rho in (0.98, 0.99)
+        for products in (16, 32)
+    ]
+    close(min(designated), -0.7393039483566021)
+    assert min(designated) > -1.0
 
 
 def verify_manuscript_literals() -> None:
@@ -356,6 +473,11 @@ def verify_manuscript_literals() -> None:
         "97.4\\%",
         "3.8--4.6 orders",
         "0.34$ to $1.95",
+        "$578$ times",
+        "$24.6$",
+        "$18/20$ and $15/20$",
+        "$5/20$ and $4/20$",
+        "$1.001$ and $0.996$",
     ]
     # The low-vs-hard order separation is reported only in the shortened
     # workshop manuscript, which is intentionally absent from the anonymous
@@ -371,6 +493,9 @@ def verify_manuscript_literals() -> None:
         "$282\\times$",
         "28{,}000\\times",
         "3.5--4.7 orders",
+        "spends $d-1$ products",
+        "residual-optimal rules remain unevaluated",
+        "they were not evaluated here",
     ):
         assert stale not in text, f"stale manuscript fragment: {stale}"
 
@@ -381,6 +506,7 @@ def main() -> None:
     verify_frozen_first_read()
     verify_budget_window()
     verify_reach_floor()
+    verify_deq_gmres()
     verify_manuscript_literals()
     print("Paper 1 quantitative claims verified against committed records.")
 

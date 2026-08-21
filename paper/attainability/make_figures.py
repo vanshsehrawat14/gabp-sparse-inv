@@ -23,6 +23,7 @@ import argparse
 import contextlib
 import csv
 import io
+import json
 import sys
 import time
 from pathlib import Path
@@ -145,7 +146,7 @@ def _demo_maze_reach_floor(out: str, quick: bool) -> int:
     n_test = 32 if quick else 64
     with open(out + ".csv", "w", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["rows", "cols", "diameter", "jacobi_sweeps_K", "products_P",
+        w.writerow(["rows", "cols", "diameter", "jacobi_sweeps_K", "propagating_products_P",
                     "reach_hops", "floor_mse", "field_energy", "floor_fraction"])
         for (r, c) in sizes:
             res = reach_floor_sweep(r, c, budgets=budgets, n_test=n_test)
@@ -153,6 +154,55 @@ def _demo_maze_reach_floor(out: str, quick: bool) -> int:
             for K in budgets:
                 w.writerow([r, c, res["diameter"], K, K - 1, K - 1,
                             res[K], total, res[K] / total])
+    return 0
+
+
+def _demo_maze_compute_budget(out: str, quick: bool) -> int:
+    from gabp_sparse_inv.bench.matched_compute import n_match
+    from gabp_sparse_inv.generators import grid_edges
+
+    with open(out + ".csv", "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["side", "nodes", "diameter", "forward_match_K", "training_match_K"])
+        for side in (6, 12, 24, 48):
+            edges = grid_edges(side, side)
+            common = dict(n=side * side, edge_index=edges, b=1, k=1, method="jacobi")
+            w.writerow([
+                side,
+                side * side,
+                2 * (side - 1),
+                n_match(**common, target="solve"),
+                n_match(**common, target="solve_adjoint"),
+            ])
+    return 0
+
+
+def _demo_maze_training_support_floor(out: str, quick: bool) -> int:
+    """Post-hoc support floors on the frozen HOLDOUT training instances."""
+    import torch
+
+    from gabp_sparse_inv.demos.maze_grid import gen_dataset, hop_distance
+
+    root = Path(__file__).resolve().parents[2]
+    seed_dir = root / "archive" / "results" / "CONFIRMATORY" / "matched_fit_taskA" / "maze_seeds"
+    seeds = range(1000, 1030)
+    with open(out + ".csv", "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["seed", "exact_train_mse", "support_floor_P6", "support_floor_P7",
+                    "ratio_P6_to_exact", "ratio_P7_to_exact"])
+        for seed in seeds:
+            edge_index, feats, target = gen_dataset(6, 6, 48, seed=seed, eps=0.05)
+            source = feats[..., 2].argmax(dim=-1)
+            dist = torch.tensor([
+                hop_distance(edge_index, 36, int(s)) for s in source
+            ])
+            floors = {
+                products: float(torch.mean((target * (dist > products).to(target.dtype)) ** 2))
+                for products in (6, 7)
+            }
+            frozen = json.loads((seed_dir / f"seed{seed}.json").read_text(encoding="utf-8"))
+            exact = float(frozen["L_exact_train"])
+            w.writerow([seed, exact, floors[6], floors[7], floors[6] / exact, floors[7] / exact])
     return 0
 
 
@@ -173,6 +223,20 @@ def _demo_deq_robustness(out: str, quick: bool) -> int:
     return 0
 
 
+def _analysis_deq_gmres(out: str, quick: bool) -> int:
+    try:
+        from .analyze_deq_gmres import main as analyze
+    except ImportError:  # direct ``python make_figures.py`` invocation
+        from analyze_deq_gmres import main as analyze
+
+    root = Path(__file__).resolve().parents[2]
+    return analyze([
+        "--raw-dir", str(root / "results" / "EXPLORATORY" / "deq_gmres_falsifier"),
+        "--out-csv", out + ".csv",
+        "--out-audit", out + "_audit.json",
+    ])
+
+
 DEMO = {
     "maze_extrapolation": (_demo_maze_extrapolation,
                            "Maze extrapolation: gabp vs higher-capacity GNN/Transformer/baseline "
@@ -183,10 +247,17 @@ DEMO = {
     "maze_reach_floor": (_demo_maze_reach_floor,
                          "Maze reach floor: exact-field energy beyond the reach ball, a test-MSE "
                          "lower bound for every rule the reach proposition covers "
-                         "(demos/maze_grid.py)."),
+                          "(demos/maze_grid.py)."),
+    "maze_compute_budget": (_demo_maze_compute_budget,
+                            "Per-size Jacobi budgets under the routed-field FLOP model."),
+    "maze_training_support_floor": (_demo_maze_training_support_floor,
+                                    "Post-hoc routed-field support floors on frozen training labels."),
     "deq_robustness": (_demo_deq_robustness,
-                       "Fixed-point backward: exact vs Neumann-K gradient error as rho(J)->1 "
-                       "(demos/deq_fixedpoint.py)."),
+                        "Fixed-point backward: exact vs Neumann-K gradient error as rho(J)->1 "
+                        "(demos/deq_fixedpoint.py)."),
+    "deq_gmres_falsifier": (_analysis_deq_gmres,
+                            "Fresh-seed DEQ comparison: Neumann and unrestarted GMRES at "
+                            "matched operator-product budgets."),
 }
 
 

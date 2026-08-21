@@ -109,7 +109,7 @@ sequence models would be a learned-sparse graph-coupled mixer, which belongs
 to the program of Section~\ref{sec:program} rather than to the present
 evidence.
 
-\section{Reach and saturation of a matvec budget}
+\section{Reach and saturation of a source-Krylov budget}
 \label{app:reach}
 
 This appendix proves Proposition~\ref{prop:reach} and states the complementary
@@ -117,93 +117,115 @@ bound that limits it from above. Together they delimit the range of budgets
 over which a fixed-$K$ experiment carries any information about the budget.
 
 \begin{proof}[Proof of Proposition~\ref{prop:reach}]
-One multiplication by $J$ or $J\T$ moves mass along at most one edge of the
-undirected pattern, so $\supp(J^{i}b)\subseteq\hop_{i}(\supp b)$ by induction
-on $i$. Let $V_p$ denote the span of the vectors the rule has formed after $p$
-products. We show $V_p\subseteq\spn\{b,Jb,\dots,J^{p}b\}$ by induction on $p$.
-Before any product the rule holds only its zero start and the source, so
-$V_0=\spn\{b\}$. If $V_{p-1}\subseteq\spn\{b,\dots,J^{p-1}b\}$, the $p$-th
-product is by hypothesis applied to some $u\in V_{p-1}$, and $Au=u-Ju$ lies in
-$\spn\{b,\dots,J^{p}b\}$ because $A=I-J$ and the identity contributes no hops;
-adjoining $Au$ and closing under linear combination leaves $V_p$ inside that
-span. Hence every $x\in V_P$ has $\supp(x)\subseteq\hop_{P}(\supp b)$. If
-$v\notin\hop_{P}(\supp b)$ then $x_v=0$, and the error at $v$ is
-$|(\inv{A}b)_v|$.
+Let $V_p$ be the span of the vectors available after $p$ products. By the
+access model, $V_0\subseteq\spn\{c\}$. If
+$V_{p-1}\subseteq\spn\{c,Mc,\dots,M^{p-1}c\}$, the next product applies $M$ to
+some vector in $V_{p-1}$ and therefore lies in
+$\spn\{Mc,\dots,M^pc\}$; subsequent linear combinations keep $V_p$ inside
+$\spn\{c,Mc,\dots,M^pc\}$. Induction gives the claimed Krylov span. One
+multiplication by $M$ moves support along at most one edge of its undirected
+pattern, so $\supp(M^ic)\subseteq\hop_i(\supp c)\subseteq\hop_i(\supp b)$.
+The support and pointwise-error conclusions follow.
 \end{proof}
 
-The bound is sharp, and needs no genericity. On a path graph with $b=e_1$ and
+The bound is sharp, and needs no genericity. On a path graph with $c=b=e_1$ and
 every edge weight nonzero, reaching vertex $P+1$ from vertex $1$ in $P$ steps
-requires traversing the unique shortest path, so the hop-$P$ entry of $J^{P}b$
+requires traversing the unique shortest path, so the hop-$P$ entry of $M^{P}c$
 is the product of those $P$ weights and cannot vanish. Cancellation on a graph
 with cycles can only shrink a support, never extend one, so it does not
 threaten the bound from the other side.
 
-Both hypotheses are load-bearing, and dropping either defeats the conclusion.
-The zero start is not a convenience: an initialization that places the mean of
-$b$ at every vertex costs no product with $A$ and is nonzero everywhere, so a
-rule carrying a global bias, a normalization across nodes, or a pooled term
-escapes the conclusion without spending any budget. The routed-field arm of
-Section~\ref{sec:maze} carries none of these inside its sweep path, and
-\url{tests/test_reach_bound.py} asserts the support property directly on the
-arm rather than on the idealization. The access hypothesis is equally
-necessary. A rule permitted to apply $A$ to arbitrary probe vectors can exploit
+The access model is load-bearing. If a rule may apply a fixed global transform
+to $b$, then $\mathbf{1}\mathbf{1}^{\mathsf T}b$ is globally supported before
+any product. If it may probe the operator with arbitrary vectors, it can exploit
 structural orthogonality \citep{curtis1974estimation}: columns whose patterns
 do not overlap are recovered together from one product against their common
-indicator, so a tridiagonal operator is recovered exactly in three products and
-a five-point grid stencil in five, after which the rule solves exactly with no
-further product and returns a globally supported answer at any diameter. Such
+indicator. A tridiagonal operator is therefore recovered exactly in three
+products and a five-point grid stencil in five, after which the rule solves
+exactly with no further product and returns a globally supported answer at any
+diameter. Such
 rules reconstruct the operator instead of approximating its inverse from a
 source, and belong on the exact side of the comparison this paper draws.
+The routed-field arm carries no global transform inside its sweep path, and
+\url{tests/test_reach_bound.py} checks the support property on the shipped arm.
 
 Within the class it covers, the bound is indifferent to the method, which is
-the point. Damped Jacobi and truncated Neumann are one polynomial in $b$; GMRES
-is the residual-optimal one; conjugate gradients and, at the standard identity
-initialization, Anderson \citep{anderson1965iterative} and Broyden
-\citep{broyden1965class} form their iterates the same way. Preconditioning is
-not a single exception, and sparsity of the preconditioner is the wrong test:
-what matters is the hop reach of the operator actually applied. Diagonal
-scaling adds none and leaves the bound intact; a sparse approximate inverse
-with $k$-hop fill adds $k$ per application; an incomplete-$LU$ preconditioner
-adds the graph diameter despite sparse factors, because back-substitution
-propagates from one end of a factor to the other. A preconditioned rule is
-covered exactly when the accumulated reach of its applied operators stays below
-the relevant distance.
+the point. Damped Jacobi and truncated Neumann are fixed polynomials; zero-start
+unpreconditioned GMRES and conjugate gradients choose their coefficients
+adaptively but remain in the same source-generated span. For a preconditioned
+method, every application of the preconditioner must be included in the access
+model. Diagonal scaling adds no reach, whereas triangular solves can propagate
+across the graph despite sparse factors. The bound applies only to the total
+reach of the operators actually used.
 
 \begin{remark}[Saturation, the complementary bound]
 \label{rem:saturation}
-Let $d$ be the grade of $b$ with respect to $A$, the degree of its minimal
-annihilating polynomial. For nonsingular $A$ that polynomial has nonzero
-constant term, so $\inv{A}b$ is a combination of $b,Ab,\dots,A^{d-1}b$ and a
-residual-optimal rule attains it exactly once it has spent $d-1$ products.
-Since $d\leq n$, a budget of $n$ is already past saturation, and an invariant
+For the unpreconditioned system, let $d$ be the grade of $b$ with respect to
+$A$, the degree of its minimal annihilating polynomial. For nonsingular $A$
+that polynomial has nonzero constant term, so $\inv{A}b$ is a combination of
+$b,Ab,\dots,A^{d-1}b$. The span therefore saturates after the $(d-1)$st
+power. That is not the same as a black-box solver terminating after $d-1$
+products: a residual-optimal rule generally spends the next product to
+determine the residual-minimizing coefficients. GMRES \citep{saad1986gmres}
+is guaranteed to terminate by $d$ products in exact arithmetic, as is CG in
+the SPD setting. The scalar case already
+shows why the distinction matters: $A^{-1}b\in\spn\{b\}$, but no zero-query
+rule can infer the coefficient $A^{-1}$. When $I-M$ is nonsingular, the same
+argument applies to a stationary splitting with iteration matrix $M$ and
+source $c$, replacing the target by $(I-M)^{-1}c$.
+Since $d\leq n$, $n$ black-box products reach the generic exact-termination
+ceiling. An invariant
 subspace, a minimal polynomial of degree below $n$, and lucky breakdown each
 lower $d$ rather than raise it, so the threshold is conservative in the only
 direction that matters here. A measurement past saturation cannot separate
 ``the budget is too small'' from ``this particular polynomial is a poor one,''
 and reach is similarly uninformative once the budget exceeds the graph
 diameter. A fixed budget carries information about the budget only while it is
-below both thresholds. On a path graph of $n$ nodes the two coincide, since the
-diameter is $n-1$.
+below both thresholds. On the sharpness construction above, a nonzero-weight
+path of $n$ nodes with an endpoint source, the two coincide at $n-1$: the
+diameter is $n-1$ and the grade is $n$. That equality belongs to that
+construction, not to path graphs in general, since a smaller grade lowers the
+Krylov threshold while leaving the diameter unchanged.
 \end{remark}
 
-Applied to this paper: the affine gradient sweep of Table~\ref{tab:deq} solves
-an $18$-dimensional system, so its $K=32$ column is past saturation and its
-$K=8$ and $K=16$ columns are past reach on the $3\times3$ grid, whose diameter
-is $4$; the whole table is read as a property of the Neumann rule. The training
-probe of Section~\ref{sec:deq} is a $16$-node chain with scalar blocks,
-so $K\in\{16,32\}$ is past saturation while the preregistered hard cells
-$K\in\{1,2,4\}$ reach at most $3$ of $15$ hops at a quarter of the dimension or
-less. The routed-field probe is $36$-dimensional with a FLOP-matched $K=7$
-reaching $6$ of $10$ hops at the training size and $6$ of $94$ at the largest
+Applied to this paper: the affine gradient sweep of Table~\ref{tab:deq} has a
+generally dense adjoint source, so the reach proposition supplies no separation
+there; it solves an $18$-dimensional system, making $K=32$ past the conservative
+saturation bound. The whole table is read as a property of the Neumann rule.
+The training probe of Section~\ref{sec:deq} is a $16$-node chain with scalar
+blocks, and its $K$ denotes Neumann terms, hence $K-1$ products. At $K=16$ the
+available powers can span the full grade-$16$ space, but the rule has spent
+only $15$ products and is not past the generic solver/query ceiling. Only
+$K=32$ is beyond that ceiling. The preregistered hard cells
+$K\in\{1,2,4\}$ remain well below it. Its adjoint source is also
+generally dense, so these cells do not inherit a routed-field reach claim. The
+routed-field probe is $36$-dimensional with $K=7$ matched at the training size
+and then held fixed, reaching $6$ of $10$ hops at the training size and $6$ of $94$ at the largest
 test size, so it is inside the informative range by a wide margin and is the
 one place where the conclusion binds the covered class rather than one rule.
+
+For a fixed operator and source, the Krylov-span statement also gives a
+sharper geometric floor. If $Q_P$ has orthonormal columns spanning
+$\mathcal K_{P+1}(M,c)$ and $y=A^{-1}b$, then every covered output satisfies
+\begin{equation}
+  \|x-y\|_2^2 \geq \|(I-Q_PQ_P^{\mathsf T})y\|_2^2.
+  \label{eq:krylov-projection-floor}
+\end{equation}
+Because this Krylov space is contained in the hop-supported coordinate space,
+Equation~\eqref{eq:krylov-projection-floor} is at least as strong as the
+support floor for that fixed $M$. It is not a uniform learned-model
+certificate here: the routed-field model learns $M$, so the projection space
+changes with its parameters. Projecting onto the label-generating operator or
+one trained operator would not lower-bound every competitor. The numerical
+class-wide certificate below therefore uses only support, which is uniform
+over all learned edge weights with the stated graph pattern.
 
 \subsection{From support to loss}
 \label{app:floor}
 
 Proposition~\ref{prop:reach} constrains support, while attainability is a
 statement about loss. The step between them needs no new experiment. A covered
-rule that spends $P$ products predicts zero at every vertex outside
+source-Krylov rule with $P$ products predicts zero at every vertex outside
 $\hop_{P}(\supp b)$, so its squared error there is the exact field's own value.
 Averaging over the test set $\mathcal{D}$ of $n$-node instances,
 \begin{equation}
@@ -223,13 +245,15 @@ fitted, and no arm has to be run to evaluate it.
   error (MSE) of every rule Proposition~\ref{prop:reach} covers; the measured
   column is the single trained Jacobi arm of Table~\ref{tab:maze-causal}, whose
   exact arm reaches $1.16\mathrm{e}{-5}$ and whose predict-mean value is
-  $2.60\mathrm{e}{-2}$. $K=7$ is the FLOP-matched budget and was not part of the
-  preregistered dose-response. Data:
+  $2.60\mathrm{e}{-2}$. $K=7$ is matched at the training size and was not part
+  of the preregistered dose-response. Its row describes the literal Jacobi
+  polynomial; the more generous class-wide comparison uses $P=7$, numerically
+  equal to the $K=8$ row's support floor. Data:
   \url{paper/attainability/figures/data/maze_reach_floor.csv}.}
   \label{tab:reach-floor}
   \begin{tabular}{rrcccc}
     \toprule
-    $K$ sweeps & $P$ products & $F(P)$ & measured & $F/\text{exact}$ & $F/\text{mean}$ \\
+    $K$ sweeps & propagating $P$ & $F(P)$ & measured & $F/\text{exact}$ & $F/\text{mean}$ \\
     \midrule
     1  & 0  & $2.98\mathrm{e}{-1}$ & $2.98\mathrm{e}{-1}$ & $25743$ & $11.5$ \\
     2  & 1  & $2.38\mathrm{e}{-1}$ & $2.57\mathrm{e}{-1}$ & $20536$ & $9.16$ \\
@@ -242,24 +266,68 @@ fitted, and no arm has to be run to evaluate it.
   \end{tabular}
 \end{table}
 
-Three readings follow, and only the first is a proof of the comparison the
-paper leads with. At the FLOP-matched $K=7$ the floor is $1.69\times10^{-2}$,
-which is $1460$ times the exact arm's test MSE of $1.16\times10^{-5}$: no rule
-the proposition covers attains the exact arm at the matched budget, whatever
-its parameters and however long it trains. At $K=1$ the trained arm reaches
-$2.984\times10^{-1}$ against a floor of $2.981\times10^{-1}$, within $0.1\%$, so
-at the tightest budget the observed failure is reach rather than optimization.
-Third, and against the paper, the floor exceeds the predict-mean value of
-$2.60\times10^{-2}$ only for $K\leq4$. At $K=7$ it is $0.65$ of that value, and
-at $K\geq16$ on this grid it is identically zero because a reach of $15$ hops
-covers a diameter of $10$. The statement that every displayed finite budget is
-worse than predict-the-mean is therefore a measurement and not a corollary of
-the proposition, and the dose-response at $K\in\{16,32\}$ is carried by
-measurement alone. Table~\ref{tab:reach-floor} thus marks the boundary of what
-the proposition buys: it settles non-attainment against the exact arm for the
-whole covered class, and it says nothing at the two largest budgets.
-Figure~\ref{fig:maze-causal} plots the routed-field budget sweep of
-Table~\ref{tab:maze-causal}.
+Three readings follow. First, the literal $K=7$ Jacobi output has $P=6$ and a
+floor of $1.69\times10^{-2}$, which is $1460$ times the exact arm's test MSE of
+$1.16\times10^{-5}$. The FLOP model nevertheless charges all seven products,
+including the first product with zero. A generic covered competitor should
+therefore receive $P=7$ useful products. Its more generous floor is
+$6.69\times10^{-3}$, still $578$ times the exact test MSE, even before charging
+GMRES orthogonalization or other method-specific overhead. Thus no rule in the
+covered source-generated class attains the exact test error at the
+seven-product budget, whatever its parameters and however long it trains.
+Second, at $K=1$ the trained arm reaches $2.984\times10^{-1}$ against a floor of
+$2.981\times10^{-1}$, within $0.1\%$, so at the tightest budget the observed
+failure is reach rather than optimization. Third, and against a broader
+reading, the floor exceeds the predict-mean value of $2.60\times10^{-2}$ only
+for $K\leq4$. At $K=7$ it is $0.65$ of that value, and at $K\geq16$ on this
+grid it is identically zero because a reach of $15$ hops covers a diameter of
+$10$. The statement that every displayed finite budget is worse than
+predict-the-mean is therefore a measurement and not a corollary of the
+proposition, and the dose-response at $K\in\{16,32\}$ is carried by measurement
+alone. Table~\ref{tab:reach-floor} marks the boundary of what the proposition
+buys: it settles non-attainment against the exact arm for the whole covered
+class, and it says nothing at the two largest budgets. Figure~\ref{fig:maze-causal}
+plots the routed-field budget sweep of Table~\ref{tab:maze-causal}.
+
+The word ``matched'' in this experiment refers to the $6\times6$ training
+size. Table~\ref{tab:maze-compute-scaling} recomputes the same FLOP model at
+each evaluation size. The experiment does not use those larger budgets; it
+holds $K=7$ fixed to ask whether the learned computation extrapolates without
+receiving more rounds. Per-size equal compute is a different solver-efficiency
+question. At sizes $24$ and $48$, its training-path budget is already at or
+beyond the graph diameter.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Jacobi iteration counts matched to the structured direct cost at
+  each grid size under the paper's analytic FLOP model. ``Training path''
+  includes the solve adjoint. Only the first-row training-path budget is used
+  in the held-out extrapolation intervention. Data:
+  \url{paper/attainability/figures/data/maze_compute_budget.csv}.}
+  \label{tab:maze-compute-scaling}
+  \begin{tabular}{rrrrr}
+    \toprule
+    side & nodes & diameter & forward only & training path \\
+    \midrule
+    6  & 36   & 10 & 6  & 7 \\
+    12 & 144  & 22 & 14 & 17 \\
+    24 & 576  & 46 & 35 & 47 \\
+    48 & 2304 & 94 & 88 & 126 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+A post-hoc check applies the same uniform support floor to the frozen HOLDOUT
+training labels. For all 30 seeds, both $F_{\mathrm{train}}(6)$ and the more
+generous $F_{\mathrm{train}}(7)$ exceed the exact arm's attained training MSE;
+the smallest per-seed ratios are $63.3$ and $24.6$, respectively. This
+certifies that a native covered finite output at either budget cannot reach the
+exact arm's native training loss. It does not turn the preregistered
+matched-fit gate into a theorem. That gate evaluates the finite-trained
+parameters through a common \emph{exact} solve, whose output is globally
+supported, so Equation~\eqref{eq:floor} no longer applies to the evaluated
+quantity. The causal gate remains an empirical result. Data:
+\url{paper/attainability/figures/data/maze_training_support_floor.csv}.
 
 \providecommand{\mazecausalwidth}{0.72\textwidth}
 \begin{figure}[htbp]
@@ -267,8 +335,9 @@ Table~\ref{tab:maze-causal}.
   \includegraphics[width=\mazecausalwidth]{figures/maze_causal.pdf}
   \caption{Within-architecture Jacobi-budget control. Test error decreases with
   Jacobi depth $K$, but the finite variants do not attain the exact arm's
-  training fit, and at $K$ sweeps no rule in the class of
-  Proposition~\ref{prop:reach} reaches beyond $K-1$ hops.
+  training fit. The literal zero-start Jacobi output after $K$ sweeps reaches
+  no farther than $K-1$ hops; a generic source-generated rule granted $P$
+  useful products reaches no farther than $P$ hops.
   Data: \url{paper/attainability/figures/data/maze_causal.csv}.}
   \label{fig:maze-causal}
 \end{figure}
@@ -313,9 +382,11 @@ frozen adjudication code. The preregistration defines
 $F=\max(2M_{\mathrm{null}},2\times10^{-6})$, where
 $M_{\mathrm{null}}$ is the near-exact cell's own matched function distance,
 and applies $F$ to both that cell's C2 collapse test and the rival
-inductive-bias branch. At high difficulty, $K=32$ is the only arm reaching
-the $60\%$ matchability bar and thus the only adjudicable equal-fit arm; it
-also sets $M_{\mathrm{null}}$, so its distance is compared with twice itself.
+inductive-bias branch. At high difficulty, $K=32$ is the only budget reaching
+the $60\%$ matchability bar, and it reaches it in both cells ($22/30$ at
+$\rho=0.98$ and $19/30$ at $\rho=0.99$), so those two cells are the only
+adjudicable equal-fit arms; each also sets its own $M_{\mathrm{null}}$, so each
+distance is compared with twice itself.
 In
 \url{archive/bench/matched_fit_taskA.py}, the verdict is \textsc{survive} when
 the matched distance's confidence interval (CI) lower bound exceeds $F$,
@@ -332,7 +403,7 @@ are $456\times$ and $92\times$ larger, and the $\rho=0.98$ CI lower bound
 ($3.84\times10^{-4}$) also exceeds it.
 
 That absolute-scale reading is not robust to the choice of location statistic,
-and we state the disagreement rather than the favorable half of it. Both
+and the disagreement is stated rather than only its favorable half. Both
 matched distributions are strongly right-skewed. Their medians are
 $5.47\times10^{-8}$ and $3.26\times10^{-8}$, which are $37\times$ and
 $61\times$ \emph{below} the same absolute scale; the mean therefore exceeds
@@ -346,27 +417,52 @@ genuine equal-fit difference concentrated in a few seeds from a well-behaved
 collapse with a heavy tail.
 
 The preregistration specified the mean, so the frozen verdict is the
-mean-based one and we report the frozen rule unchanged. We do not claim the
+mean-based one, and the frozen rule is reported unchanged. No claim is made that the
 absolute-scale sensitivity rescues what the self-referential floor could not
-settle. Thus, the evidence does not support an inductive-bias reading where
-the finite arms cannot fit, and leaves it genuinely untested where they can.
+settle. The evidence therefore does not support an inductive-bias reading where the
+finite arms cannot fit, and leaves it untested where they can.
 Only \texttt{armA\_matched\_fdist} carries a recorded median in the frozen
 summary, so this robustness check is available for the matched distances above
-and not for the as-trained separations quoted elsewhere; we did not reopen the
+and not for the as-trained separations quoted elsewhere; the analysis was not reopened after the
 per-seed records to extend it.
 
 A fourth defect is independent of the first three and was found in the same
 re-audit. The only adjudicable equal-fit arm is $K=32$, and the training system
-is a $16$-node chain with scalar blocks, so $K$ exceeds the dimension of the
-system being solved. By Remark~\ref{rem:saturation} the Krylov space at that
-budget is the whole space: the residual-optimal $32$-matvec method on this
-system is an exact solve, and the cell cannot distinguish a budget effect from
-a property of the Neumann polynomial even had the floor been sound. The two
+is a $16$-node chain with scalar blocks. This arm has 32 Neumann terms and
+spends 31 products, which exceeds the dimension of the system being solved.
+By Remark~\ref{rem:saturation}, a residual-optimal method has already reached
+the exact-termination ceiling at that budget, and the cell cannot distinguish
+a budget effect from a property of the Neumann polynomial even had the floor
+been sound. The two
 degeneracies are independent -- one is a self-referential threshold, the other
 a saturated budget -- and each alone is sufficient to void the cell. The
 preregistered hard cells $K\in\{1,2,4\}$ are at most a quarter of the dimension
 and reach at most $3$ of the chain's $15$ hops, so the conservative reading does
 not depend on either defect. Any successor experiment comparing solve rules at
-a matched budget must be run at $n\gg K_{\max}$; at $n\le K_{\max}$ the
+a matched product budget must be run at $n\gg P_{\max}$; at $n\le P_{\max}$ the
 strongest competitor degenerates into the exact arm and the comparison is
 vacuous by construction.
+
+\paragraph{Fresh GMRES record.}
+The post-hoc adversarial study was frozen before development seeds 4000--4019
+were opened. The runner requires the clean source commit and
+protocol SHA-256, checks $n\geq8P_{\max}$, asserts exact product counts, rejects
+Arnoldi breakdown, and writes one atomic record per seed. No breakdown occurs:
+the smallest recorded ratio of an Arnoldi subdiagonal to the initial residual
+norm is $1.8$, against a $100\varepsilon$ threshold. An independent
+analyzer checks all 20 records and 60 cells, recomputes every match label,
+train-loss ratio, paired contrast, and runner summary, and hashes each raw
+file. The structured exact solve differs from a dense check by at most
+$2.68\times10^{-16}$.
+
+All three frozen prediction outcomes are retained. The easy control passes.
+The predicted tenfold median training improvement does not: the best designated
+log-ratio is $-0.739$, short of $-1$. The $P=32$ initial-residual prediction
+also fails. Code inspection found that this diagnostic runs at the common
+initial gain $0.2$ in every cell, so it is not a hard-spectrum measurement and
+supports no mechanism claim. The terminal match labels and final train/test
+losses are still valid frozen endpoints. They show GMRES opening comparable
+fit at $P=8$ in most seeds and reaching the exact arm's learned function in the
+median. The study is marked
+\texttt{EXPLORATORY} throughout and is not an independent confirmation of the
+June first read.

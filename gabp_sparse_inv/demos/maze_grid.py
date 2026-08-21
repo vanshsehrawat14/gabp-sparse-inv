@@ -364,8 +364,9 @@ def reach_floor_sweep(
 ):
     """Exact-field energy outside the reach ball: a test-MSE floor for the covered class.
 
-    A rule that starts from ``x_0 = 0`` and spends ``P = K - 1`` products with ``A`` on
-    vectors it has already formed from ``b`` has support inside ``hop_P(supp b)``, so at
+    The Jacobi arm is source-Krylov with iteration matrix ``M = I - D^-1 A`` and source
+    ``c = D^-1 b``. After ``P = K - 1`` products its support is inside
+    ``hop_P(supp b)``, so at
     every vertex outside that ball its error is exactly the field's value there. The mean of
     that beyond-reach energy is therefore a lower bound on the test MSE of **every** rule the
     reach proposition covers, at any parameter count and after any amount of training. It

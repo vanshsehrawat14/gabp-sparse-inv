@@ -1,72 +1,38 @@
 \section{Limits and questions left open}
 \label{sec:program}
 
-The two probes resolve to attainability under the tested budgets, not
-inductive bias among equally fit models. That conclusion is narrower than the
-original hypothesis, and it does not turn the reference implementation into a
-performance result. This section separates the paper's evidence from two
-questions that remain legitimate but require new protocols.
+The two preregistered probes resolve to attainability against the tested
+truncations, not inductive bias among equally fit models. GMRES narrows the DEQ
+half again: eight products suffice in that exploratory population.
 
 \paragraph{What is established.}
-On solve-shaped targets, a model containing the exact structured solve can
-reach solutions that the tested finite Jacobi or Neumann alternatives do not
-reach. The within-architecture interventions locate the difference in the
-global solve or its backward, and the matched-fit read shows that the hard
-cells are not equal-fit comparisons. The finite fp32 precision sweep provides
-no robust accuracy advantage over a well-ordered dense factorization.
+The hard cells never supply the equal-fit comparison required by the
+hypothesis. The routed-field certificate extends this ruling to its
+source-generated class. In DEQ, GMRES reaches the exact arm's learned function
+in the median where matched-product Neumann does not, establishing rule
+sensitivity rather than a general finite-budget barrier. The fp32 sweep gives no robust accuracy
+advantage over a well-ordered dense factorization.
 
-\providecommand{\tmlrprogrambreak}{}
-\tmlrprogrambreak
 \paragraph{What is not established.}
-The experiments do not show that sparse direct is uniformly faster or more
-accurate than iterative methods; that exactness helps on targets not shaped by
-the operator; that a finite Transformer cannot learn these functions with
-different data, optimization, or architecture; or that the sparse-direct
-backward has condition-independent error. The implementation is a PyTorch
-reference, not a systems competitor to mature sparse-direct solvers.
+The experiments do not show that sparse direct is uniformly better than
+iterative methods, helps on targets not shaped by the operator, or has
+condition-independent error. They do not rule out a different architecture,
+optimizer, preconditioner, or multiscale solver. The implementation is a
+reference, not a systems competitor.
 
-\paragraph{Question 1: exact selected uncertainty.}
-Selected inversion provides deterministic on-pattern covariance entries and
-the log-determinant gradient. Whether that changes learned uncertainty
-quantification is a separate causal question: the model, parameterization,
-optimizer, data split, precision, and stopping rule must be held fixed while
-only the exact versus approximate computation changes. The matched
-computational comparison requires conjugate gradients (CG) for solves and
-stochastic Lanczos quadrature (SLQ) for log determinants
-\citep{gardner2018gpytorch,ubaru2017fast};
-variational or Vecchia methods change the statistical model and must be
-reported separately \citep{hensman2013gaussian,katzfuss2021general}. A valid
-study reports accuracy at matched wall time and memory, not ``exact'' as a
-synonym for better.
+\paragraph{Questions left open.}
+Selected uncertainty needs matched-time and matched-memory comparisons against
+conjugate gradients and stochastic Lanczos quadrature
+\citep{gardner2018gpytorch,ubaru2017fast}; variational or Vecchia methods change
+the statistical model \citep{hensman2013gaussian,katzfuss2021general}. DEQ
+benchmark claims likewise need preconditioned solvers, phantom gradients, and
+accelerated fixed-point methods
+\citep{geng2021training,anderson1965iterative,broyden1965class}. The present
+GMRES arm is unpreconditioned and confined to a scalar-gain chain.
 
-\paragraph{Question 2: implicit gradients near difficult spectra.}
-The four-cell DEQ diagnostic compares sparse direct with finite Neumann
-truncations. A benchmark claim would require strong Krylov and preconditioned
-solvers, phantom gradients \citep{geng2021training}, and accelerated fixed-point
-methods \citep{anderson1965iterative,broyden1965class}, all scored at matched
-gradient residual, memory, and time. The sparse-direct advantage is
-iteration-independent work after factorization; its floating-point error still
-depends on conditioning and factor growth.
-
-\paragraph{Controls and evidence boundary.}
-The first matched-fit HOLDOUT read passed the DEQ high-difficulty
-attainability checks, but the DEQ low-difficulty relative-gap control failed;
-its function-distance clause passed. For maze, the $K=256$ extrapolation-floor
-comparison passed while the separately recorded in-distribution
-\texttt{floor\_sound} diagnostic failed ($2.70\times10^{-5}$ mean loss gap,
-$44\%$ of the exact evaluation loss, against a $5\%$ diagnostic). The
-preregistration did not unambiguously choose between those two maze checks, so
-NC2 is treated as ambiguous. The conservative result is therefore hedged. A
-later reused-seed bootstrap branch is excluded from the evidentiary chain
-(Appendix~\ref{app:integrity}). Any future task needs a non-solve-shaped
-negative control: a persistent advantage there would identify a confound
-rather than an exactness-specific mechanism.
-
-\paragraph{Structural boundary.}
-For later-neighbour counts $w_v$, the numeric storage scale is
-$F=\sum_v(1+w_v)$ blocks while clique work is
-$W=\sum_v(1+w_v^2)$. Exact sparse direct is attractive only when the fronts
-remain manageable and reuse justifies factorization. If useful stiff problems
-have fronts too large for direct factorization, or accurate iterative methods
-reach the required tolerance more cheaply, the correct conclusion is that
-exactness is unnecessary in that regime.
+\paragraph{Evidence and structural boundary.}
+The failed DEQ control, ambiguous maze floor, and excluded reused-seed branch
+remain part of the ruling (Appendix~\ref{app:integrity}). Exact sparse direct is
+useful only while elimination fronts remain manageable and reuse justifies
+factorization. If an accurate iterative method is cheaper, exactness is simply
+unnecessary.

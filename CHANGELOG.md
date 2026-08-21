@@ -9,6 +9,20 @@ release.
 
 ## [Unreleased]
 
+Version string is `0.3.5.dev0`; PyPI remains at 0.3.4.
+
+### Added
+
+- Routed-field hop-distance and label-only reach-floor diagnostics, with tests
+  and a mutation-tested paper claim verifier.
+
+### Changed
+
+- Narrow the paper's reach theorem to an explicit source-Krylov access model.
+  Measurements and released numerical kernels are unchanged.
+- Replace the accumulated README narrative with the supported API, boundaries,
+  install path, and verified examples.
+
 ## [0.3.4] - 2026-07-28
 
 ### Fixed
