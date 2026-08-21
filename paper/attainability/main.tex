@@ -92,9 +92,8 @@ File paths cited in this paper are relative to the repository root.}
 Many machine-learning models require a global linear solve. For sparse
 coupling with fixed block size and elimination width, selected inversion computes inverse blocks on the
 factor's filled pattern in $\bigO(n)$ time, and its projected derivative has
-a reverse schedule with the same asymptotic structural work. Using a reference
-PyTorch implementation of the classical symmetric and static-pattern
-non-symmetric operators, I ask whether an
+a reverse schedule with the same asymptotic structural work. The central
+question is whether an
 exact structured solve acts as an \emph{inductive bias}, selecting a
 better-generalizing solution when competing models attain comparable
 training fit. Two preregistered matched-fit probes test this hypothesis on
@@ -105,8 +104,8 @@ training fit in only $0$--$23.3\%$ of high-difficulty seeds, below a
 preregistered $60\%$ bar, so the equal-fit comparison never arises. In the
 routed field, a source-generated support certificate extends the result beyond
 Jacobi: even after granting a generic competitor all seven charged products,
-its label-only test-MSE floor is $578$ times the exact arm's error. The DEQ
-result is more specific. The sparse-direct backward remains within
+its label-only test-MSE floor is $578$ times the exact arm's error. The
+sparse-direct backward remains within
 $1.1\times10^{-12}$ of a dense 64-bit floating-point (fp64) oracle where
 32-term Neumann adjoints have
 $77.1\%$ and $97.4\%$ relative error at $\rho(J)=0.99$ and $0.999$.

@@ -13,6 +13,7 @@ from __future__ import annotations
 import torch
 
 from gabp_sparse_inv import grid_edges
+from gabp_sparse_inv.demos import deq_fixedpoint as deq_impl
 from gabp_sparse_inv.demos.deq_fixedpoint import (
     affine_fixed_point,
     assemble_blocks,
@@ -108,6 +109,27 @@ def test_exact_backward_robust_as_rho_to_one():
     assert stiff["neumann32"] / stiff["exact"] > 1e6
     # (c) at fixed K the iterative error grows monotonically toward rho -> 1.
     assert res[0.999]["neumann32"] > res[0.9]["neumann32"] > res[0.5]["neumann32"]
+
+
+def test_k_neumann_terms_spend_k_minus_one_products(monkeypatch):
+    """The manuscript's K is a term count, not a matvec count."""
+    edge_index = torch.tensor([[1, 2], [0, 1]], dtype=torch.long)
+    Wd = torch.zeros(3, 1, 1, dtype=torch.float64)
+    Wl = torch.zeros(2, 1, 1, dtype=torch.float64)
+    Wu = torch.zeros(2, 1, 1, dtype=torch.float64)
+    grad = torch.ones(3, 1, dtype=torch.float64)
+    original = deq_impl.spmv
+    calls = 0
+
+    def counted(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(deq_impl, "spmv", counted)
+    out = deq_impl.neumann_adjoint(Wd, edge_index, Wl, Wu, grad, K=16)
+    assert calls == 15
+    torch.testing.assert_close(out, grad)
 
 
 # --------------------------------------------------------------------------- #

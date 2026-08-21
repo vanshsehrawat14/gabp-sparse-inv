@@ -1,9 +1,8 @@
 \section{Exactness is not accuracy}
 \label{sec:numerics}
 
-Before attributing the learning probes to operator structure, I first check
-whether this implementation has a floating-point accuracy advantage. The
-finite precision grid below shows no consistent advantage in either direction.
+The finite precision grid below shows no consistent advantage in either
+direction.
 It is a diagnostic, rather than a universal comparison of sparse and dense
 factorizations.
 
@@ -20,7 +19,8 @@ of what remains, a modest and heavy-tailed median gap, is an
 elimination-ordering effect: a dense Cholesky run in the kernel's own
 leaf-first order has comparable accuracy. No consistent accuracy edge appears
 on this grid. The 16-seed ordering diagnostic is recorded in
-\url{paper/attainability/figures/data/precision_compare_orders.txt}.
+\href{https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/main/paper/attainability/figures/data/precision_compare_orders.txt}
+{\nolinkurl{paper/attainability/figures/data/precision_compare_orders.txt}}.
 
 \begin{table}[htbp]
   \centering
@@ -29,8 +29,10 @@ on this grid. The 16-seed ordering diagnostic is recorded in
   seeds per cell; the ratio is the median per-seed dense/selected-inverse
   error ratio. Displayed errors and ratios are rounded conservatively against
   the selected-inverse arm. Data:
-  \url{paper/attainability/figures/data/precision_tree.csv} and
-  \url{paper/attainability/figures/data/precision_grid.csv}.}
+  \href{https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/main/paper/attainability/figures/data/precision_tree.csv}
+{\nolinkurl{paper/attainability/figures/data/precision_tree.csv}} and
+  \href{https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/main/paper/attainability/figures/data/precision_grid.csv}
+{\nolinkurl{paper/attainability/figures/data/precision_grid.csv}}.}
   \label{tab:precision}
   \begin{tabular}{lcccc}
     \toprule
@@ -54,8 +56,7 @@ forward-plus-backward Gaussian Markov random field (GMRF) training timings
 consistent with linear tree work
 where dense autograd is $\bigO(N^3)$. The cost still grows with problem size,
 linearly on the chain shown here; it does not acquire an iteration count
-proportional to graph distance. That is the distinction the next two sections
-exploit.
+proportional to graph distance.
 
 \providecommand{\scalingfigurewidth}{0.92\textwidth}
 \begin{figure}[htbp]
@@ -69,8 +70,8 @@ exploit.
   dense autograd. Timings depend on the basic linear algebra subprograms
   (BLAS) library and device; no graphics processing unit (GPU) claim is made.
   Data:
-  \href{bench_results.csv}{\texttt{bench\_results.csv}}
+  \href{https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/main/bench_results.csv}{\texttt{bench\_results.csv}}
   and
-  \href{paper/attainability/figures/data/gmrf_scaling.csv}{\texttt{gmrf\_scaling.csv}}.}
+  \href{https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/main/paper/attainability/figures/data/gmrf_scaling.csv}{\texttt{gmrf\_scaling.csv}}.}
   \label{fig:scaling}
 \end{figure}

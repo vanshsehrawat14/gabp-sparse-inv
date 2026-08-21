@@ -163,7 +163,12 @@ def exact_solve_adjoint_flops(n: int, edge_index, order=None, *, b: int = 1, k: 
 
 
 def iter_flops(n: int, m: int, K: int, *, b: int = 1, k: int = 1, method: str = "jacobi") -> float:
-    """Total FLOPs for ``K`` iterations of ``method`` (matvec + small per-iter overhead)."""
+    """Total FLOPs for ``K`` iterations of ``method`` (matvec + small per-iter overhead).
+
+    A zero-start Jacobi run still charges the first product ``A @ 0``. Its
+    returned iterate has polynomial degree and graph reach ``K - 1``, but the
+    FLOP model correctly charges all ``K`` products executed by the code.
+    """
     per = matvec_flops(n, m, b=b, k=k)
     if method == "jacobi":
         per += 2 * n * b * b * k                 # diagonal solve + axpy

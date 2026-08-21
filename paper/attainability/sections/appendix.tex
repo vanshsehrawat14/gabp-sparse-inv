@@ -88,13 +88,12 @@ dominance boundary. The SPD experiment shows a small reconstructed-factor
 residual on the finite tree/conditioning grid tested; it does not prove a
 height- or $\kappa$-independent global backward-error theorem. The
 non-symmetric diagnostic additionally exposes the no-pivot boundary. These
-are numerical-analysis observations with no demonstrated learning payoff,
-which is why they are not in the body. Data:
-\href{paper/attainability/figures/data/nonsym_stability.csv}
+numerical-analysis observations have no demonstrated learning payoff. Data:
+\href{https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/main/paper/attainability/figures/data/nonsym_stability.csv}
 {\texttt{nonsym\_stability.csv}} and
-\href{paper/attainability/figures/data/stability.csv}
+\href{https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/main/paper/attainability/figures/data/stability.csv}
 {\texttt{stability.csv}}; generator:
-\href{paper/attainability/make_figures.py}{\texttt{make\_figures.py}}.
+\href{https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/main/paper/attainability/make_figures.py}{\texttt{make\_figures.py}}.
 
 \paragraph{DeltaNet chunk inverse (a drop-in capability note).}
 The differentiable triangular chunk inverse $(I-A)^{-1}$ drops, unchanged,
@@ -103,8 +102,8 @@ into a chunked delta-rule linear-attention layer
 triangular solve. It reproduces the token-by-token delta rule exactly, and
 its analytic backward equals autograd through the whole multi-chunk layer.
 Because the forward is identical by construction, this demonstrates
-availability (the operator is a genuine drop-in), not a capability gain, and
-so it is recorded here rather than as a result. A learned-capability payoff for
+availability (the operator is a genuine drop-in), not a capability gain. A
+learned-capability payoff for
 sequence models would be a learned-sparse graph-coupled mixer, which belongs
 to the program of Section~\ref{sec:program} rather than to the present
 evidence.
@@ -147,10 +146,11 @@ diameter. Such
 rules reconstruct the operator instead of approximating its inverse from a
 source, and belong on the exact side of the comparison this paper draws.
 The routed-field arm carries no global transform inside its sweep path, and
-\url{tests/test_reach_bound.py} checks the support property on the shipped arm.
+\href{https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/main/tests/test_reach_bound.py}
+{\nolinkurl{tests/test_reach_bound.py}} checks the support property on the shipped arm.
 
-Within the class it covers, the bound is indifferent to the method, which is
-the point. Damped Jacobi and truncated Neumann are fixed polynomials; zero-start
+Within the class it covers, the bound is indifferent to the method. Damped
+Jacobi and truncated Neumann are fixed polynomials; zero-start
 unpreconditioned GMRES and conjugate gradients choose their coefficients
 adaptively but remain in the same source-generated span. For a preconditioned
 method, every application of the preconditioner must be included in the access
@@ -249,7 +249,8 @@ fitted, and no arm has to be run to evaluate it.
   of the preregistered dose-response. Its row describes the literal Jacobi
   polynomial; the more generous class-wide comparison uses $P=7$, numerically
   equal to the $K=8$ row's support floor. Data:
-  \url{paper/attainability/figures/data/maze_reach_floor.csv}.}
+  \href{https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/main/paper/attainability/figures/data/maze_reach_floor.csv}
+{\nolinkurl{paper/attainability/figures/data/maze_reach_floor.csv}}.}
   \label{tab:reach-floor}
   \begin{tabular}{rrcccc}
     \toprule
@@ -288,8 +289,7 @@ predict-the-mean is therefore a measurement and not a corollary of the
 proposition, and the dose-response at $K\in\{16,32\}$ is carried by measurement
 alone. Table~\ref{tab:reach-floor} marks the boundary of what the proposition
 buys: it settles non-attainment against the exact arm for the whole covered
-class, and it says nothing at the two largest budgets. Figure~\ref{fig:maze-causal}
-plots the routed-field budget sweep of Table~\ref{tab:maze-causal}.
+class, and it says nothing at the two largest budgets.
 
 The word ``matched'' in this experiment refers to the $6\times6$ training
 size. Table~\ref{tab:maze-compute-scaling} recomputes the same FLOP model at
@@ -305,7 +305,8 @@ beyond the graph diameter.
   each grid size under the paper's analytic FLOP model. ``Training path''
   includes the solve adjoint. Only the first-row training-path budget is used
   in the held-out extrapolation intervention. Data:
-  \url{paper/attainability/figures/data/maze_compute_budget.csv}.}
+  \href{https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/main/paper/attainability/figures/data/maze_compute_budget.csv}
+{\nolinkurl{paper/attainability/figures/data/maze_compute_budget.csv}}.}
   \label{tab:maze-compute-scaling}
   \begin{tabular}{rrrrr}
     \toprule
@@ -329,7 +330,8 @@ matched-fit gate into a theorem. That gate evaluates the finite-trained
 parameters through a common \emph{exact} solve, whose output is globally
 supported, so Equation~\eqref{eq:floor} no longer applies to the evaluated
 quantity. The causal gate remains an empirical result. Data:
-\url{paper/attainability/figures/data/maze_training_support_floor.csv}.
+\href{https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/main/paper/attainability/figures/data/maze_training_support_floor.csv}
+{\nolinkurl{paper/attainability/figures/data/maze_training_support_floor.csv}}.
 
 \providecommand{\mazecausalwidth}{0.72\textwidth}
 \begin{figure}[htbp]
@@ -340,7 +342,8 @@ quantity. The causal gate remains an empirical result. Data:
   training fit. The literal zero-start Jacobi output after $K$ sweeps reaches
   no farther than $K-1$ hops; a generic source-generated rule granted $P$
   useful products reaches no farther than $P$ hops.
-  Data: \url{paper/attainability/figures/data/maze_causal.csv}.}
+  Data: \href{https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/main/paper/attainability/figures/data/maze_causal.csv}
+{\nolinkurl{paper/attainability/figures/data/maze_causal.csv}}.}
   \label{fig:maze-causal}
 \end{figure}
 
@@ -349,8 +352,10 @@ quantity. The causal gate remains an empirical result. Data:
 
 At repository commit \evidencecommit{}, the matched-fit protocol was frozen
 on 29 June 2026, before the first aggregate read of HOLDOUT seeds 1000--1029.
-The evidentiary records are \url{archive/docs/CONFIRMATORY_RESULTS.md} and
-\url{archive/results/CONFIRMATORY/matched_fit_taskA/}; only these support the
+The evidentiary records are \href{https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/main/archive/docs/CONFIRMATORY_RESULTS.md}
+{\nolinkurl{archive/docs/CONFIRMATORY_RESULTS.md}} and
+\href{https://github.com/vanshsehrawat14/gabp-sparse-inv/tree/main/archive/results/CONFIRMATORY/matched_fit_taskA/}
+{\nolinkurl{archive/results/CONFIRMATORY/matched_fit_taskA/}}; only these support the
 paper's confirmatory interpretation.
 
 On 30 June, a later branch froze a bootstrap protocol and reused the same
@@ -362,7 +367,8 @@ dated provenance notes.
 The first-read \texttt{summary.json} records a top-level
 \texttt{run\_tag=CONFIRMATORY}, the HOLDOUT seed list, and a confirmatory
 output path, but two nested payloads say \texttt{EXPLORATORY}. In
-\url{archive/bench/matched_fit_taskA.py}, those labels come from a module-level
+\href{https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/main/archive/bench/matched_fit_taskA.py}
+{\nolinkurl{archive/bench/matched_fit_taskA.py}}, those labels come from a module-level
 constant; seed guarding and output routing use the confirmatory function
 argument. This metadata defect does not change a metric and remains disclosed
 in the frozen record.
@@ -390,7 +396,8 @@ $\rho=0.98$ and $19/30$ at $\rho=0.99$), so those two cells are the only
 adjudicable equal-fit arms; each also sets its own $M_{\mathrm{null}}$, so each
 distance is compared with twice itself.
 In
-\url{archive/bench/matched_fit_taskA.py}, the verdict is \textsc{survive} when
+\href{https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/main/archive/bench/matched_fit_taskA.py}
+{\nolinkurl{archive/bench/matched_fit_taskA.py}}, the verdict is \textsc{survive} when
 the matched distance's confidence interval (CI) lower bound exceeds $F$,
 \textsc{collapse} when its mean is at most $F$, and \textsc{ambiguous}
 otherwise. With $F=2\times$ that mean, \textsc{collapse} is forced and

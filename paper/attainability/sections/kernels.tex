@@ -1,9 +1,8 @@
 \subsection{Implemented operator family}
 \label{sec:kernels}
 
-The operator must be available wherever the experiments need it, so the package ships the
-selected inverse and its adjoint as drop-in PyTorch operators across a small
-generality ladder (Table~\ref{tab:ladder}). The symmetric rung covers the
+The package implements the selected inverse and its adjoint across the
+structures in Table~\ref{tab:ladder}. The symmetric rung covers the
 block chain (the Rauch--Tung--Striebel / Kalman-smoother form
 \citep{rauch1965maximum}), the star, the
 general tree, and, via a symbolic elimination that completes the pattern to

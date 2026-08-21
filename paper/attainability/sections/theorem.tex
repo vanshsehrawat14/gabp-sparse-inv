@@ -1,9 +1,6 @@
 \subsection{Why it is differentiable at forward cost}
 \label{sec:theorem}
 
-A learned component has to be trainable. That this one is, at no asymptotic
-overhead, is classical; I state it once and build on it.
-
 \begin{remark}[Selected inversion is a gradient; its derivative has a sparse reverse schedule]
 \label{rem:scaffold}
 Write $P_{\pat}$ for orthogonal projection onto the on-pattern blocks. Under
@@ -28,5 +25,4 @@ Appendix~\ref{app:theorem}.
 For the solves used in the probes, reverse mode reuses the factors for a
 transpose solve and a projected outer-product cotangent on the same filled
 pattern, again at the forward pass's asymptotic structural work and without a
-dense inverse. Selected inversion separately supplies marginal blocks. From
-here the question is what the exactness of this layer does to learning.
+dense inverse. Selected inversion separately supplies marginal blocks.

@@ -6,14 +6,17 @@ products of the sparse iteration matrix with an available vector. Global transfo
 arbitrary probes, and uncounted nonlocal preconditioners are outside the class. The
 paper therefore checks the shipped arm rather than relying on the idealization.
 
-``K`` damped-Jacobi sweeps from a zero start spend ``K - 1`` products with ``A``, so
-the support bound at ``K`` sweeps is ``K - 1`` hops.
+``K`` damped-Jacobi sweeps from a zero start execute ``K`` products with ``A``.
+The first is ``A @ 0``, so the returned polynomial has degree and support radius
+``K - 1``. A generic competitor granted the same charged product opportunities
+may use all ``K`` products nontrivially.
 """
 
 from collections import deque
 
 import torch
 
+from gabp_sparse_inv.bench.matched_compute import iter_flops, matvec_flops
 from gabp_sparse_inv.demos.maze_grid import GaBPMazeGrid, gen_dataset, reach_floor_sweep
 
 
@@ -56,6 +59,13 @@ def test_k_sweeps_stay_within_k_minus_one_hops():
         assert max(dist[v] for v in reached) <= K - 1, (
             f"K={K} reached {max(dist[v] for v in reached)} hops, bound is {K - 1}"
         )
+
+
+def test_flop_model_charges_every_zero_start_jacobi_sweep():
+    """The support radius is K-1, but the implementation pays for K matvecs."""
+    n, m, K = 36, 60, 7
+    per_sweep = matvec_flops(n, m, b=1, k=1) + 2 * n
+    assert iter_flops(n, m, K, b=1, k=1, method="jacobi") == K * per_sweep
 
 
 def test_the_reach_bound_is_attained():
@@ -143,3 +153,11 @@ def test_old_zero_start_claim_did_not_exclude_a_global_transform():
     b = torch.tensor([1.0, 0.0, 0.0], dtype=torch.float64)
     globally_pooled = torch.ones_like(b) * b.sum()
     assert torch.count_nonzero(globally_pooled) == 3
+
+
+def test_span_membership_does_not_make_a_zero_query_solver_exact():
+    """At n=1 the target is in span{b}, but its coefficient still depends on A."""
+    b = torch.tensor([1.0], dtype=torch.float64)
+    targets = [torch.linalg.solve(torch.tensor([[a]], dtype=torch.float64), b) for a in (2.0, 4.0)]
+    assert all(torch.linalg.matrix_rank(torch.stack([b, target])) == 1 for target in targets)
+    assert not torch.equal(targets[0], targets[1])
