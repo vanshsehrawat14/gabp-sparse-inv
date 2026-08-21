@@ -1,0 +1,5 @@
+side,nodes,diameter,forward_match_K,training_match_K
+6,36,10,6,7
+12,144,22,14,17
+24,576,46,35,47
+48,2304,94,88,126

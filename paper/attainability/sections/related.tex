@@ -8,17 +8,17 @@ selected inversion through sparse elimination trees
 \citep{lin2011selinv,lin2013pexsi,jacquelin2018pselinv}. Differentiation is also
 occupied: it appears in sparse log-determinants, TMB, and linear-time
 reverse-mode banded operators for TensorFlow and PyTorch
-\citep{zhu2019sparse,kristensen2016tmb,durrande2019banded}. Schwarz--Schur,
-\texttt{torch-sla}, and ADELIA provide broader differentiable sparse-solver
-surfaces \citep{wang2025schwarz,torchsla2026,boudaoud2026adelia}. The
+\citep{zhu2019sparse,kristensen2016tmb,durrande2019banded}. Schwarz--Schur and
+\texttt{torch-sla} provide broader differentiable sparse-solver surfaces;
+ADELIA provides an adjacent, structure-specialized inference differentiation
+pipeline \citep{wang2025schwarz,torchsla2026,boudaoud2026adelia}. The
 implementation here is enabling machinery, not the scientific novelty.
 
 \paragraph{Comparable fit.}
-Comparable-loss comparison is not new
-\citep{mueller2025trajectories,boursier2025simplicity}. What is specific here is
-a preregistered comparable-fit gate for exact-versus-finite numerical
-computation, followed by a negative ruling when it does not open. No broader
-priority claim is made.
+Comparable-loss comparisons already appear in
+\citet{mueller2025trajectories,boursier2025simplicity}. Here the gate is
+preregistered for exact-versus-finite numerical computation, and the causal
+verdict stays negative when it does not open.
 
 \paragraph{Local access and its escape classes.}
 Polynomial graph filters are classically hop-local
@@ -27,9 +27,10 @@ interaction \citep{bamberger2025measuring,kemper2025message}.
 Proposition~\ref{prop:reach} instead fixes this experiment's source-generated
 access class and turns support into an instance-specific floor; it is narrower
 than general matrix-vector query lower bounds
-\citep{derezinski2026matrixvector}. Learned multigrid, UGrid, ARMA filters, and
-learned incomplete factorizations are genuine escape classes
-\citep{greenfeld2019multigrid,luz2020amg,han2024ugrid,bianchi2022arma,hausner2025gmres}.
+\citep{derezinski2026matrixvector}. Learned multigrid, UGrid, ARMA filters,
+and graph-neural preconditioners are genuine escape classes
+\citep{greenfeld2019multigrid,luz2020amg,han2024ugrid,bianchi2022arma,
+chen2025gnp}.
 Their nonlocal setup and application work must be counted separately.
 
 \paragraph{Approximate implicit differentiation.}
@@ -43,6 +44,7 @@ One deployed DEQ compares them directly and keeps the inexact estimator, which
 reaches a similar score and cuts training from $56$ hours to $32$
 \citep{zheng2023deqnar}.
 Reversible DEQs report benefits from exact gradients through another
-construction \citep{mccallum2025reversible}. Neither this literature nor this
-paper supports a universal exact-gradient claim. The confirmatory result is
-Neumann-specific, and the GMRES adversary makes that boundary empirical.
+construction \citep{mccallum2025reversible}. Successful inexact training
+elsewhere already rules out a universal exact-gradient advantage. The
+confirmatory result is Neumann-specific, and the GMRES adversary makes that
+boundary empirical.

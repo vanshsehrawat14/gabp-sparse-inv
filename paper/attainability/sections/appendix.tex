@@ -266,8 +266,9 @@ fitted, and no arm has to be run to evaluate it.
   \end{tabular}
 \end{table}
 
-Three readings follow. First, the literal $K=7$ Jacobi output has $P=6$ and a
-floor of $1.69\times10^{-2}$, which is $1460$ times the exact arm's test MSE of
+The two product conventions give different constants. The literal $K=7$
+Jacobi output has $P=6$ and a floor of $1.69\times10^{-2}$, which is $1460$
+times the exact arm's test MSE of
 $1.16\times10^{-5}$. The FLOP model nevertheless charges all seven products,
 including the first product with zero. A generic covered competitor should
 therefore receive $P=7$ useful products. Its more generous floor is
@@ -275,10 +276,11 @@ $6.69\times10^{-3}$, still $578$ times the exact test MSE, even before charging
 GMRES orthogonalization or other method-specific overhead. Thus no rule in the
 covered source-generated class attains the exact test error at the
 seven-product budget, whatever its parameters and however long it trains.
-Second, at $K=1$ the trained arm reaches $2.984\times10^{-1}$ against a floor of
+
+At $K=1$ the trained arm reaches $2.984\times10^{-1}$ against a floor of
 $2.981\times10^{-1}$, within $0.1\%$, so at the tightest budget the observed
-failure is reach rather than optimization. Third, and against a broader
-reading, the floor exceeds the predict-mean value of $2.60\times10^{-2}$ only
+failure is reach rather than optimization. The floor also has a clear limit:
+it exceeds the predict-mean value of $2.60\times10^{-2}$ only
 for $K\leq4$. At $K=7$ it is $0.65$ of that value, and at $K\geq16$ on this
 grid it is identically zero because a reach of $15$ hops covers a diameter of
 $10$. The statement that every displayed finite budget is worse than
@@ -365,7 +367,7 @@ constant; seed guarding and output routing use the confirmatory function
 argument. This metadata defect does not change a metric and remains disclosed
 in the frozen record.
 
-The maze summary contains a second ambiguity. Its \texttt{floor\_sound} field
+The maze record is ambiguous in a different way. Its \texttt{floor\_sound} field
 is \texttt{false}: at the in-distribution size, the $K=256$ floor arm's mean
 evaluation-loss gap from exact is $2.70\times10^{-5}$, versus the
 implementation's $3.07\times10^{-6}$ threshold. Results prose nevertheless
@@ -377,8 +379,8 @@ non-equivalent summaries controlled. This manuscript does not retroactively
 choose the favorable one: maze NC2 is ambiguous, and no positive conclusion
 depends on treating it as a pass.
 
-A third defect is structural and was found in a 2026-07-25 re-audit of the
-frozen adjudication code. The preregistration defines
+The DEQ floor has a more serious structural problem, found in a 2026-07-25
+re-audit of the frozen adjudication code. The preregistration defines
 $F=\max(2M_{\mathrm{null}},2\times10^{-6})$, where
 $M_{\mathrm{null}}$ is the near-exact cell's own matched function distance,
 and applies $F$ to both that cell's C2 collapse test and the rival
@@ -402,8 +404,7 @@ was $1.46\times10^{-6}$, the two near-exact \emph{mean} distances
 are $456\times$ and $92\times$ larger, and the $\rho=0.98$ CI lower bound
 ($3.84\times10^{-4}$) also exceeds it.
 
-That absolute-scale reading is not robust to the choice of location statistic,
-and the disagreement is stated rather than only its favorable half. Both
+The choice of location statistic reverses that absolute-scale reading. Both
 matched distributions are strongly right-skewed. Their medians are
 $5.47\times10^{-8}$ and $3.26\times10^{-8}$, which are $37\times$ and
 $61\times$ \emph{below} the same absolute scale; the mean therefore exceeds
@@ -416,26 +417,25 @@ direction. With $n=22$ and $n=19$ matched seeds, these data cannot separate a
 genuine equal-fit difference concentrated in a few seeds from a well-behaved
 collapse with a heavy tail.
 
-The preregistration specified the mean, so the frozen verdict is the
-mean-based one, and the frozen rule is reported unchanged. No claim is made that the
-absolute-scale sensitivity rescues what the self-referential floor could not
-settle. The evidence therefore does not support an inductive-bias reading where the
-finite arms cannot fit, and leaves it untested where they can.
-Only \texttt{armA\_matched\_fdist} carries a recorded median in the frozen
-summary, so this robustness check is available for the matched distances above
-and not for the as-trained separations quoted elsewhere; the analysis was not reopened after the
-per-seed records to extend it.
+The preregistration specified the mean, so I report the frozen mean-based
+verdict unchanged. The absolute-scale sensitivity cannot rescue what the
+self-referential floor failed to settle. The evidence leaves no inductive-bias
+comparison where the finite arms cannot fit, and leaves the question untested
+where they can.
+The DEQ archive retains per-cell aggregates rather than seed-level matched-fit
+payloads. I therefore did not reconstruct its counts and intervals from
+individual records or rerun the retired HOLDOUT population. Only
+\texttt{armA\_matched\_fdist} carries a median, so this robustness check cannot
+extend to the as-trained separations quoted elsewhere.
 
-A fourth defect is independent of the first three and was found in the same
-re-audit. The only adjudicable equal-fit arm is $K=32$, and the training system
-is a $16$-node chain with scalar blocks. This arm has 32 Neumann terms and
+The same two $K=32$ cells are also past the useful budget range. The training
+system is a $16$-node chain with scalar blocks, while this arm has 32 Neumann terms and
 spends 31 products, which exceeds the dimension of the system being solved.
 By Remark~\ref{rem:saturation}, a residual-optimal method has already reached
 the exact-termination ceiling at that budget, and the cell cannot distinguish
 a budget effect from a property of the Neumann polynomial even had the floor
-been sound. The two
-degeneracies are independent -- one is a self-referential threshold, the other
-a saturated budget -- and each alone is sufficient to void the cell. The
+been sound. The self-referential floor and saturated budget are separate
+problems, and either is enough to void the cell. The
 preregistered hard cells $K\in\{1,2,4\}$ are at most a quarter of the dimension
 and reach at most $3$ of the chain's $15$ hops, so the conservative reading does
 not depend on either defect. Any successor experiment comparing solve rules at

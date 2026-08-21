@@ -25,8 +25,8 @@ specialization and projected-adjoint statement are in
 Appendix~\ref{app:theorem}.
 \end{remark}
 
-Remark~\ref{rem:scaffold} is why the exact, global sparse solve of
-\S\ref{sec:setup} can be used as a layer: embedded in a model and trained
-end-to-end with the same asymptotic structural work as the forward pass, never forming the dense
-inverse. From here the question is what the exactness of this layer does to
-learning.
+For the solves used in the probes, reverse mode reuses the factors for a
+transpose solve and a projected outer-product cotangent on the same filled
+pattern, again at the forward pass's asymptotic structural work and without a
+dense inverse. Selected inversion separately supplies marginal blocks. From
+here the question is what the exactness of this layer does to learning.

@@ -1,13 +1,12 @@
 \section{Exactness is not accuracy}
 \label{sec:numerics}
 
-Before attributing the learning probes to operator structure, the paper checks
-whether this implementation has a floating-point accuracy advantage.
-It does not on the finite precision grid below. The grid supplies no evidence
-for that explanation; it is not a universal comparison of
-sparse and dense factorization accuracy.
+Before attributing the learning probes to operator structure, I first check
+whether this implementation has a floating-point accuracy advantage. The
+finite precision grid below shows no consistent advantage in either direction.
+It is a diagnostic, rather than a universal comparison of sparse and dense
+factorizations.
 
-\paragraph{No robust win in either direction.}
 Scored on the pattern against a 64-bit oracle and swept over conditioning
 (Table~\ref{tab:precision}), the selected inverse and a dense SPD solve at
 equal 32-bit floating-point (fp32) precision stay within small constant
@@ -47,10 +46,8 @@ on this grid. The 16-seed ordering diagnostic is recorded in
   \end{tabular}
 \end{table}
 
-\paragraph{What exactness does give: a sparse-structured global operator.}
-The edge is not a more accurate rounded number; it is that the operator is
-algebraically exact, global, and sparse-structured. That structure is what
-makes the operator usable as a layer:
+The useful distinction is structural. The operator is algebraically exact,
+global, and sparse-structured, which makes it usable as a layer:
 Figure~\ref{fig:scaling} shows forward timings consistent with the chain's
 $\bigO(n)$ operation count, with the measured dense crossover, and
 forward-plus-backward Gaussian Markov random field (GMRF) training timings

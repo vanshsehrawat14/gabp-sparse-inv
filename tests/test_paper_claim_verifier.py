@@ -33,3 +33,25 @@ def test_reach_floor_verifier_rejects_a_mutated_record(tmp_path, monkeypatch):
     monkeypatch.setattr(verify_claims, "DATA", data)
     with pytest.raises(AssertionError):
         verify_claims.verify_reach_floor()
+
+
+def test_gmres_verifier_rejects_a_mutated_record(tmp_path, monkeypatch):
+    data = tmp_path / "data"
+    shutil.copytree(verify_claims.DATA, data)
+    record = data / "deq_gmres_falsifier.csv"
+    with record.open(newline="", encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle))
+        fieldnames = list(rows[0])
+    target = next(
+        row for row in rows
+        if float(row["rho"]) == 0.98 and int(row["products"]) == 8
+    )
+    target["gmres_matchable_fraction"] = "0.0"
+    with record.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+    monkeypatch.setattr(verify_claims, "DATA", data)
+    with pytest.raises(AssertionError):
+        verify_claims.verify_deq_gmres()

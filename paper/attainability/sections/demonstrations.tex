@@ -69,8 +69,7 @@ architectures could attain.
   \label{fig:maze}
 \end{figure}
 
-\paragraph{Within-architecture control: the effect is the solve's globality, not the
-architecture.}
+\paragraph{Within-architecture intervention.}
 The much larger baselines show that the observed gap is not explained by raw
 trainable-parameter count alone, but they differ in architecture and
 optimization, so the gap could still be architectural. To isolate the
@@ -180,7 +179,6 @@ Because the preregistration says ``function/extrapolation distance'' without
 resolving these two checks, the manuscript treats the maze near-exact control
 (NC2) as ambiguous, not as a clean pass.
 
-\paragraph{Interpretation and scope.}
 The task is solve-shaped by construction: the label is the output of a
 structured global solve, and the \texttt{gabp} model contains that operator.
 This accounts for the observed advantage over the tested GNN and Transformer
@@ -199,9 +197,9 @@ falsify or refine this reading.
 
 The second axis is stability. A model's optimum can lie where the underlying
 fixed point is stiff: long memory, strong coupling, slow mixing. Finite
-unaccelerated gradient estimates can become inaccurate there. This section
-shows that the exact selected-inverse backward keeps gradients correct in the
-tested regime, so it can train where the tested finite Neumann adjoints do not.
+unaccelerated gradient estimates can become inaccurate there. I test whether
+the exact sparse-direct implicit backward remains accurate where the finite
+Neumann adjoints do not.
 
 \paragraph{The operator's role.}
 A deep-equilibrium layer defines its output as a fixed point
@@ -225,8 +223,7 @@ Neumann tail is $(J\T)^K u^\star$; its asymptotic rate is governed by
 $\rho(J)$, with constants and transients affected by non-normality. Thus the
 unaccelerated iteration can become arbitrarily slow as $\rho(J)\to1$.
 
-\paragraph{Result on four tested $\rho$ values: sparse direct remains accurate; finite
-Neumann truncations degrade.}
+\paragraph{Gradient accuracy as stiffness rises.}
 On a non-symmetric coupling on a loopy $3\times3$ grid (genuine fill) scaled
 to a target spectral radius, the experiment measures the parameter-gradient relative error
 against a dense implicit-differentiation oracle (Table~\ref{tab:deq},
@@ -296,9 +293,10 @@ bar) before crediting any test-loss gap to an inductive-bias mechanism. In
 the stiff cells ($\rho\in\{0.98,0.99\}$ and $K\in\{1,2,4\}$) the
 Neumann arm is matchable in only $0$--$23.3\%$ of seeds
 (relative train gap $+1.45$ to $+13.2$), so the inductive-bias
-(\textsc{survive}) branch has nothing to compare there; the result resolves to
-the conservative attainability/optimization reading. That branch is also
-unreachable at the two high-$\rho$ cells that do clear the matchability bar,
+(\textsc{survive}) branch has nothing to compare there. So the evidence
+supports only the conservative attainability/optimization reading. That
+branch is also unreachable at the two high-$\rho$ cells that do clear the
+matchability bar,
 $K=32$ at $\rho=0.98$ ($22/30$) and at $\rho=0.99$ ($19/30$), because each
 calibrates the floor it would have to exceed; this is a
 defect of the frozen rule rather than a finding, and
@@ -312,10 +310,9 @@ control ($\rho=0.5$) did not cleanly pass: its relative-gap clause failed
 (driven by a denominator-scale instability in the relative ratio, with both arms
 converging to losses of order $10^{-8}$--$10^{-9}$), though its
 independent function-distance clause passed by more than four orders of
-magnitude. Per the frozen rule (a positive reading is void unless its
-negative controls hold), this is reported as a hedged, not pristine,
-conservative verdict, not relaxed after the fact. Full adjudication, per-cell
-table, and per-seed records:
+magnitude. Under the frozen rule, a failed negative control keeps the
+conservative verdict hedged. I did not relax that requirement after seeing the
+result. Full adjudication and the per-cell aggregate table:
 \url{archive/docs/CONFIRMATORY_RESULTS.md},
 \url{archive/docs/PREREGISTRATION_MATCHED_FIT_CONFIRMATORY.md}, and
 \url{archive/results/CONFIRMATORY/matched_fit_taskA/deq_matched_fit.json}.
@@ -382,18 +379,15 @@ general. At $P\leq4$, joint non-attainment remains unresolved. The study is
 post-hoc and exploratory; Appendix~\ref{app:integrity} gives its protocol and
 integrity record.
 
-\paragraph{Interpretation and scope.}
 The error sweep is a mechanism result at controlled scale ($18$ dimensions):
-it shows the exact sparse-direct backward is accurate on the tested cells where
-the finite Neumann truncation is not, and that the training arms differ in
-attainability under the first-read protocol. That adjudication does not support
-the stronger claim that this difference reflects an inductive bias among
-equally attainable optima, because the hard cells do not supply an equal-fit
-comparison. The later GMRES result shows that this failure is not generic to
-the same product budget once $P=8$: a better polynomial clears the bar in most
-seeds and reaches the exact arm's learned function in the median. The confirmatory conclusion is therefore an
-attainability/optimization effect for the Neumann rule rather than a
-preference effect or a general lower bound. Anderson
+the exact sparse-direct backward remains accurate on the tested cells where
+the finite Neumann truncation degrades. The first-read training result then
+shows different attainability, but the hard cells never supply the equal-fit
+comparison needed to attribute that difference to inductive bias. GMRES draws
+the boundary more sharply. Once $P=8$, a better polynomial clears the bar in
+most seeds and reaches the exact arm's learned function in the median. The
+confirmatory conclusion is therefore an attainability/optimization effect for
+the Neumann rule, with no general lower bound implied. Anderson
 \citep{anderson1965iterative}, Broyden \citep{broyden1965class}, and
 preconditioned solvers remain necessary competitors at scale. Where their
 generated vectors satisfy Proposition~\ref{prop:reach}'s source-Krylov access

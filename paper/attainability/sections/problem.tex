@@ -1,12 +1,10 @@
 \section{The primitive: an exact, differentiable global sparse solve}
 \label{sec:primitive}
 
-The operator family under test runs through a differentiable selected-inverse
-layer. The later sections need three facts about it: it is exact and global
-(\S\ref{sec:setup}), differentiable at the asymptotic cost of its forward
-pass (\S\ref{sec:theorem}), and available across the matrix structures the
-experiments use (\S\ref{sec:kernels}). None of the three is new; together
-they make exactness embeddable and trainable.
+The experiments use a differentiable selected-inverse layer. This section
+fixes the notation and cost model, then records the classical derivative and
+the matrix structures implemented in the package. That is what makes the
+exact computation usable inside a trained model.
 
 \subsection{Selected inversion on a pattern}
 \label{sec:setup}

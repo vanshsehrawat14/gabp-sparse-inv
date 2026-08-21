@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "captured_utc": "2026-08-20T06:00:39.565691+00:00",
+  "host": "local-windows-cpu",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "python": "3.14.2",
+  "cpu": {
+    "model": "AMD64 Family 25 Model 80 Stepping 0, AuthenticAMD",
+    "system_logical_count": 16,
+    "process_logical_count": 16,
+    "affinity_logical_count": null
+  },
+  "host_memory_bytes": 16483872768,
+  "repo_disk": {
+    "total_bytes": 1022702383104,
+    "free_bytes": 637122723840
+  },
+  "packages": {
+    "torch": "2.12.1",
+    "gpytorch": null,
+    "linear-operator": null,
+    "numpy": "2.4.1",
+    "scipy": "1.17.0",
+    "numba": null,
+    "scikit-sparse": null
+  },
+  "torch": {
+    "installed": true,
+    "version": "2.12.1+cpu",
+    "cuda_runtime": null,
+    "cuda_available": false,
+    "gpus": []
+  },
+  "nvidia_smi": null,
+  "nvidia_mig_mode": null,
+  "nvidia_topology": null,
+  "git": {
+    "root": "$REPOSITORY_ROOT",
+    "commit": "ad1668d0be9854c4c6a08b0ed4b4fba54ddc948d",
+    "branch": "main",
+    "status_porcelain": ""
+  },
+  "scheduler": {
+    "queue": "local-interactive",
+    "wall_limit": "none",
+    "allocation": "local CPU, host RAM, no GPU required",
+    "preemption_policy": "user-controlled",
+    "sharing_policy": "desktop may have background workloads; scientific timing is diagnostic",
+    "network_storage_policy": "local workspace only",
+    "availability_window": "2026-08-19 audit session"
+  }
+}

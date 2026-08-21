@@ -478,6 +478,7 @@ def verify_manuscript_literals() -> None:
         "$18/20$ and $15/20$",
         "$5/20$ and $4/20$",
         "$1.001$ and $0.996$",
+        "per-cell aggregates rather than seed-level matched-fit",
     ]
     # The low-vs-hard order separation is reported only in the shortened
     # workshop manuscript, which is intentionally absent from the anonymous
@@ -496,6 +497,7 @@ def verify_manuscript_literals() -> None:
         "spends $d-1$ products",
         "residual-optimal rules remain unevaluated",
         "they were not evaluated here",
+        "per-cell table, and per-seed records",
     ):
         assert stale not in text, f"stale manuscript fragment: {stale}"
 
