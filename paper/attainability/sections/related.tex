@@ -36,15 +36,26 @@ Proposition~\ref{prop:reach} instead fixes this experiment's source-generated
 access class and turns support into an instance-specific floor; it is narrower
 than general matrix-vector query lower bounds
 \citep{derezinski2026matrixvector}. Learned multigrid, UGrid, ARMA filters,
-and graph-neural preconditioners fall outside the source-generated access class
+graph-neural preconditioners, and deep statistical solvers fall outside the
+source-generated access class
 \citep{greenfeld2019multigrid,luz2020amg,han2024ugrid,bianchi2022arma,
-chen2025gnp}.
-Their nonlocal setup and application work must be counted separately.
+chen2025gnp,donon2020deep}.
+Their nonlocal setup and application work must be counted separately. A second
+escape is the budget rather than the access class: $\Psi$-GNN makes
+message-passing depth implicit and transfers across mesh sizes and boundary
+conditions, a constraint-based simulator gains accuracy on larger systems from
+more test-time solver iterations, and iterating one block longer can enlarge what
+an implicit model expresses
+\citep{nastorg2024psignn,rubanova2022constraint,liu2026expressive}.
+Proposition~\ref{prop:reach} fixes the budget and says nothing against them.
 
 \paragraph{Structured computation as inductive bias.}
 Optimization and declarative layers embed structured solution operators inside
 trainable networks and are motivated as inductive biases
-\citep{amos2017optnet,agrawal2019differentiable,gould2022deep,paulus2024lpgd}.
+\citep{amos2017optnet,agrawal2019differentiable,gould2022deep,paulus2024lpgd,
+rubanova2022constraint}. Contemporaneous work places a discrete Poisson solve on
+a graph inside a surface-code decoder on the same motivation
+\citep{trevisanutto2026decoding}.
 The question here is narrower: whether the numerical exactness of such an
 operator adds a further generalization bias once the competing realizations
 attain comparable training fit.
@@ -53,6 +64,9 @@ attain comparable training fit.
 Iteration-complexity analyses, inconsistent partial-solve adjoints, and
 differentiable preconditioned Krylov methods already frame approximate implicit
 gradients \citep{grazzi2020iteration,akbarzadeh2020consistent,montoison2026differentiable}.
+The numerical realization can itself become part of what is learned: a Neural ODE
+trained with a coarse solver loses accuracy sharply under a solver of equal or
+smaller error \citep{ott2021resnet}.
 Jacobian-free backpropagation, phantom gradients, Broyden reuse, and implicit
 language models report successful inexact training
 \citep{fung2022jfb,geng2021training,nguyen2023efficient,schone2025implicit}.
@@ -61,6 +75,10 @@ under both unrolled and implicit differentiation, and still reaches full network
 accuracy \citep{bhatia2025prdp}. In bilevel learning the hypergradient rule can
 matter at least as much as the lower-level solver \citep{ehrhardt2024analyzing},
 the same rule sensitivity the GMRES adversary finds here.
+Truncated-Neumann hypergradients induce an implicit bias of their own in
+overparameterized bilevel problems, where a Krylov solver at the same budget
+selects a visibly different one \citep{vicol2022implicit}; the question here is
+whether that difference reaches generalization once fit is matched.
 One deployed DEQ compares them directly and keeps the inexact estimator, which
 reaches a similar score and cuts training from $56$ hours to $32$
 \citep{zheng2023deqnar}.

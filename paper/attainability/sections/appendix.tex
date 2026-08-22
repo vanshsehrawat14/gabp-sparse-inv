@@ -134,7 +134,7 @@ is the product of those $P$ weights and cannot vanish. Cancellation on a graph
 with cycles can only shrink a support, never extend one, so it does not
 threaten the bound from the other side.
 
-The access model is load-bearing. If a rule may apply a fixed global transform
+The access restriction is essential. If a rule may apply a fixed global transform
 to $b$, then $\mathbf{1}\mathbf{1}^{\mathsf T}b$ is globally supported before
 any product. If it may probe the operator with arbitrary vectors, it can exploit
 structural orthogonality \citep{curtis1974estimation}: columns whose patterns
@@ -224,9 +224,9 @@ over all learned edge weights with the stated graph pattern.
 \label{app:floor}
 
 Proposition~\ref{prop:reach} constrains support, while attainability is a
-statement about loss. The step between them needs no new experiment. A covered
-source-Krylov rule with $P$ products predicts zero at every vertex outside
-$\hop_{P}(\supp b)$, so its squared error there is the exact field's own value.
+statement about loss. A covered source-Krylov rule with $P$ products predicts
+zero at every vertex outside $\hop_{P}(\supp b)$, so its squared error there is
+the exact field's own value.
 Averaging over the test set $\mathcal{D}$ of $n$-node instances,
 \begin{equation}
 \label{eq:floor}
@@ -290,9 +290,9 @@ grid it is identically zero because a reach of $15$ hops covers a diameter of
 $10$. The statement that every displayed finite budget is worse than
 predict-the-mean is therefore a measurement and not a corollary of the
 proposition, and the dose-response at $K\in\{16,32\}$ is carried by measurement
-alone. Table~\ref{tab:reach-floor} marks the boundary of what the proposition
-buys: it settles non-attainment against the exact arm for the whole covered
-class, and it says nothing at the two largest budgets.
+alone. Table~\ref{tab:reach-floor} shows where the proposition is informative:
+it settles non-attainment against the exact arm for the whole covered class,
+and it says nothing at the two largest budgets.
 
 The word ``matched'' in this experiment refers to the $6\times6$ training
 size. Table~\ref{tab:maze-compute-scaling} recomputes the same FLOP model at
