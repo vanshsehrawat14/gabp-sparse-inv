@@ -202,7 +202,12 @@ gap, not evidence of an implicit training preference.
 
 The second probe considers spectral stiffness. Finite unaccelerated gradient
 estimates can become inaccurate near instability; the experiment compares them
-with the sparse-direct implicit backward.
+with the sparse-direct implicit backward. The equilibrium Jacobian's role in DEQ
+forward and backward stability is established \citep{bai2021stabilizing}; what is
+isolated here is finite-Neumann truncation at a controlled spectral radius. A DEQ
+can also carry an implicit regularization of its own under simplified learning
+dynamics \citep{wu2024separation}; this intervention holds the forward DEQ fixed
+and varies only the numerical backward rule.
 
 \paragraph{Implicit backward as a sparse solve.}
 A deep-equilibrium layer defines its output as a fixed point

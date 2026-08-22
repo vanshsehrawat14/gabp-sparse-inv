@@ -236,7 +236,10 @@ Averaging over the test set $\mathcal{D}$ of $n$-node instances,
 \end{equation}
 The bound holds for every covered rule at any parameter count and after any
 amount of training, and $F(P)$ is computed from the labels alone: nothing is
-fitted, and no arm has to be run to evaluate it.
+fitted, and no arm has to be run to evaluate it. Density of $\inv{A}$ on its own
+would not give a far-field error this large, since inverse entries can decay with
+distance \citep{demko1984decay,benzi2007decay}; \eqref{eq:floor} instead measures
+the omitted target mass directly on the instances used here.
 
 \begin{table}[htbp]
   \centering

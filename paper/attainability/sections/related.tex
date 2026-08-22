@@ -8,23 +8,30 @@ selected inversion through sparse elimination trees
 \citep{lin2011selinv,lin2013pexsi,jacquelin2018pselinv}. Differentiation of
 sparse solves and selected inverses is also well studied: it appears in sparse
 log-determinants, TMB, and linear-time
-reverse-mode banded operators for TensorFlow and PyTorch
-\citep{zhu2019sparse,kristensen2016tmb,durrande2019banded}. Schwarz--Schur and
-\texttt{torch-sla} provide broader differentiable sparse-solver surfaces;
-ADELIA provides an adjacent, structure-specialized inference differentiation
-pipeline \citep{wang2025schwarz,torchsla2026,boudaoud2026adelia}. The
+reverse-mode banded operators for TensorFlow and PyTorch, where the sparse
+inverse subset itself is differentiated at the forward operator's complexity
+class \citep{zhu2019sparse,kristensen2016tmb,durrande2019banded}. Schwarz--Schur,
+\texttt{torch-sla}, and JAX-AMG provide broader differentiable sparse-solver
+surfaces; ADELIA provides an adjacent, structure-specialized inference
+differentiation pipeline
+\citep{wang2025schwarz,torchsla2026,boudaoud2026adelia,liu2026jaxamg}. The
 implementation here is enabling machinery, not the scientific novelty.
 
 \paragraph{Comparable fit.}
 Comparable-loss comparisons already appear in
-\citet{mueller2025trajectories,boursier2025simplicity}. Here the gate is
-preregistered for exact-versus-finite numerical computation, and the causal
+\citet{mueller2025trajectories,boursier2025simplicity}, and credit-assignment
+rules that depart from the true gradient are reported to generalize worse and
+more variably than rules that track it \citep{liu2022generalization}. Here the
+gate is preregistered for exact-versus-finite numerical computation, and the causal
 verdict stays negative when it does not open.
 
 \paragraph{Source-generated access and nonlocal alternatives.}
 Polynomial graph filters are classically hop-local
 \citep{defferrard2016convolutional}, with newer measures of long-range
-interaction \citep{bamberger2025measuring,kemper2025message}.
+interaction \citep{bamberger2025measuring,kemper2025message}; weighted Jacobi
+carries the same reading, each sweep extending the iterate's nonzero region
+along adjacent edges, so a refined mesh needs more sweeps to propagate a source
+\citep{moore2025gnnla}.
 Proposition~\ref{prop:reach} instead fixes this experiment's source-generated
 access class and turns support into an instance-specific floor; it is narrower
 than general matrix-vector query lower bounds
@@ -34,6 +41,14 @@ and graph-neural preconditioners fall outside the source-generated access class
 chen2025gnp}.
 Their nonlocal setup and application work must be counted separately.
 
+\paragraph{Structured computation as inductive bias.}
+Optimization and declarative layers embed structured solution operators inside
+trainable networks and are motivated as inductive biases
+\citep{amos2017optnet,agrawal2019differentiable,gould2022deep,paulus2024lpgd}.
+The question here is narrower: whether the numerical exactness of such an
+operator adds a further generalization bias once the competing realizations
+attain comparable training fit.
+
 \paragraph{Approximate implicit differentiation.}
 Iteration-complexity analyses, inconsistent partial-solve adjoints, and
 differentiable preconditioned Krylov methods already frame approximate implicit
@@ -41,6 +56,11 @@ gradients \citep{grazzi2020iteration,akbarzadeh2020consistent,montoison2026diffe
 Jacobian-free backpropagation, phantom gradients, Broyden reuse, and implicit
 language models report successful inexact training
 \citep{fung2022jfb,geng2021training,nguyen2023efficient,schone2025implicit}.
+PRDP trains through deliberately under-converged iterative sparse linear solves,
+under both unrolled and implicit differentiation, and still reaches full network
+accuracy \citep{bhatia2025prdp}. In bilevel learning the hypergradient rule can
+matter at least as much as the lower-level solver \citep{ehrhardt2024analyzing},
+the same rule sensitivity the GMRES adversary finds here.
 One deployed DEQ compares them directly and keeps the inexact estimator, which
 reaches a similar score and cuts training from $56$ hours to $32$
 \citep{zheng2023deqnar}.

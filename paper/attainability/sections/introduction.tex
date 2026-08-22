@@ -66,8 +66,11 @@ extrapolation-floor comparison passes, but a separate in-distribution
 \paragraph{Contribution.}
 The exact forward engine is classical
 \citep{takahashi1973,erismantinney1975,lin2011selinv,weiss2001correctness}.
-Its reverse schedule also follows established selected-inverse differentiation
-and cheap-gradient results \citep{zhu2019sparse,dwyer1948symbolic,baur1983complexity}.
+Its reverse schedule is established too: \citet{durrande2019banded} differentiate
+the sparse inverse subset in the banded setting at the forward operator's
+complexity class, and the log-determinant identity and the cheap-gradient
+principle supply the corresponding structural view
+\citep{zhu2019sparse,dwyer1948symbolic,baur1983complexity}.
 The contributions are:
 \begin{enumerate}
   \item two preregistered matched-fit studies that distinguish an
