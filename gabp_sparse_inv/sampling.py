@@ -3,8 +3,8 @@
 Draw ``x ~ N(0, A^{-1})`` where ``A`` is an SPD **precision** given in a tree
 (:class:`~gabp_sparse_inv.layout.BlockTree`) or general-sparse
 (:class:`~gabp_sparse_inv.layout.BlockSparseSym`, the junction kernel) layout, reusing the
-same ``LDL^T`` factorization as the selected inverse / solve. This is the other M-JOSS
-statistical op alongside the log-determinant (``tree_logdet`` / ``junction_logdet``).
+same ``LDL^T`` factorization as the selected inverse / solve. It is the second
+statistical operation besides the log-determinant (``tree_logdet`` / ``junction_logdet``).
 
 With ``A = L D L^T`` and each pivot factored ``D_v = C_v C_v^T`` (Cholesky), set ``M = L C``
 (block-diagonal ``C``, so ``M`` is lower-triangular in elimination order). Then ``A = M M^T``
@@ -27,7 +27,11 @@ import torch
 from torch import Tensor
 
 from .gmrf import _tree_collect_batched
-from .junction import _factor_junction, _normalize_edge_index
+from .junction import (
+    _factor_junction,
+    _normalize_edge_index,
+    _sample_transform_from_factors,
+)
 from .layout import _as_parent_tensor, tree_orders
 
 __all__ = ["sample_gaussian_tree", "sample_gaussian_junction"]
@@ -53,17 +57,8 @@ def _sample_transform_tree(diag, edge, parent_t, z):
 
 def _sample_transform_junction(diag, edge_index, edge_val, z, order):
     """Deterministic ``x = M^{-T} z`` for the junction precision (``z``/``x``: ``[..., n, b, k]``)."""
-    order, _pos, U, _S_pairs, chol, ell = _factor_junction(diag, edge_index, edge_val, order)
-    n = diag.shape[-3]
-    u = {v: torch.linalg.solve_triangular(chol[v].mT, z[..., v, :, :], upper=True) for v in range(n)}
-    # back-solve L^T x = u : decreasing elimination order, x_v = u_v - sum_{w in U_v} ell_{wv}^T x_w.
-    x = {}
-    for v in reversed(order):
-        acc = u[v]
-        for w in U[v]:
-            acc = acc - ell[(w, v)].mT @ x[w]
-        x[v] = acc
-    return torch.stack([x[v] for v in range(n)], dim=-3)              # [..., n, b, k]
+    factors = _factor_junction(diag, edge_index, edge_val, order)
+    return _sample_transform_from_factors(diag, z, factors)
 
 
 def sample_gaussian_tree(

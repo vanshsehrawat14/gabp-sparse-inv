@@ -3,33 +3,14 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 .pytest_cache/
-.coverage*
-htmlcov/
 
 # Packaging and builds
 build/
 dist/
-*.egg
 
 # Environments
 .venv/
 venv/
-env/
 
-# Generated outputs. The frozen records the paper cites are tracked:
-# bench_results.csv (Fig. 1) and results/CONFIRMATORY/ (pre-registered runs).
-results/*
-!results/CONFIRMATORY/
+# Benchmark outputs
 bench_results.*
-!bench_results.csv
-paper/joss/paper.pdf
-paper/attainability/main.pdf
-
-# Local configuration
-.env
-.pypirc
-.ruff_cache/
-.mypy_cache/
-.pyre/
-.vscode/
-.idea/

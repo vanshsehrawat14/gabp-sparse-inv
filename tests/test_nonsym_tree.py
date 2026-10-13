@@ -305,3 +305,19 @@ def test_bf16_storage_runs():
     )
     assert G[0].dtype == torch.bfloat16
     assert _rel_err(G, _oracle_selected(diag, epc, ecp, parent)) < 5e-1
+
+
+def test_unsafe_growth_is_refused_not_returned():
+    # Leaf 0 with pivot 1e-18 is eliminated into root 1 first: growth 1e18.
+    diag = torch.tensor([[[1e-18]], [[1.0]]], dtype=torch.float64)
+    pc = torch.tensor([[[2.0]], [[0.0]]], dtype=torch.float64)    # M[1, 0]
+    cp = torch.tensor([[[1.0]], [[0.0]]], dtype=torch.float64)    # M[0, 1]
+    with pytest.raises(torch.linalg.LinAlgError, match="element growth"):
+        selected_inverse_nonsym_tree(diag, pc, cp, [1, -1])
+    # Rooting the tree at node 0 eliminates node 1 first and is safe.
+    diag2 = torch.tensor([[[1e-18]], [[1.0]]], dtype=torch.float64)
+    pc2 = torch.tensor([[[0.0]], [[1.0]]], dtype=torch.float64)   # M[0, 1]
+    cp2 = torch.tensor([[[0.0]], [[2.0]]], dtype=torch.float64)   # M[1, 0]
+    Gd, _Gpc, _Gcp = selected_inverse_nonsym_tree(diag2, pc2, cp2, [-1, 0])
+    inv = torch.linalg.inv(torch.tensor([[1e-18, 1.0], [2.0, 1.0]], dtype=torch.float64))
+    torch.testing.assert_close(Gd.reshape(2), torch.stack([inv[0, 0], inv[1, 1]]))

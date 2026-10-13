@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "gabp-sparse-inv"
 dynamic = ["version"]
-description = "Differentiable selected inverse (plus log-det, Gaussian sampling, and solve) for sparse block-structured SPD and non-symmetric matrices, via Gaussian belief propagation / the Takahashi recurrence."
+description = "Differentiable selected inversion, solves, log-determinants and Gaussian sampling for sparse block matrices in PyTorch."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
@@ -27,15 +27,15 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering :: Mathematics",
-    "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 dependencies = [
     "torch>=2.2",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=7", "pytest-cov>=4"]
+dev = ["pytest>=7"]
 
 [project.urls]
 Homepage = "https://github.com/vanshsehrawat14/gabp-sparse-inv"

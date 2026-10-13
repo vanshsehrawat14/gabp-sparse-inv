@@ -2,9 +2,8 @@
 
 The autograd-facing :func:`~gabp_sparse_inv.selinv_junction` and
 :func:`~gabp_sparse_inv.selinv_nonsym_junction` already give exact gradients by reverse-mode
-through the functional forward. The symmetric map has the projected self-adjoint schedule of
-``docs/derivations.md`` §8.4; the non-symmetric inversion derivative satisfies
-``L_A^*(X) = -A^{-T} X A^{-T} = L_{A^T}(X)`` as described in §10.3. This module is the
+through the functional forward -- which *is* the reverse schedule of
+``docs/derivations.md`` §8.4 (§10.3 for the non-symmetric kernel). This module is the
 **tape-free** version: a custom
 ``torch.autograd.Function`` whose backward runs the explicit reverse two-sweep clique
 recurrence directly on the saved factors ``(chol/Dinv, ell/Lf/Uf, G|_S)``, with **no autograd

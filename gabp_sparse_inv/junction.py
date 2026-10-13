@@ -1,6 +1,6 @@
 """General sparse SPD selected inverse via the elimination tree (junction tree).
 
-This is the Phase-4 generalization of the tree kernel (:mod:`gabp_sparse_inv.tree`):
+This is the general-pattern version of the tree kernel (:mod:`gabp_sparse_inv.tree`):
 the input SPD block matrix may have an **arbitrary** sparsity pattern, not just a
 tree. The implementation picks an elimination order, symbolically completes the pattern to its
 **chordal (filled)** closure ``S = pattern(L + L^T)`` (``docs/derivations.md`` §2.1),
@@ -11,8 +11,8 @@ Trees are the zero-fill special case (``S`` = the input pattern, ``U_v`` =
 ``{parent}``); there the recurrences below reduce *block-for-block* to ``tree.py``
 eqs. (5)-(6), which the tests assert.
 
-Algorithm (the multi-neighbour Takahashi / Erisman-Tinney recurrence; derived and
-proved self-adjoint in ``docs/derivations.md`` §8.4). Number the nodes by their
+Algorithm (the multi-neighbour Takahashi / Erisman-Tinney recurrence; its reverse
+schedule is derived in ``docs/derivations.md`` §8.4). Number the nodes by their
 elimination order; for a node ``v`` let ``U_v`` be its neighbours eliminated *later*.
 By chordality ``U_v`` is a **clique** in the filled graph -- which is exactly why
 every block the distribute step reads is itself on ``S`` and already computed. With
@@ -29,8 +29,8 @@ pivots ``D_v`` and factor blocks ``ell_{wv} = A_{wv} D_v^{-1}``:
 
 **Differentiability.** The core is written functionally with differentiable block
 ops (``cholesky`` / ``cholesky_solve``), so reverse-mode autograd *through it* is the
-``S``-local self-adjoint schedule proved in §8.4 -- no custom backward needed for
-correct gradients. :func:`selinv_junction` is that autograd-facing entry point. A
+``S``-local reverse schedule of §8.4 -- no custom backward needed for correct
+gradients. :func:`selinv_junction` is that autograd-facing entry point. A
 hand-written analytic clique backward is shipped in
 :mod:`gabp_sparse_inv.junction_autodiff`; it avoids an operation-by-operation
 autograd tape and is first-order only.
@@ -54,6 +54,9 @@ from torch import Tensor
 from ._linalg import cholesky_spd, inv_via_chol
 
 __all__ = [
+    "JunctionAnalysis",
+    "SparseGaussianFactor",
+    "analyze_junction",
     "selected_inverse_junction",
     "selinv_junction",
     "junction_solve",
@@ -64,14 +67,37 @@ __all__ = [
 
 
 def _normalize_edge_index(edge_index: Tensor | Sequence[Sequence[int]]) -> Tensor:
-    """Normalize an edge index to a 1-D CPU ``long`` ``[2, m]`` tensor (not batched)."""
-    if isinstance(edge_index, Tensor):
-        ei = edge_index.detach().to(device="cpu", dtype=torch.long)
-    else:
-        ei = torch.tensor(edge_index, dtype=torch.long, device="cpu")
+    """Normalize an edge index to a CPU ``long`` ``[2, m]`` tensor (not batched).
+
+    Non-integer indices are rejected rather than truncated toward zero.
+    """
+    ei = edge_index.detach() if isinstance(edge_index, Tensor) else torch.as_tensor(edge_index)
+    if ei.numel() > 0 and (ei.is_floating_point() or ei.is_complex() or ei.dtype == torch.bool):
+        raise TypeError(f"edge_index must hold integers; got dtype {ei.dtype}")
+    ei = ei.to(device="cpu", dtype=torch.long)
     if ei.ndim != 2 or ei.shape[0] != 2:
         raise ValueError(f"edge_index must have shape [2, m]; got {tuple(ei.shape)}")
     return ei
+
+
+def _rhs_is_vector(b: Tensor, diag_shape) -> bool:
+    """Read ``b`` as ``[..., n, b]`` vectors (``True``) or ``[..., n, b, k]`` columns.
+
+    A shape that fits both layouts is read as vectors only when it equals
+    ``diag.shape[:-1]``, the ``torch.linalg.solve`` convention; ``b.unsqueeze(-1)``
+    always selects the column layout.
+    """
+    n, bs = diag_shape[-3], diag_shape[-1]
+    vector = b.ndim >= 2 and tuple(b.shape[-2:]) == (n, bs)
+    matrix = b.ndim >= 3 and tuple(b.shape[-3:-1]) == (n, bs)
+    if not (vector or matrix):
+        raise ValueError(
+            f"b must have shape [..., n, b] or [..., n, b, k] with n={n}, b={bs}; "
+            f"got {tuple(b.shape)}"
+        )
+    if vector and matrix:
+        return tuple(b.shape) == tuple(diag_shape[:-1])
+    return vector
 
 
 def elimination_order_min_degree(n: int, nbr: list[set[int]]) -> list[int]:
@@ -185,7 +211,138 @@ def _symbolic(n, edge_index, order):
     return order, pos, U, S_pairs
 
 
-def _factor_junction(diag, edge_index, edge_val, order):
+class JunctionAnalysis:
+    """Values-independent symbolic plan for repeated SPD junction factorizations.
+
+    Construct with :func:`analyze_junction`, then call :meth:`factor` whenever the
+    numeric diagonal/off-diagonal blocks change.  The input pattern, elimination order,
+    filled pattern, and clique schedule are computed exactly once and shared by every
+    resulting :class:`SparseGaussianFactor`.
+
+    The counters are deliberately explicit instrumentation for amortization studies;
+    they are not timing surrogates.  ``symbolic_analyses`` is always one for an analysis
+    object, while ``numeric_factorizations`` increases only after a factorization
+    succeeds.
+    """
+
+    def __init__(self, n: int, edge_index, order=None):
+        if not isinstance(n, int) or isinstance(n, bool) or n < 1:
+            raise ValueError(f"n must be a positive integer; got {n!r}")
+        ei = _normalize_edge_index(edge_index).clone()
+        if ei.numel() > 0:
+            if int(ei.min()) < 0 or int(ei.max()) >= n:
+                raise ValueError(f"edge_index entries must lie in [0, {n}); got range "
+                                 f"[{int(ei.min())}, {int(ei.max())}]")
+            if torch.any(ei[0] <= ei[1]):
+                raise ValueError("edge_index must contain lower-triangular positions i > j")
+            keys = ei[0] * n + ei[1]
+            if torch.unique(keys).numel() != keys.numel():
+                raise ValueError("edge_index contains duplicate edges")
+        symbolic = _symbolic(n, ei, order)
+        self.n = n
+        self.edge_index = ei
+        self.order, self.pos, self.U, self.S_pairs = symbolic
+        self._symbolic_data = symbolic
+        self.symbolic_analyses = 1
+        self.numeric_factorizations = 0
+        self.tensor_schedules = 0
+        self._batched_symbolic_by_device = {}
+
+    @property
+    def num_edges(self) -> int:
+        return int(self.edge_index.shape[1])
+
+    @property
+    def num_selected_edges(self) -> int:
+        return len(self.S_pairs)
+
+    def factor(
+        self,
+        diag: Tensor,
+        edge_val: Tensor,
+        *,
+        check: bool = False,
+        compute_dtype: torch.dtype | None = None,
+        batched: bool = False,
+    ) -> "SparseGaussianFactor":
+        """Numerically factor values on this plan and return a reusable factor object.
+
+        ``batched=True`` uses the cached level-set tensor schedule for the numeric
+        collect pass and every downstream factor query.  The reference dictionary
+        factor remains the default and the correctness oracle.
+        """
+        if diag.ndim < 3 or diag.shape[-3] != self.n or diag.shape[-2] != diag.shape[-1]:
+            raise ValueError(
+                f"diag must have shape [..., {self.n}, b, b]; got {tuple(diag.shape)}"
+            )
+        b = diag.shape[-1]
+        if (edge_val.ndim < 3 or edge_val.shape[-3] != self.num_edges
+                or edge_val.shape[-2:] != (b, b)):
+            raise ValueError(
+                f"edge_val must have shape [..., {self.num_edges}, {b}, {b}]; "
+                f"got {tuple(edge_val.shape)}"
+            )
+        if diag.device != edge_val.device:
+            raise ValueError(
+                f"diag and edge_val must share a device; got {diag.device} and {edge_val.device}"
+            )
+        if check:
+            from .layout import BlockSparseSym
+
+            BlockSparseSym(
+                diag=diag, edge_index=self.edge_index, edge_val=edge_val
+            ).validate()
+        result_dtype = diag.dtype
+        if compute_dtype is not None and compute_dtype != result_dtype:
+            diag = diag.to(compute_dtype)
+            edge_val = edge_val.to(compute_dtype)
+        batched_symbolic = None
+        if batched:
+            key = (diag.device.type, diag.device.index)
+            batched_symbolic = self._batched_symbolic_by_device.get(key)
+            if batched_symbolic is None:
+                batched_symbolic = _batched_symbolic(
+                    self.n, self.edge_index, self.order, diag.device
+                )
+                self._batched_symbolic_by_device[key] = batched_symbolic
+                self.tensor_schedules += 1
+            factors = _factor_junction_batched_numeric(
+                diag, edge_val, batched_symbolic, check_spd=True
+            )
+        else:
+            factors = _factor_junction(
+                diag,
+                self.edge_index,
+                edge_val,
+                None,
+                symbolic=self._symbolic_data,
+            )
+        self.numeric_factorizations += 1
+        return SparseGaussianFactor(
+            analysis=self,
+            diag=diag,
+            factors=factors,
+            batched_symbolic=batched_symbolic,
+            result_dtype=result_dtype,
+            factorization_id=self.numeric_factorizations,
+        )
+
+
+def analyze_junction(
+    n: int,
+    edge_index: Tensor | Sequence[Sequence[int]],
+    order: Tensor | Sequence[int] | None = None,
+) -> JunctionAnalysis:
+    """Analyze an SPD sparse pattern once for repeated numeric factorizations.
+
+    This is the persistent counterpart of the symbolic work performed inside the
+    functional junction operators.  The returned plan owns a CPU copy of ``edge_index``;
+    its numeric factors may live on any device supported by PyTorch.
+    """
+    return JunctionAnalysis(n, edge_index, order)
+
+
+def _factor_junction(diag, edge_index, edge_val, order, *, symbolic=None):
     """Shared sparse block ``LDL^T`` factorization (the collect pass).
 
     Returns ``(order, pos, U, S_pairs, chol, ell)`` where, in elimination order, the
@@ -199,7 +356,14 @@ def _factor_junction(diag, edge_index, edge_val, order):
     batch = diag.shape[:-3]
     m = edge_index.shape[1]
 
-    order, pos, U, S_pairs = _symbolic(n, edge_index, order)
+    if symbolic is None:
+        order, pos, U, S_pairs = _symbolic(n, edge_index, order)
+    else:
+        order, pos, U, S_pairs = symbolic
+        if len(order) != n:
+            raise ValueError(
+                f"symbolic plan has n={len(order)} but numeric diagonal has n={n}"
+            )
 
     def sym(x):
         return 0.5 * (x + x.mT)
@@ -242,21 +406,11 @@ def _factor_junction(diag, edge_index, edge_val, order):
     return order, pos, U, S_pairs, chol, ell
 
 
-def _selinv_junction_core(diag, edge_index, edge_val, order, return_factors=False):
-    """Functional (autograd-traceable) forward. Returns ``(G_diag, S_index, G_lower)``.
-
-    Storage is a dict of ``b x b`` blocks keyed by elimination-position orientation
-    ``(hi, lo)`` (so ``hi`` is eliminated after ``lo``); ``G_diag``/``G_lower`` are
-    re-emitted in *node-index* orientation (``i > j``) to match the input layout.
-
-    With ``return_factors=True`` also returns the collect-pass factors
-    ``(order, pos, U, S_pairs, chol, ell)`` (the analytic backward reuses them; see
-    :mod:`gabp_sparse_inv.junction_autodiff`).
-    """
+def _selected_inverse_from_factors(diag, factors):
+    """Distribute a stored junction factor into selected inverse blocks."""
     n, b = diag.shape[-3], diag.shape[-1]
     batch = diag.shape[:-3]
-
-    order, pos, U, S_pairs, chol, ell = _factor_junction(diag, edge_index, edge_val, order)
+    order, pos, U, S_pairs, chol, ell = factors
 
     def sym(x):
         return 0.5 * (x + x.mT)
@@ -301,9 +455,218 @@ def _selinv_junction_core(diag, edge_index, edge_val, order, return_factors=Fals
     else:
         S_index = torch.zeros((2, 0), dtype=torch.long)
         G_lower = diag.new_zeros((*batch, 0, b, b))
-    if return_factors:
-        return G_diag, S_index, G_lower, (order, pos, U, S_pairs, chol, ell)
     return G_diag, S_index, G_lower
+
+
+def _solve_from_factors(diag, rhs, factors):
+    """Solve ``A x = rhs`` from a stored junction factor (rhs ``[..., n, b, k]``)."""
+    n = diag.shape[-3]
+    order, _pos, U, _S_pairs, chol, ell = factors
+
+    incoming: list[list[int]] = [[] for _ in range(n)]
+    for (w, v) in ell:
+        incoming[w].append(v)
+
+    y = {}
+    for v in order:
+        acc = rhs[..., v, :, :]
+        for u in incoming[v]:
+            acc = acc - ell[(v, u)] @ y[u]
+        y[v] = acc
+
+    z = {v: torch.cholesky_solve(y[v], chol[v]) for v in range(n)}
+
+    x = {}
+    for v in reversed(order):
+        acc = z[v]
+        for w in U[v]:
+            acc = acc - ell[(w, v)].mT @ x[w]
+        x[v] = acc
+    return torch.stack([x[v] for v in range(n)], dim=-3)
+
+
+def _logdet_from_factors(diag, factors):
+    """Return ``log det A`` from stored pivot Cholesky factors."""
+    n = diag.shape[-3]
+    chol = factors[4]
+    total = None
+    for v in range(n):
+        ld = 2.0 * torch.log(torch.diagonal(chol[v], dim1=-2, dim2=-1)).sum(-1)
+        total = ld if total is None else total + ld
+    return total
+
+
+def _sample_transform_from_factors(diag, z, factors):
+    """Apply ``M^{-T}`` from stored factors to standard-normal columns ``z``."""
+    n = diag.shape[-3]
+    order, _pos, U, _S_pairs, chol, ell = factors
+    u = {
+        v: torch.linalg.solve_triangular(chol[v].mT, z[..., v, :, :], upper=True)
+        for v in range(n)
+    }
+    x = {}
+    for v in reversed(order):
+        acc = u[v]
+        for w in U[v]:
+            acc = acc - ell[(w, v)].mT @ x[w]
+        x[v] = acc
+    return torch.stack([x[v] for v in range(n)], dim=-3)
+
+
+class SparseGaussianFactor:
+    """One differentiable numeric SPD factor reused across Gaussian operations.
+
+    Instances are created by :meth:`JunctionAnalysis.factor`.  They retain the PyTorch
+    graph of exactly one numeric ``LDL^T`` factorization, so a combined loss over
+    :meth:`logdet`, :meth:`solve`, and :meth:`selected_inverse` differentiates through
+    the same pivots and factor blocks rather than refactorizing per operation.
+
+    The default dictionary backend remains the correctness reference.  A checked
+    level-set backend stores the same factor in tensor buffers so all downstream
+    queries reuse the accelerator-friendly schedule without refactorizing.
+    """
+
+    def __init__(
+        self,
+        *,
+        analysis,
+        diag,
+        factors,
+        batched_symbolic,
+        result_dtype,
+        factorization_id,
+    ):
+        self.analysis = analysis
+        self._diag = diag
+        self._factors = factors
+        self._batched_symbolic = batched_symbolic
+        self.backend = "level_set" if batched_symbolic is not None else "reference"
+        self.result_dtype = result_dtype
+        self.compute_dtype = diag.dtype
+        self.device = diag.device
+        self.factorization_id = factorization_id
+        self._query_counts = {
+            "logdet": 0,
+            "solve": 0,
+            "selected_inverse": 0,
+            "marginal_diag": 0,
+            "sample": 0,
+        }
+
+    @property
+    def num_nodes(self) -> int:
+        return self.analysis.n
+
+    @property
+    def block_size(self) -> int:
+        return int(self._diag.shape[-1])
+
+    def operation_counts(self) -> dict[str, int]:
+        """Return auditable analysis/factor/query counts for this object."""
+        return {
+            "symbolic_analyses": 1,
+            "numeric_factorizations": 1,
+            "analysis_factorizations_created": self.analysis.numeric_factorizations,
+            **self._query_counts,
+        }
+
+    def _cast_result(self, value):
+        return value.to(self.result_dtype) if value.dtype != self.result_dtype else value
+
+    def logdet(self):
+        """Return ``log det A`` without another symbolic or numeric factorization."""
+        self._query_counts["logdet"] += 1
+        if self._batched_symbolic is None:
+            value = _logdet_from_factors(self._diag, self._factors)
+        else:
+            value = _logdet_from_batched_factors(self._factors)
+        return self._cast_result(value)
+
+    def solve(self, b: Tensor):
+        """Return ``A^{-1} b`` without another symbolic or numeric factorization.
+
+        ``b`` is ``[..., n, b]`` or ``[..., n, b, k]``, read as in :func:`junction_solve`.
+        """
+        vector_rhs = _rhs_is_vector(b, self._diag.shape)
+        if b.device != self.device:
+            raise ValueError(f"b must be on {self.device}; got {b.device}")
+        rhs = b.unsqueeze(-1) if vector_rhs else b
+        if rhs.dtype != self.compute_dtype:
+            rhs = rhs.to(self.compute_dtype)
+        self._query_counts["solve"] += 1
+        if self._batched_symbolic is None:
+            x = _solve_from_factors(self._diag, rhs, self._factors)
+        else:
+            x = _solve_from_batched_factors(
+                self._diag, rhs, self._batched_symbolic, self._factors
+            )
+        x = self._cast_result(x)
+        return x.squeeze(-1) if vector_rhs else x
+
+    def selected_inverse(self):
+        """Return inverse blocks on the filled pattern without refactorizing."""
+        self._query_counts["selected_inverse"] += 1
+        if self._batched_symbolic is None:
+            G_diag, S_index, G_lower = _selected_inverse_from_factors(
+                self._diag, self._factors
+            )
+        else:
+            G_diag, G_lower = _selected_inverse_from_batched_factors(
+                self._diag, self._batched_symbolic, self._factors
+            )
+            S_index = self._batched_symbolic[3]
+        return self._cast_result(G_diag), S_index, self._cast_result(G_lower)
+
+    def marginal_diag(self):
+        """Return component-wise marginal variances ``diag(A^{-1})``."""
+        self._query_counts["marginal_diag"] += 1
+        if self._batched_symbolic is None:
+            G_diag = _selected_inverse_from_factors(self._diag, self._factors)[0]
+        else:
+            G_diag = _selected_inverse_from_batched_factors(
+                self._diag, self._batched_symbolic, self._factors
+            )[0]
+        variances = torch.diagonal(G_diag, dim1=-2, dim2=-1)
+        return self._cast_result(variances)
+
+    def sample(self, num_samples: int, *, generator: torch.Generator | None = None):
+        """Draw reparameterized samples ``x ~ N(0, A^{-1})`` from stored factors."""
+        if not isinstance(num_samples, int) or isinstance(num_samples, bool) or num_samples < 1:
+            raise ValueError(f"num_samples must be a positive integer; got {num_samples!r}")
+        n, b = self.num_nodes, self.block_size
+        batch = self._diag.shape[:-3]
+        z = torch.randn(
+            (*batch, n, b, num_samples),
+            generator=generator,
+            dtype=self.compute_dtype,
+            device=self.device,
+        )
+        self._query_counts["sample"] += 1
+        if self._batched_symbolic is None:
+            x = _sample_transform_from_factors(self._diag, z, self._factors)
+        else:
+            x = _sample_transform_from_batched_factors(
+                self._diag, z, self._batched_symbolic, self._factors
+            )
+        return self._cast_result(x).movedim(-1, 0)
+
+
+def _selinv_junction_core(diag, edge_index, edge_val, order, return_factors=False):
+    """Functional (autograd-traceable) forward. Returns ``(G_diag, S_index, G_lower)``.
+
+    Storage is a dict of ``b x b`` blocks keyed by elimination-position orientation
+    ``(hi, lo)`` (so ``hi`` is eliminated after ``lo``); ``G_diag``/``G_lower`` are
+    re-emitted in *node-index* orientation (``i > j``) to match the input layout.
+
+    With ``return_factors=True`` also returns the collect-pass factors
+    ``(order, pos, U, S_pairs, chol, ell)`` (the analytic backward reuses them; see
+    :mod:`gabp_sparse_inv.junction_autodiff`).
+    """
+    factors = _factor_junction(diag, edge_index, edge_val, order)
+    result = _selected_inverse_from_factors(diag, factors)
+    if return_factors:
+        return (*result, factors)
+    return result
 
 
 class _JunctionLevel:
@@ -321,7 +684,8 @@ class _JunctionLevel:
 
     __slots__ = (
         "nodes",                                  # level nodes (Cholesky / G_vv)
-        "ell_dest", "ell_lo",                     # ell_{wv}: dest slot, pivot node v
+        "ell_dest", "ell_lo", "ell_hi",           # ell_{wv}: slot, pivot v, higher w
+        "sf_dest", "sf_src", "sf_ell",            # solve collect: y_w -= ell_{wv} y_v
         "sc_ellw", "sc_ellwp", "sc_v", "sc_dest", # collect Schur fill over the clique
         "cr_dest", "cr_ell", "cr_gidx", "cr_gT",  # distribute cross blocks G_{w,v}
         "dg_v", "dg_ell",                         # distribute diagonal G_vv accumulation
@@ -392,14 +756,17 @@ def _batched_symbolic(n, edge_index, order, device):
     levels = []
     for L in range(num_levels):
         nodes = by_level[L]
-        ell_dest, ell_lo = [], []
+        ell_dest, ell_lo, ell_hi = [], [], []
+        sf_dest, sf_src, sf_ell = [], [], []
         sc_ellw, sc_ellwp, sc_v, sc_dest = [], [], [], []
         cr_dest, cr_ell, cr_gidx, cr_gT = [], [], [], []
         dg_v, dg_ell = [], []
         for v in nodes:
+            for u in lower[v]:                         # forward solve dependencies into v
+                sf_dest.append(v); sf_src.append(u); sf_ell.append(slot[(v, u)])
             Uv = U[v]
             for w in Uv:                              # ell_{wv} = A_{wv} D_v^{-1}
-                ell_dest.append(slot[(w, v)]); ell_lo.append(v)
+                ell_dest.append(slot[(w, v)]); ell_lo.append(v); ell_hi.append(w)
             for w in Uv:                              # A_{w,w'} -= ell_{wv} D_v ell_{w'v}^T
                 for wp in Uv:
                     if pos[w] < pos[wp]:
@@ -422,7 +789,8 @@ def _batched_symbolic(n, edge_index, order, device):
                 dg_v.append(v); dg_ell.append(slot[(u, v)])
         levels.append(_JunctionLevel(
             nodes=lt(nodes),
-            ell_dest=lt(ell_dest), ell_lo=lt(ell_lo),
+            ell_dest=lt(ell_dest), ell_lo=lt(ell_lo), ell_hi=lt(ell_hi),
+            sf_dest=lt(sf_dest), sf_src=lt(sf_src), sf_ell=lt(sf_ell),
             sc_ellw=lt(sc_ellw), sc_ellwp=lt(sc_ellwp), sc_v=lt(sc_v), sc_dest=lt(sc_dest),
             cr_dest=lt(cr_dest), cr_ell=lt(cr_ell), cr_gidx=lt(cr_gidx), cr_gT=bt(cr_gT),
             dg_v=lt(dg_v), dg_ell=lt(dg_ell),
@@ -431,29 +799,19 @@ def _batched_symbolic(n, edge_index, order, device):
     return nS, lt(init_dest), bt(init_mask), S_index, bt(emit_mask), levels
 
 
-def _selinv_junction_batched(diag, edge_index, edge_val, order):
-    """Level-set batched forward (functional / autograd-traceable).
-
-    Mathematically identical to the per-node reference :func:`_selinv_junction_core`
-    (validated block-for-block in ``tests/test_junction_batched.py``), but the Python loop
-    runs over *elimination levels* -- ``O(elimination-tree height)``: ``~log n`` balanced,
-    ``~sqrt(n)`` on a 2-D grid -- instead of over nodes, with each level a handful of
-    batched block ops. The unified working array ``Mbuf`` (and result ``Gbuf``) stack the
-    ``n`` node diagonals over the ``nS`` off-diagonal slots, so the variable-size clique
-    updates become flat ``index_select`` / ``index_add`` scatters. Reverse-mode autograd
-    through it is the §8.4 self-adjoint schedule, so ``selinv_junction(..., batched=True)``
-    gets exact gradients with no custom backward -- exactly as the per-node path does.
-    """
+def _factor_junction_batched_numeric(diag, edge_val, symbolic, *, check_spd=True):
+    """Level-set collect pass returning reusable tensor factor buffers."""
     n, b = diag.shape[-3], diag.shape[-1]
     batch = diag.shape[:-3]
-    dev = diag.device
-
-    nS, init_dest, init_mask, S_index, emit_mask, levels = _batched_symbolic(
-        n, edge_index, order, dev
-    )
+    nS, init_dest, init_mask, _S_index, _emit_mask, levels = symbolic
 
     def sym(x):
         return 0.5 * (x + x.mT)
+
+    def chol(block, *, name):
+        if check_spd:
+            return cholesky_spd(block, name=name)
+        return torch.linalg.cholesky_ex(block, check_errors=False)[0]
 
     # ---- unified working block array: [ D (n node diagonals) | W (nS off-blocks) ] ----
     Mbuf = torch.cat([diag, diag.new_zeros((*batch, nS, b, b))], dim=-3)
@@ -461,14 +819,14 @@ def _selinv_junction_batched(diag, edge_index, edge_val, order):
         contrib = torch.where(init_mask[:, None, None], edge_val.mT, edge_val)
         Mbuf = Mbuf.index_add(-3, init_dest, contrib)
 
-    chol_buf = diag.new_zeros((*batch, n, b, b))     # write-once per node (index_add from 0)
-    Dsym_buf = diag.new_zeros((*batch, n, b, b))      # symmetrized pivots, for the Schur term
-    ell_buf = diag.new_zeros((*batch, nS, b, b))      # write-once per slot
+    chol_buf = diag.new_zeros((*batch, n, b, b))
+    Dsym_buf = diag.new_zeros((*batch, n, b, b))
+    ell_buf = diag.new_zeros((*batch, nS, b, b))
 
     # ---- collect: sparse block Cholesky + clique Schur fill, increasing level ----------
     for h, lv in enumerate(levels):
         Dl = sym(Mbuf.index_select(-3, lv.nodes))
-        chol_l = cholesky_spd(Dl, name=f"D(level {h})")
+        chol_l = chol(Dl, name=f"D(level {h})")
         chol_buf = chol_buf.index_add(-3, lv.nodes, chol_l)
         Dsym_buf = Dsym_buf.index_add(-3, lv.nodes, Dl)
         if lv.ell_dest.numel() > 0:
@@ -482,18 +840,37 @@ def _selinv_junction_batched(diag, edge_index, edge_val, order):
             Dv = Dsym_buf.index_select(-3, lv.sc_v)
             Mbuf = Mbuf.index_add(-3, lv.sc_dest, -(ellw @ (Dv @ ellwp.mT)))
 
+    return chol_buf, ell_buf
+
+
+def _selected_inverse_from_batched_factors(diag, symbolic, factors):
+    """Distribute reusable level-set factor buffers into selected inverse blocks."""
+    n, b = diag.shape[-3], diag.shape[-1]
+    batch = diag.shape[:-3]
+    nS, _init_dest, _init_mask, _S_index, emit_mask, levels = symbolic
+    chol_buf, ell_buf = factors
+
+    def sym(x):
+        return 0.5 * (x + x.mT)
+
     # ---- distribute: Takahashi back-substitution restricted to S, decreasing level -----
     Gbuf = diag.new_zeros((*batch, n + nS, b, b))
     for lv in reversed(levels):
-        if lv.cr_dest.numel() > 0:                    # cross blocks G_{w,v}
+        if lv.cr_dest.numel() > 0:
             Gsrc = Gbuf.index_select(-3, lv.cr_gidx)
             Gsrc = torch.where(lv.cr_gT[:, None, None], Gsrc.mT, Gsrc)
-            Gbuf = Gbuf.index_add(-3, lv.cr_dest, -(Gsrc @ ell_buf.index_select(-3, lv.cr_ell)))
-        Dinv_l = inv_via_chol(chol_buf.index_select(-3, lv.nodes))   # diagonal blocks G_vv
+            Gbuf = Gbuf.index_add(
+                -3,
+                lv.cr_dest,
+                -(Gsrc @ ell_buf.index_select(-3, lv.cr_ell)),
+            )
+        Dinv_l = inv_via_chol(chol_buf.index_select(-3, lv.nodes))
         if lv.dg_v.numel() > 0:
             elluv = ell_buf.index_select(-3, lv.dg_ell)
             Guv = Gbuf.index_select(-3, lv.dg_ell + n)
-            acc = diag.new_zeros((*batch, n, b, b)).index_add(-3, lv.dg_v, elluv.mT @ Guv)
+            acc = diag.new_zeros((*batch, n, b, b)).index_add(
+                -3, lv.dg_v, elluv.mT @ Guv
+            )
             Gvv = Dinv_l - acc.index_select(-3, lv.nodes)
         else:
             Gvv = Dinv_l
@@ -505,6 +882,124 @@ def _selinv_junction_batched(diag, edge_index, edge_val, order):
         G_lower = torch.where(emit_mask[:, None, None], G_off.mT, G_off)
     else:
         G_lower = diag.new_zeros((*batch, 0, b, b))
+    return G_diag, G_lower
+
+
+def _solve_from_batched_factors(diag, rhs, symbolic, factors):
+    """Solve from reusable level-set factors; ``rhs`` is ``[..., n, b, k]``."""
+    n = diag.shape[-3]
+    levels = symbolic[5]
+    chol_buf, ell_buf = factors
+
+    ybuf = torch.zeros_like(rhs)
+    for lv in levels:
+        if lv.sf_dest.numel() > 0:
+            contributions = ell_buf.index_select(-3, lv.sf_ell) @ ybuf.index_select(
+                -3, lv.sf_src
+            )
+            accumulated = torch.zeros_like(rhs).index_add(
+                -3, lv.sf_dest, contributions
+            )
+            y_l = rhs.index_select(-3, lv.nodes) - accumulated.index_select(
+                -3, lv.nodes
+            )
+        else:
+            y_l = rhs.index_select(-3, lv.nodes)
+        ybuf = ybuf.index_add(-3, lv.nodes, y_l)
+
+    zbuf = torch.cholesky_solve(ybuf, chol_buf)
+    xbuf = torch.zeros_like(rhs)
+    for lv in reversed(levels):
+        if lv.ell_dest.numel() > 0:
+            contributions = ell_buf.index_select(-3, lv.ell_dest).mT @ xbuf.index_select(
+                -3, lv.ell_hi
+            )
+            accumulated = torch.zeros_like(rhs).index_add(
+                -3, lv.ell_lo, contributions
+            )
+            x_l = zbuf.index_select(-3, lv.nodes) - accumulated.index_select(
+                -3, lv.nodes
+            )
+        else:
+            x_l = zbuf.index_select(-3, lv.nodes)
+        xbuf = xbuf.index_add(-3, lv.nodes, x_l)
+    return xbuf
+
+
+def _logdet_from_batched_factors(factors):
+    """Return ``log det A`` from level-set pivot Cholesky buffers."""
+    chol_buf = factors[0]
+    return 2.0 * torch.log(
+        torch.diagonal(chol_buf, dim1=-2, dim2=-1)
+    ).sum(dim=(-1, -2))
+
+
+def _sample_transform_from_batched_factors(diag, z, symbolic, factors):
+    """Apply the stored level-set ``M^{-T}`` sampling transform."""
+    levels = symbolic[5]
+    chol_buf, ell_buf = factors
+    ubuf = torch.linalg.solve_triangular(chol_buf.mT, z, upper=True)
+    xbuf = torch.zeros_like(z)
+    for lv in reversed(levels):
+        if lv.ell_dest.numel() > 0:
+            contributions = ell_buf.index_select(-3, lv.ell_dest).mT @ xbuf.index_select(
+                -3, lv.ell_hi
+            )
+            accumulated = torch.zeros_like(z).index_add(
+                -3, lv.ell_lo, contributions
+            )
+            x_l = ubuf.index_select(-3, lv.nodes) - accumulated.index_select(
+                -3, lv.nodes
+            )
+        else:
+            x_l = ubuf.index_select(-3, lv.nodes)
+        xbuf = xbuf.index_add(-3, lv.nodes, x_l)
+    return xbuf
+
+
+def _selinv_junction_batched_numeric(
+    diag,
+    edge_val,
+    symbolic,
+    *,
+    check_spd=True,
+):
+    """Level-set factor-plus-selected-inverse from a symbolic tensor schedule.
+
+    Separating the values-dependent body from :func:`_batched_symbolic` makes the
+    shortest accelerator route testable without tracing Python graph construction or
+    ``Tensor.tolist()``.  The public path keeps ``check_spd=True`` and therefore retains
+    informative pivot failure checks.  A compiler feasibility probe may set it to
+    ``False`` only after an eager checked execution on the same inputs.
+
+    Returns ``(G_diag, G_lower)``.  The values-independent ``S_index`` remains in the
+    symbolic record and is attached by :func:`_selinv_junction_batched`.
+    """
+    factors = _factor_junction_batched_numeric(
+        diag, edge_val, symbolic, check_spd=check_spd
+    )
+    return _selected_inverse_from_batched_factors(diag, symbolic, factors)
+
+
+def _selinv_junction_batched(diag, edge_index, edge_val, order):
+    """Level-set batched forward (functional / autograd-traceable).
+
+    Mathematically identical to the per-node reference :func:`_selinv_junction_core`
+    (validated block-for-block in ``tests/test_junction_batched.py``), but the Python loop
+    runs over *elimination levels* -- ``O(elimination-tree height)``: ``~log n`` balanced,
+    ``~sqrt(n)`` on a 2-D grid -- instead of over nodes, with each level a handful of
+    batched block ops. The unified working array ``Mbuf`` (and result ``Gbuf``) stack the
+    ``n`` node diagonals over the ``nS`` off-diagonal slots, so the variable-size clique
+    updates become flat ``index_select`` / ``index_add`` scatters. Reverse-mode autograd
+    through it is the §8.4 reverse schedule, so ``selinv_junction(..., batched=True)``
+    gets exact gradients with no custom backward -- exactly as the per-node path does.
+    """
+    dev = diag.device
+    symbolic = _batched_symbolic(diag.shape[-3], edge_index, order, dev)
+    G_diag, G_lower = _selinv_junction_batched_numeric(
+        diag, edge_val, symbolic, check_spd=True
+    )
+    S_index = symbolic[3]
     return G_diag, S_index, G_lower
 
 
@@ -580,34 +1075,8 @@ def _solve_junction_core(diag, edge_index, edge_val, rhs, order):
     ``D z = y`` (per-node, via the Cholesky factor), ``L^T x = z`` (decreasing order).
     ``rhs`` is normalized internally to ``[..., n, b, k]``; the result matches.
     """
-    n, b = diag.shape[-3], diag.shape[-1]
-    order, pos, U, S_pairs, chol, ell = _factor_junction(diag, edge_index, edge_val, order)
-
-    # incoming[w] = nodes u eliminated before w with w in U_u (i.e. ell[(w, u)] exists).
-    incoming: list[list[int]] = [[] for _ in range(n)]
-    for (w, v) in ell:
-        incoming[w].append(v)
-
-    # ---- forward solve  L y = b   (increasing elimination order) -------------------
-    y = {}
-    for v in order:
-        acc = rhs[..., v, :, :]
-        for u in incoming[v]:
-            acc = acc - ell[(v, u)] @ y[u]
-        y[v] = acc
-
-    # ---- diagonal solve  D z = y   (per node, via the Cholesky factor) -------------
-    z = {v: torch.cholesky_solve(y[v], chol[v]) for v in range(n)}
-
-    # ---- back solve  L^T x = z   (decreasing elimination order) --------------------
-    x = {}
-    for v in reversed(order):
-        acc = z[v]
-        for w in U[v]:
-            acc = acc - ell[(w, v)].mT @ x[w]
-        x[v] = acc
-
-    return torch.stack([x[v] for v in range(n)], dim=-3)           # [..., n, b, k]
+    factors = _factor_junction(diag, edge_index, edge_val, order)
+    return _solve_from_factors(diag, rhs, factors)
 
 
 def junction_solve(
@@ -637,7 +1106,10 @@ def junction_solve(
         ``order`` an optional elimination order, default greedy min-degree).
     b:
         Right-hand side ``[..., n, b]`` (a single vector per node) or ``[..., n, b, k]``
-        (``k`` right-hand sides). The result has the matching shape.
+        (``k`` right-hand sides). The result has the matching shape. A shape that fits
+        both layouts (only possible when the trailing dimensions are ``(n, n, n)`` with
+        ``n == b``) is read as vectors only when it equals ``diag.shape[:-1]``, as in
+        :func:`torch.linalg.solve`; pass ``b.unsqueeze(-1)`` to force the column layout.
     check:
         If ``True``, validate the matrix inputs first.
     compute_dtype:
@@ -659,13 +1131,7 @@ def junction_solve(
 
         BlockSparseSym(diag=diag, edge_index=_normalize_edge_index(edge_index), edge_val=edge_val).validate()
     edge_index = _normalize_edge_index(edge_index)
-    n, bs = diag.shape[-3], diag.shape[-1]
-    vector_rhs = b.shape[-2] == n and b.shape[-1] == bs            # [..., n, b]
-    matrix_rhs = b.ndim >= 3 and b.shape[-3] == n and b.shape[-2] == bs  # [..., n, b, k]
-    if not (vector_rhs or matrix_rhs):
-        raise ValueError(
-            f"b must have shape [..., n, b] or [..., n, b, k] with n={n}, b={bs}; got {tuple(b.shape)}"
-        )
+    vector_rhs = _rhs_is_vector(b, diag.shape)
     rhs = b.unsqueeze(-1) if vector_rhs else b                     # -> [..., n, b, k]
     in_dtype = diag.dtype
     if compute_dtype is not None and compute_dtype != in_dtype:
@@ -716,12 +1182,8 @@ def junction_logdet(
     if compute_dtype is not None and compute_dtype != in_dtype:
         diag = diag.to(compute_dtype)
         edge_val = edge_val.to(compute_dtype)
-    n = diag.shape[-3]
-    _order, _pos, _U, _S_pairs, chol, _ell = _factor_junction(diag, edge_index, edge_val, order)
-    total = None
-    for v in range(n):
-        ld = 2.0 * torch.log(torch.diagonal(chol[v], dim1=-2, dim2=-1)).sum(-1)
-        total = ld if total is None else total + ld
+    factors = _factor_junction(diag, edge_index, edge_val, order)
+    total = _logdet_from_factors(diag, factors)
     if compute_dtype is not None and compute_dtype != in_dtype:
         total = total.to(in_dtype)
     return total
@@ -740,14 +1202,14 @@ def selinv_junction(
     Identical result to :func:`selected_inverse_junction`; the name mirrors the other
     ``selinv_*`` kernels. The functional forward is itself differentiable, so gradients
     of any loss over ``G_diag`` / ``G_lower`` flow to ``diag`` and ``edge_val`` by
-    reverse-mode through the ``S``-local schedule -- which is the self-adjoint schedule
-    proved in ``docs/derivations.md`` §8.4. (A hand-written analytic clique backward,
-    which avoids the autograd tape's memory, is a tracked follow-up.)
+    reverse-mode through the ``S``-local schedule of ``docs/derivations.md`` §8.4. The
+    hand-written, tape-free analytic backward is
+    :func:`~gabp_sparse_inv.selinv_junction_analytic`.
 
     ``batched=True`` selects the level-set batched forward (see
     :func:`selected_inverse_junction`); the result and its gradients are identical (the
-    batched path is likewise functional, so reverse-mode gives the same self-adjoint
-    backward), and only the scheduling -- per elimination level vs per node -- differs.
+    batched path is likewise functional, so reverse-mode gives the same backward), and
+    only the scheduling -- per elimination level vs per node -- differs.
     """
     edge_index = _normalize_edge_index(edge_index)
     forward = _selinv_junction_batched if batched else _selinv_junction_core

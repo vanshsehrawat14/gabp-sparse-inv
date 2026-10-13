@@ -522,7 +522,7 @@ def test_non_spd_input_names_failing_pivot():
 
 
 # --------------------------------------------------------------------------- #
-# Trace identities read off the selected inverse (the C3 one-liner; APPLICATIONS.md).
+# Trace identities read off the selected inverse.
 #   trace(A^-1)   = sum_v tr(G_vv)
 #   trace(A^-1 B) = <G_diag, Bd> + 2 <G_lower, Bl>   for symmetric B on the filled pattern S
 # --------------------------------------------------------------------------- #
@@ -616,3 +616,60 @@ def test_compute_dtype_backward_matches_fp64_reference():
     assert d.grad.dtype == torch.float32 and e.grad.dtype == torch.float32
     assert float((d.grad.double() - d64.grad).norm()) < 1e-2 * float(d64.grad.norm())
     assert float((e.grad.double() - e64.grad).norm()) < 1e-2 * float(e64.grad.norm())
+
+
+# --------------------------------------------------------------------------- #
+# Right-hand-side layouts that fit both [..., n, b] and [..., n, b, k].
+# --------------------------------------------------------------------------- #
+def _two_by_two():
+    diag = torch.tensor([[[4.0, 0.1], [0.1, 3.0]], [[5.0, 0.2], [0.2, 6.0]]], dtype=torch.float64)
+    edge = torch.tensor([[[0.2, 0.1], [-0.1, 0.3]]], dtype=torch.float64)
+    A = torch.zeros(4, 4, dtype=torch.float64)
+    A[:2, :2], A[2:, 2:], A[2:, :2], A[:2, 2:] = diag[0], diag[1], edge[0], edge[0].T
+    return diag, torch.tensor([[1], [0]]), edge, A
+
+
+def test_solve_reads_an_ambiguous_unbatched_rhs_as_columns():
+    # n = b = k = 2: [n, b, k] also matches the vector layout with a batch of 2. It was
+    # silently solved as two vector systems; it must be read as k = 2 columns.
+    diag, ei, edge, A = _two_by_two()
+    rhs = torch.arange(1.0, 9.0, dtype=torch.float64).reshape(2, 2, 2)
+    ref = torch.linalg.solve(A, rhs.reshape(4, 2)).reshape(2, 2, 2)
+    torch.testing.assert_close(junction_solve(diag, ei, edge, rhs), ref)
+
+
+def test_solve_reads_vectors_when_the_batch_matches_diag():
+    # The torch.linalg.solve rule: an exact batch match with diag selects vectors.
+    diag, ei, edge, A = _two_by_two()
+    diag_b, edge_b = diag.expand(2, 2, 2, 2), edge.expand(2, 1, 2, 2)
+    rhs = torch.arange(1.0, 9.0, dtype=torch.float64).reshape(2, 2, 2)
+    ref = torch.linalg.solve(A, rhs.reshape(2, 4, 1)).reshape(2, 2, 2)
+    torch.testing.assert_close(junction_solve(diag_b, ei, edge_b, rhs), ref)
+    # A trailing unit dimension forces the column layout for broadcast vectors.
+    out = junction_solve(diag, ei, edge, rhs.unsqueeze(-1))
+    torch.testing.assert_close(out.squeeze(-1), ref)
+
+
+def test_solve_gradient_for_an_ambiguous_rhs_matches_dense():
+    diag, ei, edge, _A = _two_by_two()
+    rhs = torch.arange(1.0, 9.0, dtype=torch.float64).reshape(2, 2, 2).requires_grad_()
+    d = diag.clone().requires_grad_()
+    e = edge.clone().requires_grad_()
+    w = torch.randn(2, 2, 2, dtype=torch.float64, generator=torch.Generator().manual_seed(0))
+    (junction_solve(d, ei, e, rhs) * w).sum().backward()
+
+    d2, e2 = diag.clone().requires_grad_(), edge.clone().requires_grad_()
+    rhs2 = rhs.detach().clone().requires_grad_()
+    s0, s1 = 0.5 * (d2[0] + d2[0].T), 0.5 * (d2[1] + d2[1].T)   # diag blocks are symmetric
+    blocks = torch.cat([torch.cat([s0, e2[0].T], 1), torch.cat([e2[0], s1], 1)], 0)
+    x2 = torch.linalg.solve(blocks, rhs2.reshape(4, 2)).reshape(2, 2, 2)
+    (x2 * w).sum().backward()
+    torch.testing.assert_close(d.grad, d2.grad)
+    torch.testing.assert_close(e.grad, e2.grad)
+    torch.testing.assert_close(rhs.grad, rhs2.grad)
+
+
+def test_rhs_with_neither_layout_is_rejected():
+    diag, ei, edge, _A = _two_by_two()
+    with pytest.raises(ValueError, match="b must have shape"):
+        junction_solve(diag, ei, edge, torch.zeros(3, 2, dtype=torch.float64))

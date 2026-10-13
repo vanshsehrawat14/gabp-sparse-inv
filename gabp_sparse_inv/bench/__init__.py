@@ -1,1 +1,1 @@
-"""Benchmark harness: time, memory, and accuracy for chain and star kernels."""
+"""Accuracy, stability, and timing harnesses for the kernels."""

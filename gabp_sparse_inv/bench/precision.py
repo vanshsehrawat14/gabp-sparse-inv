@@ -47,8 +47,7 @@ one. The honest, properly-seeded read (fp32, ``random_spd_tree``, 16 seeds; rati
 Net: **no systematic precision penalty or robust precision win on the measured grid** --
 accuracy is, in the median, that of a well-ordered dense factorization. The structural value
 is linear work at bounded width, factor-pattern numeric storage (never forming the dense
-inverse), and differentiability -- not accuracy. (See
-``docs/PROJECT_STATUS.md`` for the current interpretation.)
+inverse), and differentiability -- not accuracy.
 Like the rest of the bench these are BLAS/dtype/device-dependent diagnostics -- recorded, not
 asserted.
 

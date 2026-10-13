@@ -5,7 +5,7 @@
 backward**: the reverse two-pass collect/distribute of ``docs/derivations.md`` §8.3,
 reusing the forward factors ``(chol_D, ell)`` and the selected blocks ``G_diag``.
 
-The backward is the *self-adjoint* schedule proved in §8.2 -- a reverse-distribute
+The backward is the same-structure reverse schedule of §8.2 -- a reverse-distribute
 sweep (leaves->root) followed by a reverse-collect sweep (root->leaves) on the same
 elimination tree. It costs ``O((|V|+|E|) b^3)`` time and ``O((|V|+|E|) b^2)`` memory,
 identical to the forward pass, and never tapes the per-node loop through autograd
@@ -98,7 +98,7 @@ def _backward_batched(ctx, barGd, barGe):
 
     Same arithmetic as :func:`_backward_loop`, scheduled by :func:`tree_levels` so each
     height level is one batched block op + one ``index_add_`` -- the backward mirror of
-    the batched forward (the schedule is self-adjoint).
+    the batched forward.
     """
     edge, G_diag, ell, chol_D = ctx.saved_tensors
     root, plist, levels = ctx.root, ctx.plist, ctx.levels

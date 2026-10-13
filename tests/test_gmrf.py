@@ -220,3 +220,40 @@ def test_scaling_module_smoke(tmp_path):
                "--out", str(tmp_path / "s")])
     assert rc == 0
     assert (tmp_path / "s.json").exists()
+
+
+@pytest.mark.parametrize("sigma2", [1e-6, 1e-12, 1e-16])
+def test_marginal_likelihood_and_noise_gradient_accurate_at_small_noise(sigma2):
+    # The expanded Woodbury form lost every digit of the value and of d/d sigma2 here.
+    parent = PARENTS["deep"]
+    n = len(parent)
+    y = torch.randn(n, 1, dtype=torch.float64, generator=torch.Generator().manual_seed(3))
+    theta = dict(a=THETA["a"], kappa=THETA["kappa"], root_prec=THETA["root_prec"])
+
+    def evidence(dense, batched=False):
+        s = torch.tensor(sigma2, dtype=torch.float64, requires_grad=True)
+        if dense:
+            Sigma = torch.linalg.inv(_dense_Q(parent, **theta)) + s * torch.eye(n, dtype=torch.float64)
+            ll = torch.distributions.MultivariateNormal(
+                torch.zeros(n, dtype=torch.float64), covariance_matrix=Sigma
+            ).log_prob(y.squeeze(-1))
+        else:
+            ll = marginal_log_likelihood(parent, y, sigma2=s, batched=batched, **theta)
+        (g,) = torch.autograd.grad(ll, s)
+        return ll.detach(), g
+
+    ref_val, ref_grad = evidence(True)
+    for batched in (False, True):
+        val, grad = evidence(False, batched)
+        torch.testing.assert_close(val, ref_val, rtol=1e-10, atol=0.0)
+        torch.testing.assert_close(grad, ref_grad, rtol=1e-8, atol=0.0)
+
+
+def test_single_node_likelihood_matches_closed_form_at_tiny_noise():
+    q, y0, s0 = 3.0, 2.0, 1e-18
+    v = 1.0 / q + s0
+    s = torch.tensor(s0, dtype=torch.float64, requires_grad=True)
+    val = marginal_log_likelihood([-1], torch.tensor([[y0]], dtype=torch.float64), 0.5, 1.0, q, s)
+    (grad,) = torch.autograd.grad(val, s)
+    assert val.item() == pytest.approx(-0.5 * (math.log(2 * math.pi) + math.log(v) + y0 * y0 / v), rel=1e-14)
+    assert grad.item() == pytest.approx(0.5 * (y0 * y0 / v ** 2 - 1.0 / v), rel=1e-14)

@@ -1,6 +1,6 @@
 """Selected inverse of non-symmetric block lower-bidiagonal matrices.
 
-The non-symmetric analogue of the chain (Phase 1). Given a general (non-symmetric)
+The non-symmetric analogue of the chain. Given a general (non-symmetric)
 block lower-bidiagonal matrix ``M`` -- diagonal blocks ``M_ii`` and one sub-diagonal
 ``M_{i+1,i}``, zero super-diagonal -- compute the blocks of ``G = M^{-1}`` on ``M``'s
 own pattern (diagonal + first sub-diagonal) without forming the dense inverse:
@@ -15,7 +15,7 @@ but excluded. See ``docs/derivations.md`` §9 for the derivation.
 Unlike the SPD chain, the selected blocks here are **fully local** -- ``G_ii`` depends
 only on ``M_ii`` and ``G_{i+1,i}`` only on its two endpoint diagonals plus the coupling
 -- so there is no sequential collect/distribute sweep: the forward is one batched block
-inverse and one batched product, the "easy case" the roadmap targets for validating the
+inverse and one batched product, which makes it the simplest check of the
 non-symmetric machinery.
 
 **Differentiable backward (``selinv_bidiag``).** The matrix-level adjoint of the inverse
@@ -32,7 +32,8 @@ from typing import Sequence
 import torch
 from torch import Tensor
 
-from .layout import BlockBidiag, _as_parent_tensor, tree_orders
+from ._linalg import block_amax, check_pivot_growth
+from .layout import BlockBidiag, _as_parent_tensor, _require_finite, tree_orders
 
 __all__ = [
     "selected_inverse_bidiag",
@@ -261,7 +262,9 @@ def selected_inverse_nonsym_tree(
                                       G_vv = D_v^{-1} + ellU_v G_pp ellL_v
 
     When ``M`` is symmetric (``edge_cp[v] = edge_pc[v].mT``) these reduce block-for-block to
-    the SPD tree kernel. Each ``D_v`` must be invertible (general blocks; no SPD assumption).
+    the SPD tree kernel. Each ``D_v`` must be invertible (general blocks; no SPD assumption),
+    and the elimination raises :class:`torch.linalg.LinAlgError` when element growth exceeds
+    ``1 / sqrt(eps)`` of the working dtype, since the result would then be unreliable.
 
     Parameters
     ----------
@@ -301,6 +304,7 @@ def selected_inverse_nonsym_tree(
         for t, nm in ((edge_pc, "edge_pc"), (edge_cp, "edge_cp")):
             if t.shape != diag.shape:
                 raise ValueError(f"{nm} must match diag shape {tuple(diag.shape)}; got {tuple(t.shape)}")
+        _require_finite(diag=diag, edge_pc=edge_pc, edge_cp=edge_cp)
 
     in_dtype = diag.dtype
     if compute_dtype is not None and compute_dtype != in_dtype:
@@ -313,6 +317,14 @@ def selected_inverse_nonsym_tree(
     n = diag.shape[-3]
 
     # ---- collect: eliminate children into parents (leaves -> root) -----------
+    nonroot = [v for v in range(n) if v != root]
+    scale = block_amax(diag, 3)
+    if nonroot:
+        idx = torch.tensor(nonroot, device=diag.device)
+        scale = torch.maximum(scale, torch.maximum(
+            block_amax(edge_pc.index_select(-3, idx), 3),
+            block_amax(edge_cp.index_select(-3, idx), 3)))
+    growth = torch.zeros_like(scale)
     Dinv: list[Tensor | None] = [None] * n          # D_v^{-1} (Schur pivot inverse)
     ellL: list[Tensor | None] = [None] * n          # M_{p,v} D_v^{-1}
     ellU: list[Tensor | None] = [None] * n          # D_v^{-1} M_{v,p}
@@ -320,12 +332,17 @@ def selected_inverse_nonsym_tree(
         Dv = diag[..., v, :, :]
         for c in children[v]:
             # subtract child Schur term  M_{v,c} D_c^{-1} M_{c,v}
-            Dv = Dv - edge_pc[..., c, :, :] @ Dinv[c] @ edge_cp[..., c, :, :]
+            term = edge_pc[..., c, :, :] @ Dinv[c] @ edge_cp[..., c, :, :]
+            growth = torch.maximum(growth, block_amax(term))
+            Dv = Dv - term
+        growth = torch.maximum(growth, block_amax(Dv))
         Dv_inv = torch.linalg.inv(Dv)
         Dinv[v] = Dv_inv
         if v != root:
             ellL[v] = edge_pc[..., v, :, :] @ Dv_inv
             ellU[v] = Dv_inv @ edge_cp[..., v, :, :]
+
+    check_pivot_growth(growth, scale, diag.dtype)
 
     # ---- distribute: root marginal, then each child (root -> leaves) ---------
     G_d: list[Tensor | None] = [None] * n

@@ -18,7 +18,7 @@ EPS64 = torch.finfo(torch.float64).eps
 
 
 # --------------------------------------------------------------------------- #
-# Phase 2 gate: well-conditioned fp64 matches the dense oracle to ~1e-10.
+# Well-conditioned fp64 matches the dense oracle to ~1e-10.
 # --------------------------------------------------------------------------- #
 @pytest.mark.parametrize("K,b", [(5, 3), (8, 4), (16, 2), (1, 6)])
 def test_well_conditioned_fp64_gate(K, b):

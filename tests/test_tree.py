@@ -245,8 +245,8 @@ def test_bf16_store_low_compute_fp32():
 
 
 # --------------------------------------------------------------------------- #
-# Trace identities read off the selected inverse (the C3 one-liner; APPLICATIONS.md;
-# junction gates the same). trace(A^-1) = sum_v tr(G_vv);
+# Trace identities read off the selected inverse (the junction tests check the same).
+# trace(A^-1) = sum_v tr(G_vv);
 # trace(A^-1 B) = <G_diag, Bd> + 2 <G_edge, Be> for symmetric B on the tree pattern.
 # --------------------------------------------------------------------------- #
 def test_trace_identities_from_selected_inverse():
@@ -279,9 +279,8 @@ def test_trace_identities_from_selected_inverse():
 
 
 # --------------------------------------------------------------------------- #
-# Adjoint-of-selinv smoke check (de-risks the differentiable thread; see
-# docs/derivations.md §8). Validates the on-pattern cotangent of log-det against
-# autograd-through-dense on the reference kernel.
+# The log-det gradient restricted to the pattern is the forward selected inverse
+# (docs/derivations.md §8.0), checked against autograd through a dense log-det.
 # --------------------------------------------------------------------------- #
 def test_adjoint_logdet_matches_autograd():
     # f = log det A. Then bar_A = A^{-T} = A^{-1}; restricted to the tree pattern the

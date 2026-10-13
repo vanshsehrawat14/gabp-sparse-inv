@@ -1,4 +1,4 @@
-"""Correctness gates for the level-set *batched* junction selected inverse (T6).
+"""Correctness gates for the level-set *batched* junction selected inverse.
 
 The batched path (`selected_inverse_junction(..., batched=True)` /
 `selinv_junction(..., batched=True)`) reschedules the per-node reference loop into one
@@ -6,7 +6,7 @@ sweep over elimination *levels* (antichains of mutually non-adjacent filled-grap
 batching each level's clique work. The reference per-node kernel stays the correctness
 oracle: every test here asserts the batched result equals the reference **block-for-block**
 (`~1e-10`), forward and (via autograd) backward, plus a `gradcheck` of the batched path and
-a scaling note on the loop-count reduction. See docs/ROADMAP.md (T6) / docs/derivations.md §8.4.
+a scaling note on the loop-count reduction. See docs/derivations.md §8.4.
 """
 
 from __future__ import annotations

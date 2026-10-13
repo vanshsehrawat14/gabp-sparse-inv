@@ -127,6 +127,13 @@ def tree_levels(parent: Tensor | Sequence[int]) -> list[list[int]]:
     return levels
 
 
+def _require_finite(**tensors: Tensor) -> None:
+    """Raise ``ValueError`` if any named tensor holds ``inf`` or ``nan``."""
+    for name, t in tensors.items():
+        if not bool(torch.isfinite(t).all()):
+            raise ValueError(f"{name} must be finite; it contains inf or nan")
+
+
 @dataclass
 class BlockTridiag:
     """Symmetric block-tridiagonal matrix.
@@ -176,6 +183,7 @@ class BlockTridiag:
             raise ValueError(
                 f"device mismatch: diag={self.diag.device}, lower={self.lower.device}"
             )
+        _require_finite(diag=self.diag, lower=self.lower)
         if self.diag.ndim < 3:
             raise ValueError(
                 f"diag must have shape [..., L, b, b]; got ndim={self.diag.ndim}"
@@ -309,6 +317,7 @@ class BlockBidiag:
             raise ValueError(
                 f"device mismatch: diag={self.diag.device}, lower={self.lower.device}"
             )
+        _require_finite(diag=self.diag, lower=self.lower)
         if self.diag.ndim < 3:
             raise ValueError(
                 f"diag must have shape [..., n, b, b]; got ndim={self.diag.ndim}"
@@ -442,6 +451,7 @@ class BlockStar:
                 f"device mismatch: center={self.center.device}, "
                 f"leaf_diag={self.leaf_diag.device}, coupling={self.coupling.device}"
             )
+        _require_finite(center=self.center, leaf_diag=self.leaf_diag, coupling=self.coupling)
         if self.center.ndim < 2:
             raise ValueError(
                 f"center must have shape [..., b, b]; got ndim={self.center.ndim}"
@@ -606,6 +616,7 @@ class BlockTree:
             raise TypeError(f"dtype mismatch: diag={self.diag.dtype}, edge={self.edge.dtype}")
         if self.diag.device != self.edge.device:
             raise ValueError(f"device mismatch: diag={self.diag.device}, edge={self.edge.device}")
+        _require_finite(diag=self.diag, edge=self.edge)
         if self.diag.ndim < 3:
             raise ValueError(f"diag must have shape [..., n, b, b]; got ndim={self.diag.ndim}")
         n, b, b2 = self.diag.shape[-3], self.diag.shape[-2], self.diag.shape[-1]
@@ -751,6 +762,7 @@ class BlockSparseSym:
             raise TypeError(f"dtype mismatch: diag={self.diag.dtype}, edge_val={self.edge_val.dtype}")
         if self.diag.device != self.edge_val.device:
             raise ValueError(f"device mismatch: diag={self.diag.device}, edge_val={self.edge_val.device}")
+        _require_finite(diag=self.diag, edge_val=self.edge_val)
         if self.diag.ndim < 3:
             raise ValueError(f"diag must have shape [..., n, b, b]; got ndim={self.diag.ndim}")
         n, b, b2 = self.diag.shape[-3], self.diag.shape[-2], self.diag.shape[-1]

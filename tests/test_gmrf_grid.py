@@ -184,7 +184,13 @@ def test_recovers_hyperparameters():
     diag, ei, edge_val = grid_gmrf_precision(
         rows, cols, torch.tensor(true["kappa"], dtype=torch.float64),
         torch.tensor(true["a"], dtype=torch.float64))
-    x = sample_gaussian_junction(diag, ei, edge_val, 150)            # [S, n, 1]
+    x = sample_gaussian_junction(
+        diag,
+        ei,
+        edge_val,
+        150,
+        generator=torch.Generator().manual_seed(0),
+    )                                                               # [S, n, 1]
     g = torch.Generator().manual_seed(1)
     y = x + math.sqrt(true["sigma2"]) * torch.randn(x.shape, generator=g, dtype=torch.float64)
 
@@ -194,3 +200,39 @@ def test_recovers_hyperparameters():
     assert abs(out["kappa"] - true["kappa"]) < 0.6
     assert abs(out["a"] - true["a"]) < 0.3
     assert abs(out["sigma2"] - true["sigma2"]) < 0.2
+
+
+# --------------------------------------------------------------------------- #
+# Small observation noise: the evidence must not cancel.
+# --------------------------------------------------------------------------- #
+@pytest.mark.parametrize("sigma2", [1e-6, 1e-12, 1e-16])
+def test_marginal_likelihood_and_noise_gradient_accurate_at_small_noise(sigma2):
+    # The expanded Woodbury form subtracted two O(1/sigma2) terms and lost the value and
+    # its sigma2 derivative here; the dense covariance oracle has no such cancellation.
+    rows, cols, kappa, a = 3, 3, 2.0, 0.7
+    y = torch.randn(rows * cols, 1, dtype=torch.float64, generator=torch.Generator().manual_seed(0))
+    s = torch.tensor(sigma2, dtype=torch.float64, requires_grad=True)
+    diag, ei, ev = grid_gmrf_precision(rows, cols, kappa, a)
+    val = junction_marginal_log_likelihood(diag, ei, ev, y, s)
+    (grad,) = torch.autograd.grad(val, s)
+    s_ref = torch.tensor(sigma2, dtype=torch.float64, requires_grad=True)
+    ref = _dense_mll(rows, cols, y, kappa, a, s_ref)
+    (grad_ref,) = torch.autograd.grad(ref, s_ref)
+    torch.testing.assert_close(val, ref, rtol=1e-10, atol=0.0)
+    torch.testing.assert_close(grad, grad_ref, rtol=1e-8, atol=0.0)
+
+
+def test_single_node_likelihood_matches_closed_form_at_tiny_noise():
+    # y ~ N(0, 1/q + s): log p = -(log 2 pi + log v + y^2 / v) / 2 and
+    # d log p / d s = (y^2 / v^2 - 1 / v) / 2 with v = 1/q + s.
+    q, y0, s0 = 3.0, 2.0, 1e-18
+    v = 1.0 / q + s0
+    s = torch.tensor(s0, dtype=torch.float64, requires_grad=True)
+    diag = torch.tensor([[[q]]], dtype=torch.float64)
+    val = junction_marginal_log_likelihood(
+        diag, torch.zeros((2, 0), dtype=torch.long), torch.zeros((0, 1, 1), dtype=torch.float64),
+        torch.tensor([[y0]], dtype=torch.float64), s,
+    )
+    (grad,) = torch.autograd.grad(val, s)
+    assert val.item() == pytest.approx(-0.5 * (math.log(2 * math.pi) + math.log(v) + y0 * y0 / v), rel=1e-14)
+    assert grad.item() == pytest.approx(0.5 * (y0 * y0 / v ** 2 - 1.0 / v), rel=1e-14)

@@ -1,4 +1,4 @@
-"""M-JOSS packaging guards: the public API is importable and self-consistent.
+"""Packaging guards: the public API is importable and self-consistent.
 
 These catch the cheap regressions that break a "hot-swappable drop-in": a dangling
 ``__all__`` export, a missing ``__version__`` (the pyproject dynamic version reads

@@ -5,8 +5,7 @@ This note states and proves the result that underlies every kernel in
 *selected inverse* (the inverse blocks on the matrix's own sparsity pattern) is
 computed **exactly** by a two-pass collect/distribute schedule, which is precisely
 **Gaussian Belief Propagation** and coincides with the Takahashi recurrence.
-The block-tridiagonal **chain** (Phase 1) and the block-arrowhead **star**
-(Phase 2) are corollaries.
+The block-tridiagonal **chain** and the block-arrowhead **star** are corollaries.
 
 Notation follows the code: blocks are `b x b`; `A.mT` is the (batched) transpose;
 `D^{-1}` denotes a block inverse realized in practice through a Cholesky factor.
@@ -84,8 +83,8 @@ pivot, giving (3). For the root, `D_r` is the Schur complement of everything els
 i.e. the marginal precision of `r`; the marginal covariance is its inverse, so
 `G_{rr} = D_r^{-1}`, which is (4). (Equivalently: `A = L D L^T` with `L` unit
 lower-triangular puts `D_r` in the last pivot, and the last diagonal block of
-`A^{-1} = L^{-T} D^{-1} L^{-1}` is `D_r^{-1}` because the last row of `L^{-1}` is
-`e_r^T`.) QED(b)
+`A^{-1} = L^{-T} D^{-1} L^{-1}` is `D_r^{-1}` because the last column of the unit
+lower-triangular `L^{-1}` is `e_r`.) QED(b)
 
 **(c) Distribute.** From `A = L D L^T`, `G = A^{-1} = L^{-T} D^{-1} L^{-1}`. The
 Takahashi identity rearranges this into a back-substitution that, by `(I - L^T)`
@@ -94,8 +93,9 @@ through *already-computed* on-pattern blocks closer to the root:
 
     G = D^{-1} L^{-1} + (I - L^T) G.                                  (7)
 
-Read (7) block-row by block-row from the root downward. On a tree the only nonzero
-off-diagonal of `L` in row `v` is the parent edge, with factor block `ell_v`
+Read (7) block-row by block-row from the root downward. Row `v` of (7) involves
+column `v` of `L`, and on a tree the only nonzero off-diagonal of `L` in column `v` is
+the parent edge, with factor block `ell_v`
 (defined so that `A_{p(v),v} = ell_v D_v`, i.e. `ell_v = A_{p(v),v} D_v^{-1}`).
 Specializing (7) to the cross block `(p(v), v)` and the diagonal block `(v, v)`
 gives (5) and (6); every term on the right is a block at or above `v`'s parent,
@@ -113,14 +113,17 @@ operations, hence `O((|V|+|E|) b^3)` time and `O((|V|+|E|) b^2)` storage. QED
 Part (c) read (7) "block-row by block-row … every term on the right is already
 produced." That reading rests on a closure property which, stated in the pattern of
 the factor `L` rather than of `A`, is exactly what the general-treewidth case
-(Phase 4) needs. Let `chol(A)` denote the lower block-Cholesky factor `L` of `A` in
+needs. Let `chol(A)` denote the lower block-Cholesky factor `L` of `A` in
 the chosen elimination order, and define the **selected set**
 
     S  :=  pattern(L + L^T)                                           (8)
 
- -  the diagonal blocks together with every block where `L` (equivalently `L^T`) is
-nonzero. (`S` contains the edges of `A` **plus any fill edges** created during
-elimination.)
+ -  the diagonal blocks together with every block of the **symbolic** factor pattern
+produced by the elimination game. (`S` contains the edges of `A` **plus any fill
+edges** created during elimination.) Blocks of `L` that cancel to zero numerically still
+belong to `S`: for `L = [[1,0,0,0],[1,1,0,0],[1,0,1,0],[0,1,1,1]]` and `A = L L^T`,
+`L_21 = 0` by cancellation, yet `G_21 = 1` is needed to obtain `G_10 = -3`; dropping it
+gives `-2`. The implementation builds `S` symbolically from the input pattern.
 
 > **Lemma (closure).** The Takahashi recurrence (7) for the blocks `G_{uv}` with
 > `(u,v) in S` references, on its right-hand side, only blocks `G_{u'v'}` with
@@ -133,19 +136,19 @@ through `(I - L^T)`. Each such `w` is, by definition of `S`, a neighbour of `v` 
 factor pattern depend only on factor-pattern entries) closes the index set under the
 recurrence. ∎
 
-**Tree instance (this phase).** On a tree the leaves-to-root order is a perfect
+**Tree instance.** On a tree the leaves-to-root order is a perfect
 elimination ordering with **zero fill** (part (a)), so `pattern(L) = pattern(A)` and
 `S = SelInv(A)`: the selected set of the lemma is exactly the on-pattern target (2),
 and "neighbour in `S`" means "parent or child." This is why the tree kernel needs
-only the parent/child blocks. **For Phase 4 the same lemma holds verbatim with `S`
-the *filled* pattern** - the chordal completion of `A` - which is the correct
+only the parent/child blocks. **For a general pattern the same lemma holds verbatim
+with `S` the *filled* pattern** - the chordal completion of `A` - which is the correct
 statement to inherit there; the tree case is its zero-fill specialization.
 
 ### 2.2 The filled-pattern forward (junction tree)
 
 The two-pass schedule (3)-(6) generalizes *verbatim* to an **arbitrary** sparsity
 pattern once it is read on the filled set `S` (eq. 8) instead of the tree. This is the
-Phase-4 forward, implemented in `gabp_sparse_inv/junction.py`. Number the nodes by an
+general-pattern forward, implemented in `gabp_sparse_inv/junction.py`. Number the nodes by an
 elimination order; for node `v` let
 
     U_v := { w : w eliminated after v, (w, v) in S }
@@ -193,16 +196,21 @@ If `omega := 1 + max_v w_v`, then
 
 The first two inequalities follow from `w <= w^2` for integer `w >= 1` and
 `w^2 <= (omega-1)w`; the last follows from Cauchy--Schwarz and
-`sum_v w_v^2 >= (sum_v w_v)^2 / |V|`. Consequently `W = Theta(F)` only when
-the front width is bounded. On a tree both are `Theta(n)`. On a 2-D grid under
-nested dissection, `F = Theta(n log n)` but `W = Theta(n^{3/2})`.
+`sum_v w_v^2 >= (sum_v w_v)^2 / |V|`. Bounded front width is therefore sufficient
+for `W = Theta(F)`, but not necessary: a `k`-clique plus `n - k` isolated vertices with
+`n = k^3` has `F, W = Theta(n)` while the width grows like `n^{1/3}`. On a tree both are
+`Theta(n)`. On a 2-D grid under nested dissection, `F = Theta(n log n)` but
+`W = Theta(n^{3/2})`.
 
 The shipped level-set implementation also pre-materializes flattened
 clique-pair index tensors, so its symbolic metadata is `Theta(W)`, not
-`Theta(F)`. A streaming or supernodal implementation could retain
-`Theta(F)` numeric storage while generating clique work on demand. The shipped
-reference uses a min-degree order and a per-node loop; neither implementation
-is claimed memory-optimal.
+`Theta(F)`. Its out-of-place `index_add` updates copy whole buffers once per
+elimination level, adding `Theta(h F b^2)` data movement for elimination height `h`,
+and it materializes a level's clique-pair products at once, so its peak numeric
+workspace can exceed `Theta(F b^2)`. A streaming or supernodal implementation could
+retain `Theta(F)` numeric storage while generating clique work on demand. The
+shipped reference uses a min-degree order and a per-node loop; neither
+implementation is claimed memory-optimal.
 
 ---
 
@@ -222,7 +230,7 @@ is a separate approximate route and is **not** implemented here.
 
 ---
 
-## 4. Corollary: the chain (Phase 1)
+## 4. Corollary: the chain
 
 A path `0 - 1 - ... - (L-1)` rooted at the last node makes each node `i` the single
 child of `i+1`. Then `children(i) = {i-1}` (or none), and (3)-(6) reduce to
@@ -237,7 +245,7 @@ smoother two-pass.)
 
 ---
 
-## 5. Corollary: the star (Phase 2)
+## 5. Corollary: the star
 
 A star roots at the **center** `0`; every leaf `j = 1..K` is a child of `0` with no
 children of its own, so `D_j = A_{jj}`. Write `A_{0j}` for the center->leaf
@@ -277,7 +285,7 @@ star and chain kernels must agree block-for-block - verified to ~1e-12 in
 
 ---
 
-## 5.5 The general tree kernel (Phase 3)
+## 5.5 The general tree kernel
 
 `gabp_sparse_inv/tree.py` implements (3)-(6) for an **arbitrary** rooted tree given
 by a `parent` array (`parent[root] = -1`). Two conventions fix the orientation:
@@ -299,8 +307,8 @@ path-tree roots it at node 0, and the selected inverse - being just blocks of
 `A^{-1}` - must agree block-for-block regardless of elimination root.
 
 This kernel is a **correctness reference**: its `O(n)` per-node Python loop is
-launch-latency-bound on GPU. Batching siblings/level-sets (and the differentiable
-backward) is deferred to the differentiable-selinv work (see §8 and PROJECT_STATUS).
+launch-latency-bound on GPU. The level-set batched schedule and the differentiable
+backward are described in §8.
 
 ---
 
@@ -308,12 +316,14 @@ backward) is deferred to the differentiable-selinv work (see §8 and PROJECT_STA
 
 **Pivot-symmetrization policy.** A pivot/Schur block `D_v` is symmetric in exact
 arithmetic, but the computed Schur update (a sum of `ell_v U_v^T` terms, or
-`A_{ii} - C D^{-1} C^T`) is not exactly symmetric in floating point. All kernels
-adopt one policy: **symmetrize every pivot, `D <- (D + D^T)/2`, immediately before
-its Cholesky**, and likewise symmetrize the selected diagonal outputs `G_{vv}`. This
-is `O(b^2)` per block, removes a backend-dependent dependence on which triangle the
-Cholesky reads, and gives a consistent story for the error analysis below.
-(`star.py`, `tree.py`, and `chain.py` all follow it.)
+`A_{ii} - C D^{-1} C^T`) is not exactly symmetric in floating point. Every
+Schur-updated pivot is symmetrized, `D <- (D + D^T)/2`, immediately before its
+Cholesky, and the selected diagonal outputs `G_{vv}` are symmetrized too. The tree
+and junction kernels symmetrize every pivot; the chain and star kernels pass their
+untouched input pivots (the first chain block and the star leaves) to Cholesky as
+given, which is equivalent for the symmetric diagonal blocks they require
+(`check=True` validates the symmetry). Symmetrization removes skew; it does not
+restore positive definiteness lost to rounding.
 
 **Local primitive error bounds (not a global stability theorem).** Let `u` be the unit roundoff and
 `gamma_k := k u / (1 - k u)`. The schedule is built from three `b x b` primitives,
@@ -396,12 +406,11 @@ conditional case.
   `~1e-9`.
 - **Dense triangular `(I - A)^{-1}` (§9.4).** Computed by backward-stable triangular solves
   (S): the computed `T̂` solves `(I - A + ΔM) T̂ = I` with `||ΔM||_2 <= c·N·u·||I - A||_2`
-  (Higham ch. 8). Without SPD the forward error is governed by `kappa(I - A)`; for the
-  strictly-lower (nilpotent) `A` of a DeltaNet chunk the unit diagonal keeps `I - A`
-  well away from singular, so the **static, pivot-free** pattern is stable precisely in the
-  well-conditioned-triangular regime - the explicit assumption the roadmap flags for the
-  general non-symmetric thread (no pivoting keeps `O(n)`/zero-fill but needs the conditioning
-  to cooperate).
+  (Higham ch. 8). Without SPD the forward error is governed by `kappa(I - A)`. The unit
+  diagonal makes `I - A` nonsingular (its determinant is one) but not well conditioned:
+  `[[1, 0], [t, 1]]` has `kappa_2` of order `t^2`. The triangular solve is backward
+  stable; the accuracy of `T` still depends on `kappa(I - A)`, which large strictly-lower
+  entries of a chunk can make arbitrarily large.
 
 ---
 
@@ -411,7 +420,7 @@ conditional case.
   Takahashi equations and the observation that inverse entries on the pattern of
   the Cholesky factor are computable without the full inverse. The tree theorem is
   the zero-fill (treewidth-1) special case where the factor pattern equals `A`'s.
-- **Selected inversion / SelInv, Lin, Lu, Ying & E (2011)** and **PEXSI** - selected
+- **Selected inversion / SelInv, Lin, Yang, Meza, Lu, Ying & E (2011)** and **PEXSI** - selected
   inversion for general sparse SPD/Hermitian matrices via the elimination tree; the
   block-tree case here is the fill-free instance and the natural building block for
   the junction-tree generalization (§2.2, `junction.py`).
@@ -419,36 +428,48 @@ conditional case.
   of Gaussian BP on trees; Section 3 is the precise correspondence to (3)-(6).
 - **Matrix-derivative adjoints - Dwyer & Macphail (1948); Giles (2008)** - the
   reverse-mode adjoint of the matrix inverse/determinant/product, i.e. eq. (10) and
-  the log-det gradient. These are the *folklore* primitives §8 builds on and claims
-  nothing for; the contribution of §8 is the structure-preserving (self-adjoint)
-  *schedule*, not the identity. (See also Murray's `chol-rev` for the Cholesky
-  adjoint.)
+  the log-det gradient; Murray (2016) for blocked Cholesky derivatives.
+- **Sparse log-det barrier Hessian - Andersen, Dahl & Vandenberghe (2013;
+  arXiv:1203.2742)** - for SPD `X` on a chordal pattern `V` they evaluate the
+  projected inverse `P_V(X^{-1})` and the Hessian `Y -> P_V(X^{-1} Y X^{-1})` of
+  `-log det X` for arbitrary `Y` on `V` by multifrontal and supernodal algorithms of
+  factorization cost, factor it as `R^adj o R`, and prune for sparse arguments; the
+  CHOMPACK library implements them. For SPD input the reverse schedule of §8 computes
+  `-P(G H G)`, i.e. this Hessian with the opposite sign, so §8 claims no new
+  mathematics: it records the recurrences the kernels implement.
+- **Differentiable banded operators - Durrande et al. (2019)** - reverse-mode
+  derivatives of banded Cholesky and of the band of the inverse inside an AD
+  framework, applied to Gaussian models.
+- **Non-symmetric selected inversion - Jacquelin, Lin & Yang (2018, PSelInv)** - the
+  distributed two-sided recurrence that §10 instantiates on a static pattern.
 
 ---
 
 ## 8. The adjoint of selected inversion (the differentiable thread)
 
-This section **proves**, on trees, the result the differentiable kernel is built
-around: the reverse-mode adjoint of selected inversion is *itself* a two-pass
+This section derives, on trees, the reverse schedule the differentiable kernel
+implements: the reverse-mode adjoint of selected inversion is a two-pass
 collect/distribute on the same elimination tree, with the same `O((|V|+|E|) b^3)`
-cost as the forward pass. The explicit reverse recurrences derived here are exactly
+cost as the forward pass. This is the selected-inversion instance of reverse-mode
+differentiation of a sparse computational graph (§7); the explicit recurrences are
 what `gabp_sparse_inv/autodiff.py` (`SelInvTree`) implements.
 
-### 8.0 What is and is not new (honest accounting)
+### 8.0 Provenance
 
-The matrix-level identity is *folklore* and this document claims nothing for it. For `G = A^{-1}`
-and a cotangent `bar_G` (the same-shaped tensor `bar_G_{uv} = ∂f/∂G_{uv}`),
+The matrix-level identity is classical. For `G = A^{-1}` and a cotangent `bar_G` (the
+same-shaped tensor `bar_G_{uv} = ∂f/∂G_{uv}`),
 
-    bar_A  =  - A^{-1} bar_G A^{-1}                                   (10)
+    bar_A  =  - A^{-T} bar_G A^{-T}                                   (10)
 
-is the Dwyer-Macphail (1948) / Giles (2008) adjoint of the matrix inverse. Likewise,
-differentiating `log det A` needs only the *diagonal* selected blocks (`∂/∂A log det
-A = A^{-1}`), which is the classical GMRF / sparse-Cholesky log-det-gradient result,
-and the path instance is the differentiable RTS/Kalman smoother. **The contribution
-here is structural, not the formula:** that the *full on-pattern* cotangent - every
-diagonal and edge block, not just the log-det diagonal - is produced by a schedule
-with the *same shape and cost* as the forward selected inverse (a "self-adjoint"
-computational structure), and is realized as a single batched kernel (§ level sets).
+is the Dwyer-Macphail (1948) / Giles (2008) adjoint of the matrix inverse (for SPD `A`
+the transposes drop). Differentiating `log det A` with respect to every stored entry
+needs the selected inverse on `A`'s own pattern, diagonal and edge blocks, since
+`∂ log det A / ∂A = A^{-T}`; no adjoint of the selected inverse is involved. The path
+instance is the differentiable RTS/Kalman smoother. That the full on-pattern cotangent
+is produced at the cost of the forward selected inverse is the sparse log-det barrier
+Hessian of Andersen, Dahl & Vandenberghe (§7), and more generally the cheap-gradient
+property of reverse-mode differentiation. The sections below record the recurrences
+and storage conventions the kernels implement.
 
 ### 8.1 Setup and parametrization convention (the factor-of-2 is here)
 
@@ -472,16 +493,20 @@ recovered as a *remark*: because `U_v` occupies the two matrix slots `(p,v)` and
 
     barAe[v] = M_{p(v),v} + (M_{v,p(v)})^T,   M := -A^{-1} bar_G A^{-1},   (12)
 
-where `bar_G` is the *symmetric* matrix cotangent with `bar_G_{p,v} = bar_G_{v,p}^T =
-barGe[v]` (and `bar_G_{vv}` the symmetrized `barGd[v]`). The factor-of-2 / transpose
-in (12) is the classic source of error in selected-inverse adjoints; the implementation sidesteps it
-entirely in validation by differentiating a *parametrized dense oracle*
+where `bar_G` is the *symmetric* matrix cotangent with `bar_G_{p,v} = barGe[v] / 2` and
+`bar_G_{v,p} = barGe[v]^T / 2` (and `bar_G_{vv}` the symmetrized `barGd[v]`). Each
+stored output block is one parameter of `f`, so its cotangent is split between the two
+slots it represents; the sum in (12) then accounts for the two slots the stored input
+edge occupies. Putting `barGe[v]` in both slots doubles the answer. For
+`A = [[2, e], [e, 3]]`, `e = 0.4` and `f = G_10 = -e / (6 - e^2)`, (12) gives
+`df/de = -(6 + e^2) / (6 - e^2)^2 = -0.1806...`, which the kernels reproduce. The
+implementation is also validated by differentiating a *parametrized dense oracle*
 (`to_dense(diag, edge) → inv → extract → f`), which carries the duplication through
 autograd automatically (see `tests/test_autodiff.py`).
 
 ### 8.2 The adjoint theorem (proved on trees)
 
-> **Theorem (self-adjoint schedule).** Let `A` be SPD with tree pattern `G`, rooted
+> **Theorem (same-structure reverse schedule).** Let `A` be SPD with tree pattern `G`, rooted
 > as in §2, with forward factors `D_v`, `ell_v = U_v D_v^{-1}` and selected blocks
 > `G_vv`, `G_{p(v),v}` from (3)-(6). For any loss `f` of the selected blocks, the
 > stored-block gradients (11b) are computed exactly by the **reverse two-pass
@@ -502,6 +527,14 @@ sweep has the same `1 + |children(v)|` block-op count per node; and (ii) the dat
 dependencies reverse cleanly - a quantity computed in the forward collect (resp.
 distribute) has all its consumers in later collect/distribute steps, so its cotangent
 is complete by the time the reversed sweep reaches it (made explicit after (14)). ∎
+
+**Remark (what is and is not self-adjoint).** On symmetric matrices with the trace
+inner product, and with the same pattern `S` for inputs and outputs, the derivative
+`H -> -P_S(G H G)` is a self-adjoint linear map. In the package's half-storage
+coordinates the same map is self-adjoint only with respect to the weight 2 on stored
+off-diagonal blocks, and when the input pattern is smaller than `S` the Jacobian is
+rectangular. "Same structure" in the theorem refers to the schedule, not to an
+operator identity.
 
 **Remark (why the naive "off-`S`" argument fails).** It is tempting to argue from (10)
 that `bar_A|_S` "never references an off-`S` block of `A^{-1}`." That is **false**:
@@ -554,20 +587,18 @@ symmetrization in (14b) is the adjoint of the forward pivot/diagonal symmetrizat
 (§6) - omitting it breaks agreement with `gradcheck`, which perturbs `diag[v]` in
 antisymmetric directions too.
 
-**Degenerate check (log-det).** Putting `barGd[v] = I`, `barGe[v] = 0` makes (13)-(14)
-reproduce `∂ log det A / ∂A_vv` and `∂/∂U_v` on the pattern; the `n=1` case gives
-`barAd = -Dinv s(I) Dinv = -G_vv^2`, matching `∂ log det / ∂A = A^{-1}` differentiated
-once more. This is the case the Phase-3 smoke test
-(`test_adjoint_logdet_matches_autograd`) already exercises; `tests/test_autodiff.py`
-extends validation to general `barGd`, `barGe` against the parametrized dense oracle.
+**Degenerate check (trace of the inverse).** Putting `barGd[v] = I`, `barGe[v] = 0`
+differentiates `f = sum_v tr G_vv = tr(A^{-1})`, so (13)-(14) return the on-pattern
+blocks of `-A^{-2}`; the `n = 1` case gives `barAd = -Dinv s(I) Dinv = -G_vv^2`. This is
+not the log-det gradient, which is the forward selected inverse itself
+(`test_adjoint_logdet_matches_autograd` checks that separate fact).
+`tests/test_autodiff.py` validates general `barGd`, `barGe` against the parametrized dense
+oracle.
 
-### 8.4 Filled pattern (junction tree): the self-adjoint schedule
+### 8.4 Filled pattern (junction tree): the reverse schedule
 
 Sections 8.1-8.3 are the zero-fill (tree) case. The same construction extends to the
-**filled pattern** - the Phase-4 generalization. This section proves that the *adjoint* extends:
-the self-adjoint schedule earlier drafts only conjectured is a theorem, with the §2.1
-closure lemma (and its transpose) controlling the index set. Only the explicit recurrences
-and the implementation are deferred.
+**filled pattern**, with the §2.1 closure lemma controlling the index set.
 
 **Setup.** Let `A` be SPD with an arbitrary sparsity pattern, fix an elimination order, and
 let `L` be the block-Cholesky factor and `S := pattern(L + L^T)` the **filled** (chordal)
@@ -576,12 +607,11 @@ pattern (§2.1, eq. (8)) - the edges of `A` plus all fill. The forward selected 
 back-substitution (7), `(D, L|_S) ↦ G|_S`; by the closure Lemma (§2.1) it references only
 `S`-blocks.
 
-> **Theorem (self-adjoint, filled pattern).** For any scalar loss `f` of the selected
+> **Theorem (same-structure reverse schedule, filled pattern).** For any scalar loss `f` of the selected
 > blocks `{G_{uv} : (u,v) ∈ S}`, the cotangents `{∂f/∂A_{uv} : (u,v) ∈ S}` are computed by
 > a **reverse two-pass schedule on the same elimination structure** - a reverse-Takahashi
 > sweep followed by a reverse-elimination sweep - that touches only `S`-blocks, reuses the
 > forward factors `(D, L|_S)`, and costs the same `O(·)` as the forward selected inverse.
-> Selected inversion on the filled pattern is self-adjoint.
 
 **Proof.** The forward map `A|_S ↦ G|_S` is a finite composition of block primitives, each
 **`S`-local**, scheduled in elimination order:
@@ -686,19 +716,14 @@ that validates the non-symmetric forward + adjoint machinery and bridges to the 
 chunk inverse `(I − A)^{-1}` (§9.4). Implemented in `gabp_sparse_inv/nonsym.py`
 (`selected_inverse_bidiag`, `selinv_bidiag`).
 
-### 9.0 What is and is not new (honest accounting)
+### 9.0 Provenance
 
-Two facts are classical and this document claims nothing for them: (i) the inverse of a block
-lower-bidiagonal matrix is computed by forward substitution, and (ii) the differential of
-a matrix inverse is `dG = -G (dM) G` (Dwyer-Macphail 1948 / Giles 2008, the same identity
-(10) used in §8, now without symmetry). The contribution is the same *structural* one as
-§8: that the **on-pattern** cotangent of the **selected** inverse is produced by a schedule
-of the same shape and `O(n)` cost as the forward - here so directly that both passes are
-*local* (no sequential sweep at all), realized as a single batched kernel. It is the
-non-symmetric, triangular endpoint of the same-schedule thesis: the reverse has the same
-shape and `O(n)` cost, while the inversion derivative obeys
-`L_M^*(X) = -M^{-T} X M^{-T} = L_{M^T}(X)` (§10.3). This is an identity between
-derivative maps, not a selected-inverse value at the transpose.
+Two facts are classical: (i) the inverse of a block lower-bidiagonal matrix is computed
+by forward substitution, and (ii) the differential of a matrix inverse is
+`dG = -G (dM) G` (Dwyer-Macphail 1948 / Giles 2008, identity (10) without symmetry).
+The on-pattern cotangent of the selected inverse is local here (no sequential sweep),
+and the inversion derivative obeys `L_M^*(X) = -M^{-T} X M^{-T} = L_{M^T}(X)` (§10.3),
+an identity between derivative maps, not a selected-inverse value at the transpose.
 
 ### 9.1 Setup
 
@@ -745,13 +770,12 @@ then push through the inverse VJP `D_i ↦ E_i = D_i^{-1}`, whose adjoint is
 `bar_D = -E^T bar_E E^T` (the non-symmetric (10), no symmetrization - `D_i` is a free
 block):
 
-    ∂f/∂D_i = - E_i^T bE[i] E_i^T = - G_ii^T bE[i] G_ii                                    (16b)
+    ∂f/∂D_i = - E_i^T bE[i] E_i^T = - G_ii^T bE[i] G_ii^T                                  (16b)
     ∂f/∂C_i = - E_{i+1}^T bGl[i] E_i^T = - G_{i+1,i+1}^T bGl[i] G_ii^T                      (16c)
 
 These are exactly the three accumulations and two contractions in
 `SelInvBidiag.backward`. The backward touches the same blocks as the forward with the same
-`O(n)` cost and is, like the forward, fully local/batched. Its transpose-form VJP is not a
-self-adjoint non-symmetric inversion map. There is *no* pivot symmetrization (§6/§8.1): the dense
+`O(n)` cost and is, like the forward, fully local/batched. There is *no* pivot symmetrization (§6/§8.1): the dense
 oracle assembles `M` exactly and inverts it, so analytic and autograd gradients agree to
 `~1e-9` (`tests/test_nonsym.py`), without the factor-of-2/transpose bookkeeping that the
 symmetric stored-block convention forces.
@@ -809,22 +833,16 @@ blocks (`A_{ij} != A_{ji}^T`). This generalizes the junction kernel (§2.2, §8.
 non-symmetric, and the non-symmetric *tree* (§9.5) from zero-fill to general fill.
 Implemented as `selected_inverse_nonsym_junction` (`gabp_sparse_inv/nonsym_junction.py`).
 
-### 10.0 What is and is not new (honest accounting)
+### 10.0 Provenance
 
 The forward is **classical**: the block `LDU` selected inverse on the filled pattern is the
-Erisman-Tinney (1975) recurrence (the non-symmetric Takahashi). The contribution is the same
-as the rest of the program - the **differentiable** thread: its reverse-mode closes on a
-same-pattern schedule. Because `A` is non-symmetric, the inversion derivative is not
-self-adjoint: its linear adjoint is the
-derivative at `Aᵀ` (the adjoint map is `P_S L_{Aᵀ} ι_S`, not
-`P_S L_A ι_S`), with the same `Theta(W b^3)` structural work. This
-is why §10.3 propagates **independent** lower/upper cotangents (the `L` of `A` is the `U` of
-`Aᵀ`): that independence is the fingerprint of "up to transpose." Established for the
-non-symmetric case in §10.3 (the non-symmetric analogue of §8.4). The proof technique
-(locality of each block op's VJP + chordality) is standard, which is exactly why it carries
-over from the SPD case. (On a structurally-symmetric pattern the selected blocks of `Aᵀ` are
-just the transposes of the forward blocks, already in hand - so the adjoint costs no more than
-the SPD case.)
+Erisman-Tinney (1975) recurrence (the non-symmetric Takahashi), implemented at scale by
+PSelInv (§7). Its reverse mode is reverse-mode differentiation of that program; it closes on
+the same pattern for the reason given in §8.4 (each block operation's VJP touches only its
+operands). Because `A` is non-symmetric, the linear adjoint of the inversion derivative is
+the derivative at `Aᵀ` (the adjoint map is `P_S L_{Aᵀ} ι_S`, not `P_S L_A ι_S`), with the
+same `Theta(W b^3)` structural work, and §10.3 propagates **independent** lower/upper
+cotangents.
 
 ### 10.1 Setup
 
@@ -894,11 +912,14 @@ pattern static and the work `Theta(W b^3)`, but requires every pivot `D_v` (a Sc
 complement) to stay nonsingular and numerically usable. The package's block-dominant
 generators provide a controlled empirical regime; no general claim is made here that the
 particular singular-value dominance diagnostic used by the harness is inherited by every
-Schur complement. Partial / threshold pivoting would
-restore stability for indefinite or badly-scaled `A`, but it changes the elimination pattern
-*dynamically* - destroying the static-`S`, bounded-fill story. So pivoting is deliberately out
-of scope and flagged as a research question (`docs/ROADMAP.md`, "Non-symmetric stability"),
-not a gap closed here.
+Schur complement. Global conditioning does not certify the regime:
+`[[eps, 1], [2, 1]]` has `kappa_2 -> 2.62` as `eps -> 0` and nonzero scalar pivots, yet
+eliminating node 0 first multiplies by `2 / eps`. Partial / threshold pivoting would
+restore stability, but it changes the elimination pattern *dynamically*, so it is out of
+scope. Instead the kernels track element growth (the largest reduced pivot, reduced
+coupling or Schur update relative to the largest input entry) and raise
+`torch.linalg.LinAlgError` when it exceeds `1 / sqrt(eps)` of the working dtype; the caller
+can choose an order that eliminates well-conditioned pivots first or use a pivoted LU.
 
 The boundary is **measured** in `gabp_sparse_inv/bench/nonsym_stability.py`: sweeping the
 block-diagonal-dominance ratio `α = σ_min(A_vv) / Σ_j ||A_vj||` (Feingold-Varga boundary at
@@ -911,23 +932,22 @@ dominance boundary (a diagnostic, the §10.4 tradeoff made concrete).
 
 ---
 
-## Roadmap pointer
+## Implementation status
 
-Implemented and tested: **chain** (Phase 1), **star** (Phase 2), **general tree**
-(Phase 3 - `gabp_sparse_inv/tree.py`), the **differentiable, level-set-batched adjoint of
+Implemented and tested: **chain**, **star**, **general tree**
+(`gabp_sparse_inv/tree.py`), the **differentiable, level-set-batched adjoint of
 selected inversion** on trees (§8 - `gabp_sparse_inv/autodiff.py`, `SelInvTree`/
-`selinv_tree`; the §8.2 theorem proved, backward validated to machine precision), and the
+`selinv_tree`; backward validated to machine precision), and the
 **non-symmetric lower-bidiagonal** selected inverse plus the dense `(I − A)^{-1}` DeltaNet
 chunk and the **non-symmetric tree** selected inverse (§9 - `gabp_sparse_inv/nonsym.py`),
 and the **general-sparse (junction-tree)** selected
 inverse on the filled pattern (§2.2, §8.4 - `gabp_sparse_inv/junction.py`,
 `selected_inverse_junction`/`selinv_junction`): forward + an autograd adjoint (the §8.4
-self-adjoint schedule realized by reverse-mode, `gradcheck`-validated), and the **general
+reverse schedule realized by reverse-mode, `gradcheck`-validated), and the **general
 non-symmetric (LU / Erisman-Tinney)** selected inverse on the filled pattern (§10,
 `gabp_sparse_inv/nonsym_junction.py`, `selected_inverse_nonsym_junction`/
 `selinv_nonsym_junction`): forward + an autograd adjoint evaluated through
-`L_A^* = L_{A^T}` (§10.3), no pivoting (the static-pattern regime),
-dense-oracle/`gradcheck`-gated.
+`L_A^* = L_{A^T}` (§10.3), no pivoting (the static-pattern regime, with the §10.4
+growth guard), dense-oracle/`gradcheck`-gated.
 The hand-written analytic filled-pattern backwards are shipped for both
-symmetric and non-symmetric junction kernels; see
-[PROJECT_STATUS.md](PROJECT_STATUS.md).
+symmetric and non-symmetric junction kernels.

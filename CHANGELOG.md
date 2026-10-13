@@ -9,19 +9,79 @@ release.
 
 ## [Unreleased]
 
-Version string is `0.3.5.dev0`; PyPI remains at 0.3.4.
+The version string on `main` is `0.4.0.dev0`; PyPI serves 0.3.4.
+
+### Upgrading from 0.3.4
+
+Code written for 0.3.4 can behave differently in these cases.
+
+- The non-symmetric kernels raise `torch.linalg.LinAlgError` instead of returning blocks
+  when element growth exceeds `1 / sqrt(eps)`: about `2.9e3` in float32 and `6.7e7` in
+  float64. Float32 problems with moderate growth can now raise; eliminating in float64
+  avoids that.
+- `check=True` rejects infinite or NaN blocks with `ValueError` before factorizing, where
+  0.3.4 could fail later with `torch.linalg.LinAlgError`, and floating-point edge indices
+  with `TypeError`, where 0.3.4 truncated them.
+- When `n == b`, a right-hand side ending in `[n, n, n]` is read as columns unless it
+  equals `diag.shape[:-1]`; 0.3.4 read it as a batch of vectors. Passing
+  `rhs.unsqueeze(-1)` and squeezing the result keeps the 0.3.4 reading.
+- The Gaussian marginal likelihoods and their `sigma2` gradients change only where 0.3.4
+  lost accuracy at small observation noise. At `sigma2 >= 1e-2` on unit-scale test
+  problems they agree with 0.3.4 to about `1e-12`.
+- `gabp_sparse_inv.demos` and `gabp_sparse_inv.bench.matched_compute` are removed.
+
+The rest of the 0.3.4 API keeps its signatures; `junction_marginal_log_likelihood` and
+`junction_posterior_marginal_variances` gain an optional `analysis` argument.
 
 ### Added
 
-- Routed-field hop-distance and label-only reach-floor diagnostics, with tests
-  and a mutation-tested paper claim verifier.
+- `analyze_junction`, `JunctionAnalysis` and `SparseGaussianFactor`. Symbolic analysis
+  of an SPD pattern runs once and is reused across numeric factorizations; one numeric
+  factor serves `logdet`, `solve`, `selected_inverse`, `marginal_diag` and `sample`,
+  differentiably, without refactorizing.
+- CI jobs that run the suite with the minimum supported PyTorch and against the
+  installed wheel, and a test that runs the README examples in a fresh interpreter.
 
-### Changed
+### Fixed
 
-- Narrow the paper's reach theorem to an explicit source-Krylov access model.
-  Measurements and released numerical kernels are unchanged.
-- Replace the accumulated README narrative with the supported API, boundaries,
-  install path, and verified examples.
+- `junction_solve`, `nonsym_junction_solve` and `SparseGaussianFactor.solve` read an
+  unbatched right-hand side of shape `[n, b, k]` with `n == b == k` as a batch of
+  vectors and returned the solution of different systems. A shape that fits both
+  layouts is now read as vectors only when it equals `diag.shape[:-1]`, as in
+  `torch.linalg.solve`; `rhs.unsqueeze(-1)` selects the column layout.
+- `marginal_log_likelihood` and `junction_marginal_log_likelihood` subtracted two terms
+  of order `1 / sigma2`. At small observation noise this lost the value and the
+  derivative with respect to `sigma2` (on a 3 x 3 grid the derivative was already off by
+  a relative `3e-6` at `sigma2 = 1e-6`, and every digit was lost at `1e-12`). Both now
+  factor `I + sigma2 Q` and use the posterior energy `mu' Q mu + sigma2 ||Q mu||^2`, and
+  agree with dense references to about `1e-15` down to `sigma2 = 1e-18`. The tape-free
+  gradient of `fit_grid_marginal_likelihood_analytic` uses the same form.
+- The non-symmetric kernels eliminate in a fixed order without pivoting and returned
+  wrong blocks when elimination amplified entries, even for well-conditioned matrices
+  such as `[[1e-18, 1], [2, 1]]`. `selected_inverse_nonsym_junction`,
+  `selinv_nonsym_junction`, `selinv_nonsym_junction_analytic`, `nonsym_junction_solve`
+  and `selected_inverse_nonsym_tree` now raise `torch.linalg.LinAlgError` when element
+  growth exceeds `1 / sqrt(eps)` of the working dtype.
+- `check=True` rejects infinite and NaN blocks. Edge indices must be integers; floating
+  indices were truncated toward zero.
+- Importing `gabp_sparse_inv.bench` no longer requires setuptools. Under Python 3.12,
+  torch 2.2 wheels need it for `torch.utils.benchmark` without declaring it, so the
+  benchmark harness imports the timer only when it times something.
+- Documentation: the stored off-diagonal cotangent in the derivations is split between the
+  two symmetric slots (it was counted twice); the "log-det check" of the tree backward
+  differentiates the trace of the inverse; a missing transpose in the bidiagonal adjoint;
+  row and column slips in the tree proof; bounded front width is sufficient, not
+  necessary, for linear work; and the derivative schedule is attributed to the prior work
+  it reproduces. The README example that mixed float32 and float64 is fixed.
+- `CITATION.cff` no longer names an unpublished article as the preferred citation.
+
+### Removed
+
+- The research demonstrations (`gabp_sparse_inv.demos`), the research benchmarks
+  `gabp_sparse_inv.bench.matched_compute` and `gabp_sparse_inv.bench.deq_gmres_falsifier`,
+  and the manuscript sources, figure data and archived experiment records. They served a
+  research study rather than the library. They remain at the `research-archive` tag, and
+  the demonstrations and `matched_compute` also ship in 0.3.4.
 
 ## [0.3.4] - 2026-07-28
 
@@ -63,7 +123,7 @@ Version string is `0.3.5.dev0`; PyPI remains at 0.3.4.
   - The JOSS paper's statement of need adds the nearest 2025-2026 systems (Serinv, sTiles,
     Schwarz-Schur Involution, TMB, and Siden et al.) and no longer claims to be the only
     differentiable selected-inverse library or an unqualified linear-cost operator.
-- Republished the corrected Paper 1 (`paper/attainability/`) manuscript and figures.
+- Republished the corrected attainability manuscript and figures under `paper/attainability/`.
 - Packaging metadata modernized to PEP 639 (`license = "MIT"` / `license-files`); the deprecated
   MIT license classifier was removed.
 

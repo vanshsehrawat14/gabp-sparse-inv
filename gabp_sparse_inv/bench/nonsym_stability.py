@@ -23,7 +23,8 @@ The honest reading (§10.4): while block-diagonally dominant (``alpha >~ 1``) th
 is at **parity** with pivoted LU and tracks ``kappa * u``; as dominance is lost the Schur floor
 collapses and ``err_nopivot`` departs from ``kappa * u`` while pivoted LU does not - the boundary
 of the static-pattern regime. Pivoting would fix it but makes the symbolic pattern
-data-dependent, so it is deliberately out of scope (``docs/ROADMAP.md``). Like
+data-dependent, so it is out of scope; past the boundary the kernels refuse eliminations whose
+element growth exceeds ``1 / sqrt(eps)``, which the harness records as an infinite error. Like
 the rest of ``bench/`` these are dtype/BLAS-dependent **diagnostics** - recorded, not asserted.
 
     python -m gabp_sparse_inv.bench.nonsym_stability
@@ -41,6 +42,7 @@ from pathlib import Path
 import torch
 
 from ..generators import grid_edges
+from ..junction import _symbolic
 from ..nonsym_junction import _factor_nonsym, selected_inverse_nonsym_junction
 
 __all__ = ["NonsymStabilityRecord", "random_nonsym_dominant", "nonsym_stability_one", "main"]
@@ -146,7 +148,6 @@ def nonsym_stability_one(*, alpha, rows, cols, b, seed, storage="fp32"):
     """One no-pivot stability record on a loopy grid at a given dominance ``alpha``."""
     n = rows * cols
     dtype = torch.float32 if storage == "fp32" else torch.float64
-    u = float(torch.finfo(dtype).eps)
     diag, ei, lower, upper = random_nonsym_dominant(n, grid_edges(rows, cols), b, alpha=alpha, seed=seed)
 
     A = _assemble(diag, ei, lower, upper)
@@ -178,8 +179,9 @@ def nonsym_stability_one(*, alpha, rows, cols, b, seed, storage="fp32"):
         if not (err_nopivot == err_nopivot and err_nopivot < float("inf")):
             err_nopivot = float("inf")
     except RuntimeError:
-        # exact-singular Schur pivot in the static order: the no-pivot factorization fails.
-        Si = selected_inverse_nonsym_junction(diag, ei, lower, upper)[1]
+        # Singular pivot or refused element growth in the static order: no result.
+        _o, _p, _U, pairs = _symbolic(n, ei, None)
+        Si = torch.tensor([(max(w, v), min(w, v)) for w, v in pairs], dtype=torch.long).T
         err_nopivot = float("inf")
 
     err_pivoted = _dense_pivoted_err(A.to(dtype), inv64, Si, b)

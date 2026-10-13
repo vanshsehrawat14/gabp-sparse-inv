@@ -253,40 +253,50 @@ def _tree_solve_batched(diag, edge, parent_t, rhs):
     return x.squeeze(-1)
 
 
+def _tree_matvec(diag, edge, parent_t, x):
+    """``Q x`` for tree storage with ``edge[v] = Q_{p(v), v}``; ``x`` is ``[..., n, b]``."""
+    plist = parent_t.tolist()
+    child = [v for v, pv in enumerate(plist) if pv >= 0]
+    xc = x.unsqueeze(-1)
+    out = diag @ xc
+    if child:
+        c = torch.tensor(child, device=x.device)
+        pa = torch.tensor([plist[v] for v in child], device=x.device)
+        E = edge.index_select(-3, c)
+        out = out.index_add(-3, pa, E @ xc.index_select(-3, c))
+        out = out.index_add(-3, c, E.mT @ xc.index_select(-3, pa))
+    return out.squeeze(-1)
+
+
 def marginal_log_likelihood(parent, y, a, kappa, root_prec, sigma2, *, batched=False):
     """Exact log marginal likelihood ``log p(y | theta)`` of the tree GMRF.
 
-    ``y`` has shape ``[..., n, 1]``. Uses the evidence identity for ``y ~ N(0, Q^{-1} +
-    sigma2 I)`` with ``Q_post = Q + sigma2^{-1} I`` (tree-structured): every term is a
-    tree log-det or solve, so the whole quantity and its gradient are ``O(n)``. With
-    ``batched=True`` the log-dets and solve run on the level-set schedule (same result).
+    ``y`` has shape ``[..., n, 1]`` and ``y ~ N(0, Q^{-1} + sigma2 I)``. With the
+    tree-structured ``B = I + sigma2 Q`` and the posterior mean ``mu = B^{-1} y``,
+
+        log p(y) = 1/2 log det Q - 1/2 log det B
+                   - 1/2 (mu' Q mu + sigma2 ||Q mu||^2) - N/2 log(2 pi),
+
+    so every term is a tree log-det, solve or product and the value and its gradient are
+    ``O(n)``. Both quadratic terms are nonnegative and none grows like ``1 / sigma2``, so
+    the value and its ``sigma2`` derivative stay accurate as ``sigma2 -> 0``, where the
+    expanded Woodbury form cancels catastrophically. With ``batched=True`` the log-dets
+    and solve run on the level-set schedule (same result).
     """
     p = _as_parent_tensor(parent)
     diag, edge = tree_gmrf_precision(p, a, kappa, root_prec)
     n, b = diag.shape[-3], diag.shape[-1]
     eye = torch.eye(b, dtype=diag.dtype, device=diag.device)
     sigma2 = torch.as_tensor(sigma2, dtype=diag.dtype, device=diag.device)
-    R = 1.0 / sigma2
 
     logdet_Q = tree_logdet(diag, edge, p, batched=batched)
-    diag_post = diag + R * eye
-    logdet_Qpost = tree_logdet(diag_post, edge, p, batched=batched)
-    logdet_R = n * b * torch.log(R)
+    diag_B, edge_B = eye + sigma2 * diag, sigma2 * edge
+    logdet_B = tree_logdet(diag_B, edge_B, p, batched=batched)
+    mu = tree_solve(diag_B, edge_B, p, y, batched=batched)
+    Qmu = _tree_matvec(diag, edge, p, mu)
+    quad = (mu * Qmu).sum(dim=(-1, -2)) + sigma2 * (Qmu * Qmu).sum(dim=(-1, -2))
 
-    Ry = R * y
-    mu = tree_solve(diag_post, edge, p, Ry, batched=batched)
-    yRy = (R * (y * y)).sum(dim=(-1, -2))
-    quad2 = (Ry * mu).sum(dim=(-1, -2))
-
-    N = n * b
-    return (
-        0.5 * logdet_Q
-        + 0.5 * logdet_R
-        - 0.5 * logdet_Qpost
-        - 0.5 * yRy
-        + 0.5 * quad2
-        - 0.5 * N * math.log(2.0 * math.pi)
-    )
+    return 0.5 * logdet_Q - 0.5 * logdet_B - 0.5 * quad - 0.5 * n * b * math.log(2.0 * math.pi)
 
 
 def posterior_marginal_variances(parent, a, kappa, root_prec, sigma2, *, batched=False):

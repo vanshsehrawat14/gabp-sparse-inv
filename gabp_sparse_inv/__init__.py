@@ -5,19 +5,23 @@ inverse. Trees cost ``O(n b^3)`` work and ``O(n b^2)`` storage. For a general el
 order with later-neighbour counts ``w_v``, numeric storage is
 ``Theta(sum_v(1+w_v) b^2)`` and clique work is
 ``Theta(sum_v(1+w_v^2) b^3)``. Kernels (all validated against dense fp64
-oracles; see ``docs/PROJECT_STATUS.md`` for the authoritative scope):
+oracles; see ``README.md`` for the supported scope):
 
 SPD
     ``selected_inverse_chain`` (block-tridiagonal), ``selected_inverse_star`` (arrowhead),
     ``selected_inverse_tree`` (general tree), ``selinv_tree`` (the differentiable tree kernel
     with an analytic backward), and ``selected_inverse_junction`` / ``selinv_junction`` (general
-    sparse SPD via the filled / chordal pattern, handling loopy graphs *exactly*).
+    sparse SPD via the filled / chordal pattern, handling loopy graphs *exactly*).  For repeated
+    Gaussian operations, ``analyze_junction(...).factor(...)`` exposes one differentiable numeric
+    factor through :class:`SparseGaussianFactor`.
 Non-symmetric
-    ``selected_inverse_bidiag`` (block lower-bidiagonal, DeltaNet chunk),
-    ``selected_inverse_nonsym_tree`` (tree pattern, ``M_{uv} != M_{vu}``), and
+    ``selected_inverse_bidiag`` (block lower-bidiagonal), ``selected_inverse_tril`` (the dense
+    ``(I - A)^{-1}`` chunk inverse), ``selected_inverse_nonsym_tree`` (tree pattern,
+    ``M_{uv} != M_{vu}``), and
     ``selected_inverse_nonsym_junction`` / ``selinv_nonsym_junction`` (general sparse
     non-symmetric on the filled pattern, via block LDU + the two-sided Takahashi /
-    Erisman-Tinney recurrence; no pivoting, the static-pattern regime), with
+    Erisman-Tinney recurrence; no pivoting, so eliminations with unsafe element growth
+    raise), with
     ``nonsym_junction_solve`` the sibling linear solve ``A^{-1} b`` / ``A^{-T} b`` (the
     fixed-point / DEQ implicit-differentiation primitive).
 Applications
@@ -44,6 +48,9 @@ from .generators import (
 )
 from .autodiff import SelInvTree, selinv_tree
 from .junction import (
+    JunctionAnalysis,
+    SparseGaussianFactor,
+    analyze_junction,
     elimination_order_min_degree,
     elimination_order_nested_dissection,
     junction_logdet,
@@ -99,6 +106,9 @@ __all__ = [
     "ChainFactors",
     "StarFactors",
     "TreeFactors",
+    "JunctionAnalysis",
+    "SparseGaussianFactor",
+    "analyze_junction",
     "selected_inverse_chain",
     "selected_inverse_star",
     "selected_inverse_tree",
@@ -146,5 +156,4 @@ __all__ = [
     "condition_number",
 ]
 
-# The public source snapshot is ahead of the published 0.3.4 release.
-__version__ = "0.3.5.dev0"
+__version__ = "0.4.0.dev0"

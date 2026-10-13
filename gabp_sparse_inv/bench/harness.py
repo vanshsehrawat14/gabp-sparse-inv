@@ -16,7 +16,6 @@ except ImportError:  # Windows
     resource = None
 
 import torch
-import torch.utils.benchmark as tbench
 
 from ..chain import selected_inverse_chain
 from ..generators import (
@@ -169,6 +168,11 @@ class BenchRecord:
 
 def _time(fn, *, min_run_time: float = 0.2, num_threads: int = 1) -> tuple[float, float]:
     """Median and IQR (seconds) via ``torch.utils.benchmark``."""
+    # Imported here: under Python 3.12, older torch wheels (2.2 among them) need
+    # setuptools for this import without declaring it, and importing the harness should
+    # not require it.
+    import torch.utils.benchmark as tbench
+
     timer = tbench.Timer(stmt="fn()", globals={"fn": fn}, num_threads=num_threads)
     m = timer.blocked_autorange(min_run_time=min_run_time)
     return float(m.median), float(m.iqr)

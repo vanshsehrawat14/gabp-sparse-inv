@@ -10,7 +10,6 @@ skipped as infeasible. Also exercises the posterior-variance calibration objecti
 
     python -m gabp_sparse_inv.bench.gmrf_scaling --values 31 63 127 255 511 1023
 
-The table in ``docs/APPLICATIONS.md`` used ``--samples 16``; the default here is 64.
 Times are BLAS/thread/device dependent diagnostics -- recorded, not asserted.
 """
 

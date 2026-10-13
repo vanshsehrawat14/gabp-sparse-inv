@@ -1,7 +1,7 @@
 """General non-symmetric (LU / Erisman-Tinney) selected inverse on the filled pattern.
 
-The non-symmetric generalization of :mod:`gabp_sparse_inv.junction`, and the headline
-open rung of the program (``docs/ROADMAP.md`` step 5): the input block matrix ``A`` has an
+The non-symmetric generalization of :mod:`gabp_sparse_inv.junction`: the input block
+matrix ``A`` has an
 **arbitrary structurally-symmetric** sparsity pattern (``(i,j)`` present iff ``(j,i)`` is),
 but ``A_{ij}`` and ``A_{ji}`` are **independent** (``A != A^T``). The implementation picks an elimination
 order, complete the pattern to its chordal closure ``S`` (the *same* fill as the symmetric
@@ -32,9 +32,12 @@ are asserted in the tests.
 
 **No pivoting (the static-pattern regime).** The factorization eliminates in the fixed
 symbolic order with **no pivoting**, which is what keeps the pattern static and the cost
-front-dependent -- but requires every block pivot ``D_v`` to stay non-singular (e.g. block
-diagonal dominance / the well-scaled regime; ``docs/ROADMAP.md`` "Non-symmetric stability").
-Pivoting would make the symbolic pattern data-dependent; it is not handled here.
+front-dependent. Every block pivot ``D_v`` must stay nonsingular and the elimination must not
+amplify entries: a well-conditioned ``A`` can still defeat a fixed order (``[[eps, 1], [2, 1]]``
+eliminated from node 0). The factorization therefore tracks element growth and raises
+:class:`torch.linalg.LinAlgError` when it exceeds ``1 / sqrt(eps)`` of the working dtype,
+instead of returning unreliable blocks (``docs/derivations.md`` §10.4). Block diagonal
+dominance in the elimination order is the safe regime; pivoting is not implemented.
 
 **Differentiability.** The core is functional (the block inverses are ``torch.linalg.inv``),
 so reverse-mode autograd through it is the ``S``-local adjoint-up-to-transpose schedule
@@ -47,8 +50,8 @@ so reverse-mode autograd through it is the ``S``-local adjoint-up-to-transpose s
 ``x = A^{-1} b`` (and the transpose ``A^{-T} b``) via standard block triangular substitution:
 :func:`nonsym_junction_solve`, the non-symmetric counterpart of
 :func:`~gabp_sparse_inv.junction_solve`. The transpose solve is the implicit-differentiation
-adjoint a fixed-point / DEQ backward needs (``demos/deq_fixedpoint.py``), reusing the *same*
-factors with no refactorization.
+adjoint a fixed-point / DEQ backward needs, reusing the *same* factors with no
+refactorization.
 
 **Scope.** A minimal reference: the dependency-free min-degree order from
 :mod:`gabp_sparse_inv.junction` and a per-node Python loop. No supernodal engineering, no
@@ -62,7 +65,9 @@ from typing import Sequence
 import torch
 from torch import Tensor
 
-from .junction import _normalize_edge_index, _symbolic
+from ._linalg import block_amax, check_pivot_growth
+from .junction import _normalize_edge_index, _rhs_is_vector, _symbolic
+from .layout import _require_finite
 
 __all__ = [
     "selected_inverse_nonsym_junction",
@@ -101,12 +106,22 @@ def _factor_nonsym(diag, edge_index, edge_lower, edge_upper, order):
             WL[(j, i)] = WL[(j, i)] + up_blk           # A_{hi,lo} = A_{j,i}
             WU[(j, i)] = WU[(j, i)] + lo_blk           # A_{lo,hi} = A_{i,j}
 
+    # Element growth of the reduced matrix, checked once elimination is complete.
+    scale = block_amax(diag, 3)
+    if m:
+        scale = torch.maximum(scale, torch.maximum(block_amax(edge_lower, 3),
+                                                   block_amax(edge_upper, 3)))
+    growth = torch.zeros_like(scale)
+
     Dinv, Lf, Uf = {}, {}, {}
     for v in order:
+        growth = torch.maximum(growth, block_amax(Wd[v]))
         Dv_inv = torch.linalg.inv(Wd[v])
         Dinv[v] = Dv_inv
         Uv = U[v]
         for w in Uv:
+            growth = torch.maximum(growth, torch.maximum(block_amax(WL[(w, v)]),
+                                                         block_amax(WU[(w, v)])))
             Lf[(w, v)] = WL[(w, v)] @ Dv_inv           # L_{w,v}
             Uf[(w, v)] = Dv_inv @ WU[(w, v)]           # U_{v,w}
         # Schur over the clique: block(row w, col w') -= A_{w,v} D_v^{-1} A_{v,w'}.
@@ -114,6 +129,7 @@ def _factor_nonsym(diag, edge_index, edge_lower, edge_upper, order):
             AwvDinv = WL[(w, v)] @ Dv_inv
             for wp in Uv:
                 term = AwvDinv @ WU[(wp, v)]            # A_{w,v} D_v^{-1} A_{v,w'}
+                growth = torch.maximum(growth, block_amax(term))
                 if w == wp:
                     Wd[w] = Wd[w] - term
                 elif pos[w] > pos[wp]:
@@ -121,6 +137,7 @@ def _factor_nonsym(diag, edge_index, edge_lower, edge_upper, order):
                 else:
                     WU[(wp, w)] = WU[(wp, w)] - term    # upper block (row w < col w')
 
+    check_pivot_growth(growth, scale, diag.dtype)
     return order, pos, U, S_pairs, Dinv, Lf, Uf
 
 
@@ -209,7 +226,7 @@ def selected_inverse_nonsym_junction(
         symmetric ``A`` this equals ``edge_lower[k].mT``.
     order:
         Optional explicit elimination order (a permutation of ``range(n)``); default greedy
-        min-degree (``docs/ROADMAP.md`` non-goals: no AMD/METIS).
+        min-degree.
     check:
         If ``True``, validate shapes and the ``i > j`` / in-range index convention first.
     compute_dtype:
@@ -227,6 +244,7 @@ def selected_inverse_nonsym_junction(
         n, b = diag.shape[-3], diag.shape[-1]
         if edge_lower.shape[-3:] != (edge_index.shape[1], b, b) or edge_upper.shape[-3:] != (edge_index.shape[1], b, b):
             raise ValueError("edge_lower/edge_upper must have shape [..., m, b, b] matching edge_index")
+        _require_finite(diag=diag, edge_lower=edge_lower, edge_upper=edge_upper)
         ij = edge_index.tolist()
         for i, j in zip(ij[0], ij[1]):
             if not (n > i > j >= 0):
@@ -331,7 +349,8 @@ def nonsym_junction_solve(
         elimination order, default greedy min-degree).
     b:
         Right-hand side ``[..., n, b]`` (one vector per node) or ``[..., n, b, k]``
-        (``k`` right-hand sides). The result has the matching shape.
+        (``k`` right-hand sides), read as in :func:`~gabp_sparse_inv.junction_solve`.
+        The result has the matching shape.
     transpose:
         If ``True``, solve ``A^T x = b`` instead of ``A x = b``.
     check:
@@ -347,25 +366,21 @@ def nonsym_junction_solve(
     Notes
     -----
     Functional / autograd-traceable: gradients flow to ``diag``, ``edge_lower``,
-    ``edge_upper`` and ``b`` by reverse-mode (no custom backward). No pivoting -- the
-    static-pattern regime (every block pivot ``D_v`` must stay non-singular).
+    ``edge_upper`` and ``b`` by reverse-mode (no custom backward). No pivoting: raises
+    :class:`torch.linalg.LinAlgError` when a pivot is singular or element growth exceeds
+    ``1 / sqrt(eps)``.
     """
     edge_index = _normalize_edge_index(edge_index)
     if check:
         n, bs = diag.shape[-3], diag.shape[-1]
         if edge_lower.shape[-3:] != (edge_index.shape[1], bs, bs) or edge_upper.shape[-3:] != (edge_index.shape[1], bs, bs):
             raise ValueError("edge_lower/edge_upper must have shape [..., m, b, b] matching edge_index")
+        _require_finite(diag=diag, edge_lower=edge_lower, edge_upper=edge_upper)
         ij = edge_index.tolist()
         for i, j in zip(ij[0], ij[1]):
             if not (n > i > j >= 0):
                 raise ValueError(f"edge_index must be lower-triangular in range (n>i>j>=0); got ({i},{j})")
-    n, bs = diag.shape[-3], diag.shape[-1]
-    vector_rhs = b.shape[-2] == n and b.shape[-1] == bs            # [..., n, b]
-    matrix_rhs = b.ndim >= 3 and b.shape[-3] == n and b.shape[-2] == bs  # [..., n, b, k]
-    if not (vector_rhs or matrix_rhs):
-        raise ValueError(
-            f"b must have shape [..., n, b] or [..., n, b, k] with n={n}, b={bs}; got {tuple(b.shape)}"
-        )
+    vector_rhs = _rhs_is_vector(b, diag.shape)
     rhs = b.unsqueeze(-1) if vector_rhs else b                     # -> [..., n, b, k]
     in_dtype = diag.dtype
     if compute_dtype is not None and compute_dtype != in_dtype:
@@ -390,9 +405,9 @@ def selinv_nonsym_junction(
 
     Identical result to :func:`selected_inverse_nonsym_junction`; the functional forward is
     differentiable, so gradients of any loss over the selected blocks flow to ``diag``,
-    ``edge_lower`` and ``edge_upper`` by reverse-mode. For the inversion derivative,
-    ``L_A^*(X) = -A^{-T} X A^{-T} = L_{A^T}(X)``; this is a derivative map, not the
-    selected-inverse value at ``A^T`` (``docs/derivations.md`` §10). No custom backward.
+    ``edge_lower`` and ``edge_upper`` by reverse-mode through the ``S``-local schedule of
+    ``docs/derivations.md`` §10.3. The VJP is the inversion derivative's adjoint, which is the
+    derivative at ``A^T``; it is not a selected inverse of ``A^T``. No custom backward.
     """
     edge_index = _normalize_edge_index(edge_index)
     return _selinv_nonsym_junction_core(diag, edge_index, edge_lower, edge_upper, order)

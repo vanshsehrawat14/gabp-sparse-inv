@@ -2,8 +2,8 @@
 
 The non-symmetric kernel eliminates with **no pivoting**, so the static-pattern factorization
 is only safe while block-diagonally dominant (``derivations.md`` §10.4). These gates check the
-harness wiring and the **robust, monotone** qualitative boundary: parity with pivoted LU when
-dominant, a collapsing Schur-pivot floor and a growing no-pivot error when dominance is lost;
+harness wiring and the **robust, monotone** qualitative boundary (parity with pivoted LU when
+dominant, a collapsing Schur-pivot floor and a growing no-pivot error when dominance is lost),
 not the noisy per-seed magnitudes (those are diagnostics).
 """
 

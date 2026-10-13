@@ -19,6 +19,7 @@ from gabp_sparse_inv import (
     random_spd_graph,
     selected_inverse_junction,
 )
+from gabp_sparse_inv.junction_autodiff import selinv_nonsym_junction_analytic
 from gabp_sparse_inv.nonsym_junction import (
     nonsym_junction_solve,
     selected_inverse_nonsym_junction,
@@ -312,3 +313,47 @@ def test_solve_single_node():
         torch.zeros(0, 3, 3, dtype=torch.float64), torch.zeros(0, 3, 3, dtype=torch.float64), rhs,
     )
     assert torch.allclose(x[0], torch.linalg.solve(diag[0], rhs[0]), atol=1e-12)
+
+
+@pytest.mark.parametrize("transpose", [False, True])
+def test_solve_reads_an_ambiguous_rhs_as_columns(transpose):
+    diag = torch.tensor([[[4.0, 0.1], [0.1, 3.0]], [[5.0, 0.2], [0.2, 6.0]]], dtype=torch.float64)
+    lower = torch.tensor([[[0.2, 0.1], [-0.1, 0.3]]], dtype=torch.float64)
+    upper = torch.tensor([[[0.3, -0.2], [0.05, 0.1]]], dtype=torch.float64)
+    A = torch.zeros(4, 4, dtype=torch.float64)
+    A[:2, :2], A[2:, 2:], A[2:, :2], A[:2, 2:] = diag[0], diag[1], lower[0], upper[0]
+    M = A.T if transpose else A
+    rhs = torch.arange(1.0, 9.0, dtype=torch.float64).reshape(2, 2, 2)
+    out = nonsym_junction_solve(diag, torch.tensor([[1], [0]]), lower, upper, rhs, transpose=transpose)
+    torch.testing.assert_close(out, torch.linalg.solve(M, rhs.reshape(4, 2)).reshape(2, 2, 2))
+
+
+# --------------------------------------------------------------------------- #
+# Static no-pivot elimination refuses unsafe element growth.
+# --------------------------------------------------------------------------- #
+def _growth_problem(eps):
+    # [[eps, 1], [2, 1]]: cond_2 -> 2.62 as eps -> 0 and every scalar pivot is nonzero,
+    # yet eliminating node 0 first multiplies by 2 / eps.
+    diag = torch.tensor([[[eps]], [[1.0]]], dtype=torch.float64)
+    return diag, torch.tensor([[1], [0]]), torch.tensor([[[2.0]]], dtype=torch.float64), \
+        torch.tensor([[[1.0]]], dtype=torch.float64)
+
+
+def test_unsafe_growth_is_refused_not_returned():
+    diag, ei, lower, upper = _growth_problem(1e-18)
+    with pytest.raises(torch.linalg.LinAlgError, match="element growth"):
+        selected_inverse_nonsym_junction(diag, ei, lower, upper, order=[0, 1])
+    with pytest.raises(torch.linalg.LinAlgError, match="element growth"):
+        nonsym_junction_solve(diag, ei, lower, upper, torch.ones(2, 1, dtype=torch.float64), order=[0, 1])
+    with pytest.raises(torch.linalg.LinAlgError, match="element growth"):
+        selinv_nonsym_junction_analytic(diag, ei, lower, upper, [0, 1])
+
+
+def test_a_safe_order_and_a_mild_pivot_stay_accurate():
+    for eps, order in ((1e-18, [1, 0]), (0.1, [0, 1])):
+        diag, ei, lower, upper = _growth_problem(eps)
+        A = torch.tensor([[eps, 1.0], [2.0, 1.0]], dtype=torch.float64)
+        Gd, _S, Gl, Gu = selected_inverse_nonsym_junction(diag, ei, lower, upper, order=order)
+        got = torch.stack([Gd[0, 0, 0], Gd[1, 0, 0], Gl[0, 0, 0], Gu[0, 0, 0]])
+        inv = torch.linalg.inv(A)
+        torch.testing.assert_close(got, torch.stack([inv[0, 0], inv[1, 1], inv[1, 0], inv[0, 1]]))

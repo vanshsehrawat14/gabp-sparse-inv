@@ -17,7 +17,7 @@ def _oracle_selected(bt: BlockTridiag):
 
 
 # --------------------------------------------------------------------------- #
-# Phase 1 gate: well-conditioned fp64 matches dense oracle to ~1e-10.
+# Well-conditioned fp64 matches the dense oracle to ~1e-10.
 # --------------------------------------------------------------------------- #
 @pytest.mark.parametrize("L,b", [(8, 4), (16, 3), (32, 2), (5, 6)])
 def test_well_conditioned_fp64_gate(L, b):
