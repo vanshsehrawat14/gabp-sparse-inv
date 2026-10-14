@@ -42,13 +42,9 @@ each block operation.
 pip install gabp-sparse-inv
 ```
 
-PyPI serves 0.3.4. The reusable factor and the fixes listed under *Unreleased* in the
-[changelog](CHANGELOG.md) are on `main`, and the changelog lists the behaviour changes
-from 0.3.4:
-
-```bash
-pip install git+https://github.com/vanshsehrawat14/gabp-sparse-inv
-```
+Code written for 0.3.4 can behave differently under 0.4.0; the
+[changelog](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.4.0/CHANGELOG.md#upgrading-from-034)
+lists each case.
 
 ## Examples
 
@@ -146,16 +142,20 @@ and against the installed wheel.
 
 ## Documentation
 
-- [Derivations](docs/derivations.md): the recurrences, derivative conventions, costs,
-  numerical boundaries and prior work.
-- [Architecture](docs/ARCHITECTURE.md): module map and conventions for contributors.
-- [Changelog](CHANGELOG.md) and [contributing guide](CONTRIBUTING.md).
+- [Derivations](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.4.0/docs/derivations.md):
+  the recurrences, derivative conventions, costs, numerical boundaries and prior work.
+- [Architecture](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.4.0/docs/ARCHITECTURE.md):
+  module map and conventions for contributors.
+- [Changelog](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.4.0/CHANGELOG.md)
+  and [contributing guide](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.4.0/CONTRIBUTING.md).
 - [Research archive](https://github.com/vanshsehrawat14/gabp-sparse-inv/tree/research-archive):
   the research code, experiments and manuscripts that `main` carried before 0.4.0.
 
 ## Citation and license
 
-Citation metadata is in [CITATION.cff](CITATION.cff). If the selected inverse matters to
-your work, please also cite the algorithms: Takahashi, Fagan and Chen (1973), Erisman and
-Tinney (1975), Lin et al. (2011), and Andersen, Dahl and Vandenberghe (2013). The software
-is MIT licensed; see [LICENSE](LICENSE).
+Citation metadata is in
+[CITATION.cff](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.4.0/CITATION.cff).
+If the selected inverse matters to your work, please also cite the algorithms: Takahashi,
+Fagan and Chen (1973), Erisman and Tinney (1975), Lin et al. (2011), and Andersen, Dahl and
+Vandenberghe (2013). The software is MIT licensed; see
+[LICENSE](https://github.com/vanshsehrawat14/gabp-sparse-inv/blob/v0.4.0/LICENSE).

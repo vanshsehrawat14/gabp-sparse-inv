@@ -9,7 +9,7 @@ release.
 
 ## [Unreleased]
 
-The version string on `main` is `0.4.0.dev0`; PyPI serves 0.3.4.
+## [0.4.0] - 2026-10-14
 
 ### Upgrading from 0.3.4
 
@@ -174,7 +174,8 @@ First release, prepared for submission to the Journal of Open Source Software.
   expanded project URLs, a JOSS paper draft (`paper/joss/`), and CI across
   Ubuntu / Windows on Python 3.12 and 3.13, and macOS on Python 3.12.
 
-[Unreleased]: https://github.com/vanshsehrawat14/gabp-sparse-inv/compare/v0.3.4...HEAD
+[Unreleased]: https://github.com/vanshsehrawat14/gabp-sparse-inv/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/vanshsehrawat14/gabp-sparse-inv/compare/v0.3.4...v0.4.0
 [0.3.4]: https://github.com/vanshsehrawat14/gabp-sparse-inv/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/vanshsehrawat14/gabp-sparse-inv/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/vanshsehrawat14/gabp-sparse-inv/compare/v0.3.1...v0.3.2

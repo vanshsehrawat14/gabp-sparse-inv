@@ -41,9 +41,9 @@ discussion but may be declined to keep the package focused.
 
 ## Releases (maintainer)
 
-1. Set `__version__` in `gabp_sparse_inv/__init__.py` (the single source of truth) and move
-   the changelog entries from *Unreleased* under the new version.
+1. Set `__version__` in `gabp_sparse_inv/__init__.py` (the single source of truth), set
+   `version` and `date-released` in `CITATION.cff`, point the README links at the new tag,
+   and move the changelog entries from *Unreleased* under the new version.
 2. Build with `python -m build`, install the wheel into a clean environment, and run the
    test suite against it.
-3. Tag the release commit `vX.Y.Z`, publish the tag, upload the built files to PyPI, and
-   update `CITATION.cff`.
+3. Tag the release commit `vX.Y.Z`, publish the tag, and upload the built files to PyPI.
