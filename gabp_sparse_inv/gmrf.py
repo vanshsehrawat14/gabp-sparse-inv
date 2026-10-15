@@ -351,10 +351,10 @@ def fit_marginal_likelihood(
     init = init or {}
 
     def _inv_softplus(x):
-        x = torch.as_tensor(x, dtype=dtype)
+        x = torch.as_tensor(x, dtype=dtype, device=y.device)
         return torch.log(torch.expm1(x.clamp_min(1e-6)))
 
-    raw_a = torch.tensor(float(init.get("a", 0.5)), dtype=dtype, requires_grad=True)
+    raw_a = torch.tensor(float(init.get("a", 0.5)), dtype=dtype, device=y.device, requires_grad=True)
     raw_kappa = _inv_softplus(init.get("kappa", 1.0)).clone().requires_grad_(True)
     raw_root = _inv_softplus(init.get("root_prec", 1.0)).clone().requires_grad_(True)
     raw_sigma2 = _inv_softplus(init.get("sigma2", 1.0)).clone().requires_grad_(True)

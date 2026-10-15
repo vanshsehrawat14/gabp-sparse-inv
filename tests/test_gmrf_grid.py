@@ -250,3 +250,13 @@ def test_posterior_variances_are_per_coordinate_for_block_nodes(b):
     want = torch.diagonal(torch.linalg.inv(Q_post)).reshape(5, b)
     assert v.shape == ((5,) if b == 1 else (5, b))
     torch.testing.assert_close(v.reshape(5, b), want)
+
+
+def test_grid_precision_follows_the_hyperparameter_device():
+    # 0.4.0 built the degree vector on the CPU whatever the device of kappa and a. The meta
+    # device stands in for an accelerator: values must land there, topology stays on the CPU.
+    kappa = torch.tensor(1.0, device="meta")
+    a = torch.tensor(0.5, device="meta", dtype=torch.float32)
+    diag, ei, edge_val = grid_gmrf_precision(3, 4, kappa, a)
+    assert diag.device.type == "meta" and edge_val.device.type == "meta"
+    assert diag.dtype == torch.float32 and ei.device.type == "cpu"

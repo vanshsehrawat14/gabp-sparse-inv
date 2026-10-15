@@ -83,19 +83,21 @@ def grid_gmrf_precision(rows: int, cols: int, kappa, a):
     Returns ``(diag, edge_index, edge_val)`` in the junction layout: ``diag`` ``[n, 1, 1]``
     holds ``Q_vv = kappa (1 + a deg_v)``; ``edge_index`` ``[2, m]`` is :func:`grid_edges`
     (``i > j``); ``edge_val`` ``[m, 1, 1]`` holds ``Q_{ij} = -kappa a``. Differentiable in
-    ``kappa`` and ``a`` (tensors or floats); ``n = rows * cols``.
+    ``kappa`` and ``a`` (tensors or floats); ``n = rows * cols``. The values take the dtype
+    and device of the first floating-point tensor among ``kappa`` and ``a`` (default float64
+    on CPU); ``edge_index`` stays on the CPU like every topology argument.
     """
     n = rows * cols
     edge_index = grid_edges(rows, cols)
     m = edge_index.shape[1]
-    dtype = torch.float64
+    dtype, device = torch.float64, torch.device("cpu")
     for val in (kappa, a):
         if isinstance(val, Tensor) and val.is_floating_point():
-            dtype = val.dtype
+            dtype, device = val.dtype, val.device
             break
-    kappa = torch.as_tensor(kappa, dtype=dtype)
-    a = torch.as_tensor(a, dtype=dtype)
-    deg = grid_node_degrees(n, edge_index).to(dtype)
+    kappa = torch.as_tensor(kappa, dtype=dtype, device=device)
+    a = torch.as_tensor(a, dtype=dtype, device=device)
+    deg = grid_node_degrees(n, edge_index).to(device=device, dtype=dtype)
 
     diag_scalar = kappa * (1.0 + a * deg)                      # [n]
     diag = diag_scalar.reshape(n, 1, 1)
@@ -180,7 +182,7 @@ def fit_grid_marginal_likelihood(
     init = init or {}
 
     def _inv_softplus(x):
-        x = torch.as_tensor(x, dtype=dtype)
+        x = torch.as_tensor(x, dtype=dtype, device=y.device)
         return torch.log(torch.expm1(x.clamp_min(1e-6)))
 
     raw_kappa = _inv_softplus(init.get("kappa", 1.0)).clone().requires_grad_(True)
@@ -229,13 +231,13 @@ def _marginal_nll_and_grads(
     with torch.no_grad():
         dtype = y.dtype
         n = rows * cols
-        kappa = torch.as_tensor(kappa, dtype=dtype)
-        a = torch.as_tensor(a, dtype=dtype)
-        s2 = torch.as_tensor(sigma2, dtype=dtype)
+        kappa = torch.as_tensor(kappa, dtype=dtype, device=y.device)
+        a = torch.as_tensor(a, dtype=dtype, device=y.device)
+        s2 = torch.as_tensor(sigma2, dtype=dtype, device=y.device)
 
         diag, ei, edge_val = grid_gmrf_precision(rows, cols, kappa, a)
         analysis = _resolve_analysis(n, ei, order, analysis)
-        deg = grid_node_degrees(n, ei).to(dtype)
+        deg = grid_node_degrees(n, ei).to(device=y.device, dtype=dtype)
         yb = y.reshape(-1, n, 1)
         nb = yb.shape[0]
 
@@ -302,7 +304,7 @@ def fit_grid_marginal_likelihood_analytic(
     init = init or {}
 
     def _inv_softplus(x):
-        x = torch.as_tensor(x, dtype=dtype)
+        x = torch.as_tensor(x, dtype=dtype, device=y.device)
         return torch.log(torch.expm1(x.clamp_min(1e-6)))
 
     raw_kappa = _inv_softplus(init.get("kappa", 1.0)).clone().requires_grad_(True)
