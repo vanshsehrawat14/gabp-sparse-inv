@@ -19,6 +19,7 @@ __all__ = [
     "block_norm",
     "local_scales",
     "check_pivot_growth",
+    "refuse_double_backward",
 ]
 
 
@@ -121,4 +122,22 @@ def check_pivot_growth(growth: Tensor, dtype: torch.dtype, power: float) -> None
             "unreliable. Use an elimination order that keeps the leading pivots well "
             "conditioned, compute in float64 (compute_dtype=torch.float64), or use a "
             "pivoted LU."
+        )
+
+
+def refuse_double_backward(name: str, alternative: str) -> None:
+    """Raise if autograd asks a first-order analytic backward for a differentiable gradient.
+
+    Autograd runs a custom backward with grad mode on exactly when the caller passed
+    ``create_graph=True`` (double backward, Hessian-vector products,
+    ``torch.autograd.functional.hessian``). These backwards read saved factors that are not
+    connected to the inputs, so a second derivative through them would be wrong or silently
+    zero; ``once_differentiable`` alone still lets ``torch.autograd.functional.hessian``
+    return zeros. Refusing here makes every such request fail loudly.
+    """
+    if torch.is_grad_enabled():
+        raise RuntimeError(
+            f"{name} has a first-order analytic backward and cannot build a differentiable "
+            "gradient (create_graph=True: double backward, Hessian-vector products, "
+            f"torch.autograd.functional.hessian). Use {alternative} for higher derivatives."
         )

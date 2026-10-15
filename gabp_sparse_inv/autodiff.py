@@ -22,10 +22,12 @@ A_{p(v),v}``). The returned cotangents ``barAd[v] = d f / d diag[v]`` and
 ``barAe[v] = d f / d edge[v]`` are gradients in the autograd sense w.r.t. those input
 tensors -- exactly what :func:`torch.autograd.gradcheck` verifies.
 
-**First-order only for this module.** ``backward`` runs under no-grad (the standard
-custom-Function contract). For Hessian-vector products use the functional junction kernels
-or ``selected_inverse_tree(batched=True)``; both pass ``gradgradcheck``
-(``tests/test_double_backward.py``).
+**First-order only.** The backward reads saved intermediates (``ell``, ``chol_D``) that are not
+connected to the inputs, so differentiating it again would drop terms. It therefore refuses
+to build a differentiable gradient: any ``create_graph=True`` request (double backward,
+Hessian-vector products, ``torch.autograd.functional.hessian``) through :func:`selinv_tree`
+raises. For higher derivatives use ``selected_inverse_tree(batched=True)`` or the functional
+junction kernels; both pass ``gradgradcheck`` (``tests/test_double_backward.py``).
 """
 
 from __future__ import annotations
@@ -35,7 +37,7 @@ from typing import Sequence
 import torch
 from torch import Tensor
 
-from ._linalg import inv_via_chol
+from ._linalg import inv_via_chol, refuse_double_backward
 from .layout import _as_parent_tensor, tree_levels, tree_orders
 from .tree import _level_index_tensors, selected_inverse_tree
 
@@ -179,6 +181,7 @@ class SelInvTree(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, barGd, barGe):
+        refuse_double_backward("selinv_tree", "selected_inverse_tree(batched=True)")
         if ctx.batched:
             barAd, barAe = _backward_batched(ctx, barGd, barGe)
         else:
@@ -215,7 +218,9 @@ def selinv_tree(
     -------
     (G_diag, G_edge):
         ``G_diag[v] = G_vv`` and ``G_edge[v] = G_{p(v),v}`` (root slot zero), with
-        autograd support w.r.t. ``diag`` and ``edge``.
+        first-order autograd support w.r.t. ``diag`` and ``edge``. A ``create_graph=True``
+        backward (second derivatives) raises; use
+        ``selected_inverse_tree(batched=True)`` for those.
     """
     if check:
         from .layout import BlockTree

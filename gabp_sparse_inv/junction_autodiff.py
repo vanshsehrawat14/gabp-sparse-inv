@@ -30,9 +30,12 @@ Each block touched lies in ``S`` (chordality). With ``w_v=|U_v|``, its arithmeti
 autograd tape's intermediates. Validated block-for-block against the autograd path and by
 ``gradcheck`` in ``tests/test_junction_autodiff.py``.
 
-**First-order only** (the standard custom-``Function`` contract: ``backward`` runs under
-no-grad). For Hessian-vector products use the functional :func:`~gabp_sparse_inv.selinv_junction`
-/ :func:`~gabp_sparse_inv.selinv_nonsym_junction`, which double-back through autograd.
+**First-order only.** The backwards read saved factors that are not connected to the inputs,
+so differentiating them again would drop terms. Both refuse to build a differentiable gradient:
+any ``create_graph=True`` request (double backward, Hessian-vector products,
+``torch.autograd.functional.hessian``) raises. For higher derivatives use the functional
+:func:`~gabp_sparse_inv.selinv_junction` / :func:`~gabp_sparse_inv.selinv_nonsym_junction`,
+which double-back through autograd.
 """
 
 from __future__ import annotations
@@ -42,7 +45,7 @@ from typing import Sequence
 import torch
 from torch import Tensor
 
-from ._linalg import inv_via_chol
+from ._linalg import inv_via_chol, refuse_double_backward
 from .junction import _normalize_edge_index, _selinv_junction_core
 from .nonsym_junction import _selinv_nonsym_junction_core
 
@@ -184,6 +187,7 @@ class SelInvJunction(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, barGd, barSi, barGl):
+        refuse_double_backward("selinv_junction_analytic", "selinv_junction")
         barAd, barAe = _backward_junction(ctx, barGd, barGl)
         return barAd, barAe, None, None
 
@@ -201,8 +205,9 @@ def selinv_junction_analytic(
     tape over the per-node loop), reusing the forward factors. With later-front sizes ``w_v``,
     work is ``Theta(sum_v(1+w_v^2) b^3)`` and numeric storage is
     ``Theta(sum_v(1+w_v) b^2)``; the current level-set metadata is also quadratic in ``w_v``.
-    Gradients to ``diag`` and ``edge_val``; **first-order only** (use the functional
-    :func:`~gabp_sparse_inv.selinv_junction` for Hessian-vector products).
+    Gradients to ``diag`` and ``edge_val``; **first-order only**: a ``create_graph=True``
+    backward raises (use the functional :func:`~gabp_sparse_inv.selinv_junction` for
+    Hessian-vector products).
     """
     edge_index = _normalize_edge_index(edge_index)
     return SelInvJunction.apply(diag, edge_val, edge_index, order)
@@ -354,6 +359,7 @@ class SelInvNonsymJunction(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, barGd, barSi, barGl, barGu):
+        refuse_double_backward("selinv_nonsym_junction_analytic", "selinv_nonsym_junction")
         barAd, barAel, barAeu = _backward_nonsym_junction(ctx, barGd, barGl, barGu)
         return barAd, barAel, barAeu, None, None
 
@@ -372,8 +378,9 @@ def selinv_nonsym_junction_analytic(
     the non-symmetric analogue of the §8.4 schedule, carrying independent lower/upper factor
     cotangents -- with no autograd tape. It has the same front-dependent work and numeric
     factor storage as the symmetric routine above. Gradients to ``diag``,
-    ``edge_lower`` and ``edge_upper``; **first-order only** (use the functional
-    :func:`~gabp_sparse_inv.selinv_nonsym_junction` for Hessian-vector products).
+    ``edge_lower`` and ``edge_upper``; **first-order only**: a ``create_graph=True`` backward
+    raises (use the functional :func:`~gabp_sparse_inv.selinv_nonsym_junction` for
+    Hessian-vector products).
     """
     edge_index = _normalize_edge_index(edge_index)
     return SelInvNonsymJunction.apply(diag, edge_lower, edge_upper, edge_index, order)

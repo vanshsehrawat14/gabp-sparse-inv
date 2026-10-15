@@ -22,7 +22,9 @@ non-symmetric machinery.
 is ``dG = -G (dM) G`` (folklore); restricted to the bidiagonal pattern it is a local,
 ``O(n)`` rule (``docs/derivations.md`` §9.2), implemented here as a hand-written analytic
 backward (the diagonal inverse is not re-differentiated by autograd -- the saved
-``G_diag = M_ii^{-1}`` carries the inverse VJP). First-order gradients only.
+``G_diag = M_ii^{-1}`` carries the inverse VJP). The backward applies differentiable
+operations to saved forward outputs, so second derivatives through it are also correct
+(``gradgradcheck`` in ``tests/test_double_backward.py``).
 """
 
 from __future__ import annotations
@@ -144,7 +146,7 @@ def selinv_bidiag(diag: Tensor, lower: Tensor, *, check: bool = False):
 
     Same forward result as :func:`selected_inverse_bidiag`, but ``(G_diag, G_lower)``
     are connected to ``diag`` and ``lower`` through the analytic backward of
-    :class:`SelInvBidiag`. First-order gradients only.
+    :class:`SelInvBidiag`, which also double-backs correctly.
     """
     if check:
         BlockBidiag(diag=diag, lower=lower).validate()
@@ -231,7 +233,8 @@ def selinv_tril(A: Tensor, *, check: bool = False) -> Tensor:
     """Autograd-connected ``T = (I - A)^{-1}`` (DeltaNet chunk inverse).
 
     Same forward as :func:`selected_inverse_tril`, with the analytic backward of
-    :class:`SelInvTril` (``bar_A = tril(T^T bar_T T^T, -1)``). First-order gradients only.
+    :class:`SelInvTril` (``bar_A = tril(T^T bar_T T^T, -1)``), which also double-backs
+    correctly (it differentiates only the saved output ``T``).
     """
     if check and (A.ndim < 2 or A.shape[-1] != A.shape[-2]):
         raise ValueError(f"A must be square [..., N, N]; got {tuple(A.shape)}")
