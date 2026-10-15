@@ -191,3 +191,34 @@ def test_empty_inputs_are_refused_clearly():
         gs.selected_inverse_junction(torch.zeros(0, 2, 2), torch.zeros(2, 0, dtype=torch.long), torch.zeros(0, 2, 2))
     with pytest.raises(ValueError, match="at least one node"):
         gs.selected_inverse_chain(torch.zeros(0, 2, 2), torch.zeros(0, 2, 2))
+
+
+def _spd_checked_calls(diag):
+    """check=True through every SPD layout, with ``diag`` as the (n=2) diagonal blocks."""
+    b = diag.shape[-1]
+    zero = torch.zeros(1, b, b, dtype=diag.dtype)
+    return [
+        lambda: gs.selected_inverse_chain(diag, zero, check=True),
+        lambda: gs.selected_inverse_star(diag[0], diag[1:], zero, check=True),
+        lambda: gs.selected_inverse_tree(diag, torch.cat([zero, zero]), [-1, 0], check=True),
+        lambda: gs.selected_inverse_junction(diag, torch.zeros(2, 0, dtype=torch.long),
+                                             torch.zeros(0, b, b, dtype=diag.dtype), check=True),
+    ]
+
+
+def test_symmetry_is_judged_per_block():
+    # 0.4.0 compared against max(1, largest entry anywhere): a fully asymmetric block of tiny
+    # entries passed, and so did an asymmetric unit block sitting next to a 1e12 block.
+    tiny = torch.tensor([[1e-12, 5e-11], [0.0, 1e-12]], dtype=F64)
+    masked = torch.tensor([[1.0, 1e-3], [0.0, 1.0]], dtype=F64)
+    for bad in (torch.stack([tiny, torch.eye(2, dtype=F64)]), torch.stack([masked, 1e12 * torch.eye(2, dtype=F64)])):
+        for call in _spd_checked_calls(bad):
+            with pytest.raises(ValueError, match="not symmetric"):
+                call()
+
+
+def test_roundoff_level_asymmetry_still_passes():
+    for scale in (1e-12, 1.0, 1e12):
+        block = scale * torch.tensor([[2.0, 0.5], [0.5 * (1 + 1e-14), 2.0]], dtype=F64)
+        for call in _spd_checked_calls(torch.stack([block, block])):
+            call()

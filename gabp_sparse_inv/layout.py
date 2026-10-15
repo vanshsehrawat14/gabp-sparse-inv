@@ -205,6 +205,22 @@ def tree_levels(parent: Tensor | Sequence[int]) -> list[list[int]]:
     return levels
 
 
+def _require_symmetric_blocks(label: str, blocks: Tensor, tol: float) -> None:
+    """Raise unless every ``b x b`` block is symmetric relative to its own largest entry.
+
+    Each block is judged on its own scale, so a large block elsewhere cannot hide an
+    asymmetric one and a block of tiny entries is not judged against an absolute floor.
+    """
+    asym = (blocks - blocks.mT).abs().amax(dim=(-2, -1))
+    size = blocks.abs().amax(dim=(-2, -1))
+    if bool((asym > tol * size).any()):
+        rel = asym / size.clamp_min(torch.finfo(blocks.dtype).tiny)
+        raise ValueError(
+            f"{label} blocks are not symmetric within tol={tol} "
+            f"(largest asymmetry relative to its block: {float(rel.max()):.3e})"
+        )
+
+
 def _require_finite(**tensors: Tensor) -> None:
     """Raise ``ValueError`` if any named tensor holds ``inf`` or ``nan``."""
     for name, t in tensors.items():
@@ -288,13 +304,7 @@ class BlockTridiag:
         tol = symmetry_tol
         if tol is None:
             tol = 1e-6 if self.diag.dtype in (torch.float16, torch.bfloat16, torch.float32) else 1e-10
-        asym = (self.diag - self.diag.mT).abs().amax()
-        scale = self.diag.abs().amax().clamp_min(1.0)
-        if asym > tol * scale:
-            raise ValueError(
-                f"diagonal blocks are not symmetric within tol={tol} "
-                f"(max asymmetry {float(asym):.3e}, scale {float(scale):.3e})"
-            )
+        _require_symmetric_blocks("diagonal", self.diag, tol)
         return self
 
     # -- dense bridges (tests / oracle only) -----------------------------------
@@ -559,13 +569,7 @@ class BlockStar:
         if tol is None:
             tol = 1e-6 if self.center.dtype in (torch.float16, torch.bfloat16, torch.float32) else 1e-10
         for label, blocks in (("center", self.center), ("leaf_diag", self.leaf_diag)):
-            asym = (blocks - blocks.mT).abs().amax()
-            scale = blocks.abs().amax().clamp_min(1.0)
-            if asym > tol * scale:
-                raise ValueError(
-                    f"{label} blocks are not symmetric within tol={tol} "
-                    f"(max asymmetry {float(asym):.3e}, scale {float(scale):.3e})"
-                )
+            _require_symmetric_blocks(label, blocks, tol)
         return self
 
     # -- dense bridges (tests / oracle only) -----------------------------------
@@ -716,13 +720,8 @@ class BlockTree:
         tol = symmetry_tol
         if tol is None:
             tol = 1e-6 if self.diag.dtype in (torch.float16, torch.bfloat16, torch.float32) else 1e-10
-        asym = (self.diag - self.diag.mT).abs().amax()
+        _require_symmetric_blocks("diagonal", self.diag, tol)
         scale = self.diag.abs().amax().clamp_min(1.0)
-        if asym > tol * scale:
-            raise ValueError(
-                f"diagonal blocks are not symmetric within tol={tol} "
-                f"(max asymmetry {float(asym):.3e}, scale {float(scale):.3e})"
-            )
         root_edge = self.edge[..., root, :, :].abs().amax()
         if root_edge > tol * scale:
             raise ValueError(
@@ -855,13 +854,7 @@ class BlockSparseSym:
         tol = symmetry_tol
         if tol is None:
             tol = 1e-6 if self.diag.dtype in (torch.float16, torch.bfloat16, torch.float32) else 1e-10
-        asym = (self.diag - self.diag.mT).abs().amax()
-        scale = self.diag.abs().amax().clamp_min(1.0)
-        if asym > tol * scale:
-            raise ValueError(
-                f"diagonal blocks are not symmetric within tol={tol} "
-                f"(max asymmetry {float(asym):.3e}, scale {float(scale):.3e})"
-            )
+        _require_symmetric_blocks("diagonal", self.diag, tol)
         return self
 
     # -- dense bridges (tests / oracle only) -----------------------------------
