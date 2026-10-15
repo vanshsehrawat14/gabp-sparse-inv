@@ -1,6 +1,7 @@
 # Contributing to gabp-sparse-inv
 
-By participating you agree to abide by the [Code of Conduct](CODE_OF_CONDUCT.md).
+Please keep discussions and contributions professional, respectful, and focused on
+improving the software.
 
 ## Questions
 
