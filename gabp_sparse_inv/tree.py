@@ -21,9 +21,11 @@ The schedule follows the validated topological orders from
 ``O(n)`` sweep over nodes; every ``b x b`` block op is batched over leading dims.
 ``O(n b^3)`` time, ``O(n b^2)`` storage.
 
-This is a **correctness reference** kernel: the sequential per-node loop is
-launch-latency-bound on GPU. Sibling/level-set batching (and a differentiable
-backward) belong to the differentiable-selinv work -- see ``docs/derivations.md`` §8.
+The sequential per-node loop is the correctness reference and is launch-latency-bound
+on GPU; ``batched=True`` runs one batched block op per height level instead. Both paths
+are written out of place, so reverse-mode autograd through either gives exact first and
+second derivatives. :func:`gabp_sparse_inv.selinv_tree` adds a hand-written first-order
+backward (``docs/derivations.md`` §8).
 
 Pivots are symmetrized before factorization (policy; see ``derivations.md`` §6).
 """
@@ -201,42 +203,50 @@ def selected_inverse_tree(
     n = diag.shape[-3]
     b = diag.shape[-1]
     batch = diag.shape[:-3]
+    zero = diag.new_zeros((*batch, b, b))
 
-    chol_D = diag.new_empty((*batch, n, b, b))
-    ell = diag.new_zeros((*batch, n, b, b))         # root slot stays zero
+    # Per-node blocks live in Python lists and are stacked at the end: writing them into
+    # preallocated buffers in place would break reverse-mode autograd through this loop.
+    chol: list[Tensor | None] = [None] * n
+    ell_l: list[Tensor] = [zero] * n                 # root slot stays zero
 
     # ---- collect: eliminate children into parents (leaves -> root) ----------
-    P = diag.clone()                                 # working pivots D_v
+    P = [diag[..., v, :, :] for v in range(n)]      # working pivots D_v
     for v in collect_order:
-        Pv = 0.5 * (P[..., v, :, :] + P[..., v, :, :].mT)   # symmetrize pivot (policy)
+        Pv = 0.5 * (P[v] + P[v].mT)                  # symmetrize pivot (policy)
+        P[v] = None                                   # no longer needed; free it early
         chol_v = cholesky_spd(Pv, name=f"D_{v}")
-        chol_D[..., v, :, :] = chol_v
+        chol[v] = chol_v
         if v != root:
             U_v = edge[..., v, :, :]                  # A_{p(v),v}
             # ell_v = U_v D_v^{-1} = (D_v^{-1} U_v^T)^T = cholesky_solve(U_v^T, chol_v)^T.
             ell_v = torch.cholesky_solve(U_v.mT, chol_v).mT
-            ell[..., v, :, :] = ell_v
+            ell_l[v] = ell_v
             # Subtract this child's Schur term U_v D_v^{-1} U_v^T from the parent pivot.
             pv = plist[v]
-            P[..., pv, :, :] = P[..., pv, :, :] - ell_v @ U_v.mT
+            P[pv] = P[pv] - ell_v @ U_v.mT
 
     # ---- distribute: root marginal, then each child (root -> leaves) --------
-    G_diag = diag.new_empty((*batch, n, b, b))
-    G_edge = diag.new_zeros((*batch, n, b, b))       # root slot stays zero
+    G_d: list[Tensor | None] = [None] * n
+    G_e: list[Tensor] = [zero] * n                   # root slot stays zero
 
-    G_root = inv_via_chol(chol_D[..., root, :, :])
-    G_diag[..., root, :, :] = 0.5 * (G_root + G_root.mT)
+    G_root = inv_via_chol(chol[root])
+    G_d[root] = 0.5 * (G_root + G_root.mT)
     for v in reversed(collect_order):
         if v == root:
             continue
         pv = plist[v]
-        ell_v = ell[..., v, :, :]
-        Gpp = G_diag[..., pv, :, :]                   # parent already computed
-        G_pv = -(Gpp @ ell_v)                         # G_{p(v),v}
-        G_edge[..., v, :, :] = G_pv
-        Dv_inv = inv_via_chol(chol_D[..., v, :, :])
+        ell_v = ell_l[v]
+        Gpp = G_d[pv]                                 # parent already computed
+        G_e[v] = -(Gpp @ ell_v)                       # G_{p(v),v}
+        Dv_inv = inv_via_chol(chol[v])
         G_vv = Dv_inv + ell_v.mT @ Gpp @ ell_v        # = D_v^{-1} + ell^T G_pp ell
-        G_diag[..., v, :, :] = 0.5 * (G_vv + G_vv.mT)
+        G_d[v] = 0.5 * (G_vv + G_vv.mT)
+
+    G_diag = torch.stack(G_d, dim=-3)
+    G_edge = torch.stack(G_e, dim=-3)
+    chol_D = torch.stack(chol, dim=-3)
+    ell = torch.stack(ell_l, dim=-3)
 
     if compute_dtype is not None and compute_dtype != in_dtype:
         G_diag = G_diag.to(in_dtype)

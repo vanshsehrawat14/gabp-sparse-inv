@@ -11,6 +11,7 @@ from gabp_sparse_inv import (
     selected_inverse_chain,
     selected_inverse_star,
     selected_inverse_tree,
+    selinv_tree,
 )
 from gabp_sparse_inv.bench import metrics
 
@@ -303,3 +304,20 @@ def test_adjoint_logdet_matches_autograd():
             # grad block (p,v) = (A^{-1})_{p,v} = G_edge[v].
             ge = grad[p * b:(p + 1) * b, v * b:(v + 1) * b]
             assert torch.allclose(G_edge[v], ge, atol=1e-9)
+
+
+@pytest.mark.parametrize("batched", [False, True])
+def test_default_tree_path_is_differentiable(batched):
+    # 0.4.0's per-node loop (the default) wrote into preallocated buffers in place, so
+    # .backward() raised although the README promised gradients for every operation.
+    bt = random_spd_tree(7, 2, seed=4, kind="random", diag_load=1.0)
+    d = bt.diag.clone().requires_grad_(True)
+    e = bt.edge.clone().requires_grad_(True)
+    Gd, Ge = selected_inverse_tree(d, e, bt.parent, batched=batched)
+    gd, ge = torch.autograd.grad((Gd ** 2).sum() + (Ge ** 2).sum(), (d, e))
+    d2 = bt.diag.clone().requires_grad_(True)
+    e2 = bt.edge.clone().requires_grad_(True)
+    Gd2, Ge2 = selinv_tree(d2, e2, bt.parent)
+    rd, re = torch.autograd.grad((Gd2 ** 2).sum() + (Ge2 ** 2).sum(), (d2, e2))
+    torch.testing.assert_close(gd, rd)
+    torch.testing.assert_close(ge, re)

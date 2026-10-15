@@ -8,9 +8,7 @@ reusing the forward factors ``(chol_D, ell)`` and the selected blocks ``G_diag``
 The backward is the same-structure reverse schedule of §8.2 -- a reverse-distribute
 sweep (leaves->root) followed by a reverse-collect sweep (root->leaves) on the same
 elimination tree. It costs ``O((|V|+|E|) b^3)`` time and ``O((|V|+|E|) b^2)`` memory,
-identical to the forward pass, and never tapes the per-node loop through autograd
-(the shipped forward loop is in fact *not* autograd-traceable -- it writes into
-preallocated buffers -- which is part of why this analytic backward exists).
+identical to the forward pass, and never tapes the per-node loop through autograd.
 
 Both passes have a per-node ``loop`` form (the correctness reference) and a level-set
 ``batched`` form (one batched solve + one ``index_add_`` per height antichain, the
@@ -26,8 +24,8 @@ tensors -- exactly what :func:`torch.autograd.gradcheck` verifies.
 connected to the inputs, so differentiating it again would drop terms. It therefore refuses
 to build a differentiable gradient: any ``create_graph=True`` request (double backward,
 Hessian-vector products, ``torch.autograd.functional.hessian``) through :func:`selinv_tree`
-raises. For higher derivatives use ``selected_inverse_tree(batched=True)`` or the functional
-junction kernels; both pass ``gradgradcheck`` (``tests/test_double_backward.py``).
+raises. For higher derivatives use :func:`~gabp_sparse_inv.selected_inverse_tree` (either path) or
+the functional junction kernels; they pass ``gradgradcheck`` (``tests/test_double_backward.py``).
 """
 
 from __future__ import annotations
@@ -181,7 +179,7 @@ class SelInvTree(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, barGd, barGe):
-        refuse_double_backward("selinv_tree", "selected_inverse_tree(batched=True)")
+        refuse_double_backward("selinv_tree", "selected_inverse_tree")
         if ctx.batched:
             barAd, barAe = _backward_batched(ctx, barGd, barGe)
         else:
@@ -220,7 +218,7 @@ def selinv_tree(
         ``G_diag[v] = G_vv`` and ``G_edge[v] = G_{p(v),v}`` (root slot zero), with
         first-order autograd support w.r.t. ``diag`` and ``edge``. A ``create_graph=True``
         backward (second derivatives) raises; use
-        ``selected_inverse_tree(batched=True)`` for those.
+        :func:`gabp_sparse_inv.selected_inverse_tree` for those.
     """
     parent_t = _check_tree(diag, parent, edge=edge)
     if check:

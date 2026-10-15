@@ -5,11 +5,9 @@ Second-order autograd (needed for Laplace approximation / natural-gradient uses)
 
 * the **junction** selected inverse / solve / log-det are written functionally, so
   ``gradgradcheck`` passes directly;
-* the **tree** selected inverse double-backs through its *level-set batched* functional
-  forward (``selected_inverse_tree(batched=True)``); the per-node reference loop and the
-  memory-lean analytic ``selinv_tree`` backward are **first-order only** (in-place block
-  writes / a once-differentiable analytic adjoint) -- use the batched functional forward
-  when HVPs are required.
+* the **tree** selected inverse double-backs through both of its functional forwards
+  (``selected_inverse_tree``, per-node or ``batched=True``). 0.4.0's per-node loop wrote into
+  preallocated buffers in place and could not even run a first-order backward;
 
 * the hand-written analytic backwards (``selinv_tree``, ``selinv_junction_analytic``,
   ``selinv_nonsym_junction_analytic``) read saved factors that are not connected to the
@@ -142,16 +140,14 @@ def test_tree_batched_functional_gradgradcheck():
     )
 
 
-def test_tree_per_node_loop_is_first_order_only():
-    """The per-node reference loop uses in-place block writes => no second order (documented)."""
+def test_tree_per_node_functional_gradgradcheck():
     bt = random_spd_tree(6, 2, seed=1, kind="random", diag_load=1.0)
     d = bt.diag.clone().requires_grad_(True)
     e = bt.edge.clone().requires_grad_(True)
-    with pytest.raises(RuntimeError):
-        torch.autograd.gradgradcheck(
-            lambda d, e: selected_inverse_tree(d, e, bt.parent, batched=False),
-            (d, e), atol=1e-4, rtol=1e-3,
-        )
+    assert torch.autograd.gradgradcheck(
+        lambda d, e: selected_inverse_tree(d, e, bt.parent, batched=False),
+        (d, e), atol=1e-4, rtol=1e-3,
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -246,13 +242,14 @@ def test_chain_and_star_hvp_match_dense():
     _assert_hvp_close(star_kernel, star_dense, (st.center, st.leaf_diag, st.coupling))
 
 
-def test_tree_batched_hvp_matches_dense():
+@pytest.mark.parametrize("batched", [False, True])
+def test_tree_hvp_matches_dense(batched):
     bt = random_spd_tree(6, 2, seed=1, kind="random", diag_load=1.0)
     plist = bt.parent.tolist()
     pairs = [(v, v) for v in range(6)] + [(plist[v], v) for v in range(6) if plist[v] >= 0]
 
     def kernel(d, e):
-        Gd, Ge = selected_inverse_tree(_sym(d), e, bt.parent, batched=True)
+        Gd, Ge = selected_inverse_tree(_sym(d), e, bt.parent, batched=batched)
         return Gd.square().sum() + Ge.square().sum()
 
     def dense(d, e):
