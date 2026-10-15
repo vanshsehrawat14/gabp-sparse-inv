@@ -9,6 +9,106 @@ release.
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-10-15
+
+A corrective release. An independent review of 0.4.0 found several cases where the package
+returned wrong numbers without raising, although every first-order test passed. Each case
+below now returns a result checked against a dense reference or raises a clear error.
+
+### Upgrading from 0.4.0
+
+Code written for 0.4.0 can behave differently in these cases.
+
+- Edge lists are checked on every call, not only with `check=True`: integer indices in
+  range, `i > j`, each block once. Unchecked 0.4.0 calls summed a list that held both
+  orientations of an edge (the PyTorch Geometric convention) or a repeated block into a
+  different matrix, and accepted an `i < j` listing that `check=True` rejected. Convert a
+  both-direction list with `keep = edge_index[0] > edge_index[1]; edge_index, edge_val =
+  edge_index[:, keep], edge_val[keep]` (the non-symmetric kernels take the dropped `(j, i)`
+  blocks as `edge_upper`), and an upper-triangle list with `edge_index.flip(0)` and
+  `edge_val.mT`.
+- Tree parent arrays must hold integers and have one entry per node. Floating-point parents
+  raise `TypeError` (0.4.0 truncated them, even with `check=True`), and a parent array
+  shorter than `diag` raises instead of leaving uninitialized output blocks. Block tensors
+  with the wrong number of blocks raise `ValueError` instead of being ignored or broadcast.
+- The non-symmetric kernels refuse more eliminations. The growth guard now measures growth
+  locally, and selected inverses use a stricter limit than solves: `eps^{-1/4}` (about `54`
+  in float32 and `8.2e3` in float64) instead of `eps^{-1/2}`. Float32 problems that are not
+  diagonally dominant can now raise where 0.4.0 returned blocks; `compute_dtype=torch.float64`
+  or a better elimination order usually avoids it.
+- `selinv_tree`, `selinv_junction_analytic` and `selinv_nonsym_junction_analytic` raise
+  `RuntimeError` when asked for a differentiable gradient (`create_graph=True`: double
+  backward, Hessian-vector products, `torch.autograd.functional.hessian`). 0.4.0 returned
+  Hessian-vector products off by about 60%. `selected_inverse_tree`, `selinv_junction` and
+  `selinv_nonsym_junction` give correct second derivatives.
+- `junction_posterior_marginal_variances` returns per-coordinate variances of shape
+  `[..., n, b]` for block nodes (`b > 1`); 0.4.0 returned the sum of the `b` variances of
+  each node. Scalar nodes still give `[..., n]`.
+- `check=True` and `validate()` judge each diagonal block's symmetry against its own
+  entries. 0.4.0 compared against `max(1, largest entry anywhere)`, so an asymmetric block
+  of small entries, or one next to a much larger block, passed.
+- Failing SPD pivots are named by their 0-based node index in every path; the chain counted
+  from 1 and the batched paths named only the elimination level.
+
+### Fixed
+
+- Non-symmetric growth guard. 0.4.0 divided the growth by the largest input entry of the
+  whole matrix, so one large block anywhere, even a disconnected one, switched the guard off:
+  `[[1e-18, 1], [2, 1]]` plus an isolated node `1e12` gave `G_00 = 128` instead of `-0.5`
+  from `selected_inverse_nonsym_junction(check=True)`, `selinv_nonsym_junction`,
+  `selinv_nonsym_junction_analytic`, `nonsym_junction_solve` and
+  `selected_inverse_nonsym_tree`, and in float32 an isolated node of `1e5` was enough. The
+  guard now compares each reduced block and each factor product `||L|| ||D|| ||U||` with the
+  largest input entries of its own block row and column. Selected-inverse errors grow like
+  `u * growth^2` rather than `u * growth`: on a matrix with condition number 5.6 that 0.4.0
+  accepted at growth `1e7`, the selected blocks were wrong by `2.5e-3` while a solve was
+  accurate to `1e-9`, hence the separate limits. The guard is a heuristic;
+  `docs/derivations.md` §10.4 states what it does and does not guarantee.
+- Second derivatives through the analytic backwards were silently wrong (see above).
+  `once_differentiable` alone would still let `torch.autograd.functional.hessian` return
+  zeros, so these backwards refuse every `create_graph=True` request.
+- Edge lists, parents and block counts were validated only with `check=True`, or not at all
+  (see above). Negative or out-of-range indices and empty inputs now raise `ValueError` with
+  a message instead of a `KeyError` or `RuntimeError` from inside the kernel.
+- `selected_inverse_tree` with the default `batched=False` wrote into preallocated buffers
+  in place, so `.backward()` raised although the README documented every operation as
+  differentiable. It now gives exact first and second derivatives. Its forward time is
+  unchanged; its peak memory is higher (about 136 MiB instead of 55 MiB above the inputs
+  for `n = 20000`, `b = 8`), and `batched=True`, unchanged, remains the route for large
+  trees.
+- `junction_posterior_marginal_variances` returned the wrong quantity for `b > 1` (see
+  above).
+- `grid_gmrf_precision` built its degree vector on the CPU whatever the device of `kappa`
+  and `a`; its values now follow the device of the hyperparameters. The tree and grid fit
+  helpers create their parameters on the device of `y`. GPU use is still untested.
+- `tree_logdet` reported a non-SPD pivot through a bare backend error; it now names the
+  node like the other kernels.
+
+### Documentation
+
+- `derivations.md` §6 quotes Higham's Cholesky bound correctly, `|ΔD| <= gamma_{b+1}
+  |R̂^T||R̂|` (Theorem 10.3; it said `(b+1) gamma_{b+1}`), and gives the normwise constants,
+  which grow like `b^2`, `b^{3/2}` and `b^2` for Cholesky, triangular solves and products
+  rather than like `b`. A computed triangular inverse has a columnwise backward error, not
+  one nearby matrix. §8.4 no longer calls the reverse schedule self-adjoint, and the §8
+  arguments are labelled as derivations checked against autograd. §10.4 describes the new
+  guard and a randomized check of it.
+- `bench/stability.py` no longer asserts the retracted height- and condition-independent
+  backward-error theorem in its docstring and command-line help.
+- The cost formulas state that `w_v` counts later neighbours in the filled graph, and the
+  README and `ARCHITECTURE.md` note the cost of the default minimum-degree ordering.
+- The README states that the condition number alone does not control the non-symmetric
+  kernels, that float16 and bfloat16 inputs need `compute_dtype`, that GPU use is untested,
+  and which gradient route to use when, with labelled CPU timings. References to removed
+  research demonstrations are gone from the package and documentation.
+
+### Added
+
+- `tests/test_cuda.py`, a CUDA smoke test that compares the main entry points with the CPU
+  results; it is skipped without a CUDA device and has not been run on GPU hardware for
+  this release.
+- Regression tests for each defect above.
+
 ## [0.4.0] - 2026-10-14
 
 ### Upgrading from 0.3.4
@@ -174,7 +274,8 @@ First release, prepared for submission to the Journal of Open Source Software.
   expanded project URLs, a JOSS paper draft (`paper/joss/`), and CI across
   Ubuntu / Windows on Python 3.12 and 3.13, and macOS on Python 3.12.
 
-[Unreleased]: https://github.com/vanshsehrawat14/gabp-sparse-inv/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/vanshsehrawat14/gabp-sparse-inv/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/vanshsehrawat14/gabp-sparse-inv/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/vanshsehrawat14/gabp-sparse-inv/compare/v0.3.4...v0.4.0
 [0.3.4]: https://github.com/vanshsehrawat14/gabp-sparse-inv/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/vanshsehrawat14/gabp-sparse-inv/compare/v0.3.2...v0.3.3
