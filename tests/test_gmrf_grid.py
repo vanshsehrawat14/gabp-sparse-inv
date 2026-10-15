@@ -24,6 +24,7 @@ from gabp_sparse_inv import (
     grid_node_degrees,
     junction_marginal_log_likelihood,
     junction_posterior_marginal_variances,
+    random_spd_graph,
     sample_gaussian_junction,
 )
 from gabp_sparse_inv.junction import _normalize_edge_index
@@ -236,3 +237,16 @@ def test_single_node_likelihood_matches_closed_form_at_tiny_noise():
     (grad,) = torch.autograd.grad(val, s)
     assert val.item() == pytest.approx(-0.5 * (math.log(2 * math.pi) + math.log(v) + y0 * y0 / v), rel=1e-14)
     assert grad.item() == pytest.approx(0.5 * (y0 * y0 / v ** 2 - 1.0 / v), rel=1e-14)
+
+
+@pytest.mark.parametrize("b", [1, 2, 3])
+def test_posterior_variances_are_per_coordinate_for_block_nodes(b):
+    # 0.4.0 summed the b variances of each node into a [n] tensor; the documented object is
+    # diag(Q_post^{-1}), one variance per coordinate.
+    A = random_spd_graph(5, [(1, 0), (2, 1), (3, 2), (4, 3), (4, 1)], b, seed=0, diag_load=1.0)
+    sigma2 = 0.5
+    v = junction_posterior_marginal_variances(A.diag, A.edge_index, A.edge_val, sigma2)
+    Q_post = A.to_dense() + (1.0 / sigma2) * torch.eye(5 * b, dtype=torch.float64)
+    want = torch.diagonal(torch.linalg.inv(Q_post)).reshape(5, b)
+    assert v.shape == ((5,) if b == 1 else (5, b))
+    torch.testing.assert_close(v.reshape(5, b), want)

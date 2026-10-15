@@ -154,15 +154,17 @@ def junction_posterior_marginal_variances(
 ):
     """Posterior marginal variances ``diag(Q_post^{-1})`` via the junction selected inverse.
 
-    Returns a ``[..., n]`` tensor of scalar variances (``Q_post = Q + sigma2^{-1} I``). The
-    gradient w.r.t. ``theta`` flows through the functional selected-inverse schedule. A supplied
+    Returns the per-coordinate variances (``Q_post = Q + sigma2^{-1} I``): a ``[..., n]``
+    tensor for scalar nodes (``b = 1``) and ``[..., n, b]`` for block nodes. The gradient
+    w.r.t. ``theta`` flows through the functional selected-inverse schedule. A supplied
     :class:`~gabp_sparse_inv.JunctionAnalysis` reuses the symbolic plan.
     """
     eye = torch.eye(diag.shape[-1], dtype=diag.dtype, device=diag.device)
     sigma2 = torch.as_tensor(sigma2, dtype=diag.dtype, device=diag.device)
     diag_post = diag + (1.0 / sigma2) * eye
     analysis = _resolve_analysis(diag.shape[-3], edge_index, order, analysis)
-    return analysis.factor(diag_post, edge_val).marginal_diag().sum(-1)
+    variances = analysis.factor(diag_post, edge_val).marginal_diag()
+    return variances.squeeze(-1) if variances.shape[-1] == 1 else variances
 
 
 def fit_grid_marginal_likelihood(
