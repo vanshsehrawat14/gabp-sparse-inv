@@ -36,7 +36,7 @@ import torch
 from torch import Tensor
 
 from ._linalg import cholesky_spd, inv_via_chol
-from .layout import BlockTree, _as_parent_tensor, tree_levels, tree_orders
+from .layout import BlockTree, _check_tree, tree_levels, tree_orders
 
 __all__ = ["selected_inverse_tree", "TreeFactors"]
 
@@ -148,7 +148,8 @@ def selected_inverse_tree(
         1-D ``long`` parent array of length ``n`` (``parent[root] = -1``); the topology
         is shared across leading batch dims and is not batched.
     check:
-        If ``True``, validate inputs (shape / dtype / symmetry / topology) first.
+        If ``True``, also validate values (dtype / finiteness / block symmetry / zero root
+        slot). Structural checks (shapes, an integer parent array forming one tree) always run.
     return_factors:
         If ``True``, also return the :class:`TreeFactors` from the collect pass.
     compute_dtype:
@@ -169,10 +170,10 @@ def selected_inverse_tree(
         ``G_edge`` ``[..., n, b, b]`` holds the cross blocks ``G_{p(v),v}`` (so
         ``G_{v,p(v)} = G_edge[v].mT``). The root slot of ``G_edge`` is zero.
     """
+    parent = _check_tree(diag, parent, edge=edge)
     if check:
         BlockTree(diag=diag, edge=edge, parent=parent).validate()
 
-    parent = _as_parent_tensor(parent)
     plist = parent.tolist()
     root, _children, collect_order = tree_orders(parent)
 

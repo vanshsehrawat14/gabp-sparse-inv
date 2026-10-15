@@ -41,7 +41,7 @@ from ._linalg import (
     check_pivot_growth,
     local_scales,
 )
-from .layout import BlockBidiag, _as_parent_tensor, _require_finite, tree_orders
+from .layout import BlockBidiag, _check_blocks, _check_tree, _require_finite, tree_orders
 
 __all__ = [
     "selected_inverse_bidiag",
@@ -70,7 +70,8 @@ def selected_inverse_bidiag(
     lower:
         Sub-diagonal blocks ``lower[i] = M_{i+1,i}``: ``[..., n-1, b, b]``.
     check:
-        If ``True``, validate the block-bidiagonal inputs before computing.
+        If ``True``, also validate values (dtype / finiteness). Block shapes and counts are
+        always checked.
     compute_dtype:
         If given, all linear algebra runs in this dtype (inputs upcast, result cast
         back); mirrors the SPD kernels' low-precision-storage path.
@@ -81,6 +82,8 @@ def selected_inverse_bidiag(
         ``G_diag[i] = (M^{-1})_{ii}`` ``[..., n, b, b]`` and
         ``G_lower[i] = (M^{-1})_{i+1,i}`` ``[..., n-1, b, b]``.
     """
+    _check_blocks(diag)
+    _check_blocks(diag, diag.shape[-3] - 1, lower=lower)
     if check:
         BlockBidiag(diag=diag, lower=lower).validate()
 
@@ -148,6 +151,8 @@ def selinv_bidiag(diag: Tensor, lower: Tensor, *, check: bool = False):
     are connected to ``diag`` and ``lower`` through the analytic backward of
     :class:`SelInvBidiag`, which also double-backs correctly.
     """
+    _check_blocks(diag)
+    _check_blocks(diag, diag.shape[-3] - 1, lower=lower)
     if check:
         BlockBidiag(diag=diag, lower=lower).validate()
     return SelInvBidiag.apply(diag, lower)
@@ -291,7 +296,8 @@ def selected_inverse_nonsym_tree(
         1-D ``long`` parent array of length ``n`` (``parent[root] = -1``); shared across
         leading batch dims (not batched).
     check:
-        If ``True``, validate shapes / parent topology first.
+        If ``True``, also require finite values. Structural checks (shapes, an integer parent
+        array forming one tree) always run.
     compute_dtype:
         If given, all linear algebra runs in this dtype (inputs upcast, result cast back).
 
@@ -307,14 +313,8 @@ def selected_inverse_nonsym_tree(
     any loss over the selected blocks flow to ``diag``, ``edge_pc`` and ``edge_cp`` by
     reverse-mode, with no custom backward. First- and higher-order both available via autograd.
     """
-    parent_t = _as_parent_tensor(parent)
+    parent_t = _check_tree(diag, parent, edge_pc=edge_pc, edge_cp=edge_cp)
     if check:
-        n_chk = diag.shape[-3]
-        if parent_t.numel() != n_chk:
-            raise ValueError(f"parent length {parent_t.numel()} != n={n_chk}")
-        for t, nm in ((edge_pc, "edge_pc"), (edge_cp, "edge_cp")):
-            if t.shape != diag.shape:
-                raise ValueError(f"{nm} must match diag shape {tuple(diag.shape)}; got {tuple(t.shape)}")
         _require_finite(diag=diag, edge_pc=edge_pc, edge_cp=edge_cp)
 
     in_dtype = diag.dtype

@@ -33,7 +33,7 @@ import torch
 from torch import Tensor
 
 from ._linalg import cholesky_spd, inv_via_chol
-from .layout import BlockStar
+from .layout import BlockStar, _check_blocks
 
 __all__ = ["selected_inverse_star", "StarFactors"]
 
@@ -80,7 +80,8 @@ def selected_inverse_star(
         Center->leaf coupling blocks ``A_0j``: ``[..., K, b, b]``
         (``A_{j,0} = coupling[..., j].mT``).
     check:
-        If ``True``, validate inputs (shape / dtype / symmetry) before factorizing.
+        If ``True``, also validate values (dtype / finiteness / block symmetry) before
+        factorizing. Block shapes and counts are always checked.
     return_factors:
         If ``True``, also return the :class:`StarFactors` from the collect pass.
     compute_dtype:
@@ -97,6 +98,10 @@ def selected_inverse_star(
         ``G_cross`` ``[..., K, b, b]`` holds the cross blocks ``G_{j,0}`` (so
         ``G_{0,j} = G_cross[..., j].mT``).
     """
+    _check_blocks(leaf_diag, coupling=coupling)
+    if center.ndim < 2 or tuple(center.shape[-2:]) != tuple(leaf_diag.shape[-2:]):
+        raise ValueError(f"center must have shape [..., {leaf_diag.shape[-1]}, {leaf_diag.shape[-1]}]; "
+                         f"got {tuple(center.shape)}")
     if check:
         BlockStar(center=center, leaf_diag=leaf_diag, coupling=coupling).validate()
 

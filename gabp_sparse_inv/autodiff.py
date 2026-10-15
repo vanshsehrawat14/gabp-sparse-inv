@@ -38,7 +38,7 @@ import torch
 from torch import Tensor
 
 from ._linalg import inv_via_chol, refuse_double_backward
-from .layout import _as_parent_tensor, tree_levels, tree_orders
+from .layout import _check_tree, tree_levels, tree_orders
 from .tree import _level_index_tensors, selected_inverse_tree
 
 __all__ = ["selinv_tree", "SelInvTree"]
@@ -209,7 +209,7 @@ def selinv_tree(
     diag, edge, parent:
         As in :func:`gabp_sparse_inv.selected_inverse_tree`.
     check:
-        If ``True``, validate the block-tree inputs before computing.
+        If ``True``, also validate the block values (structural checks always run).
     batched:
         If ``True``, use the level-set batched forward and backward (same result;
         amortizes launch latency on GPU). Default is the per-node reference loop.
@@ -222,10 +222,10 @@ def selinv_tree(
         backward (second derivatives) raises; use
         ``selected_inverse_tree(batched=True)`` for those.
     """
+    parent_t = _check_tree(diag, parent, edge=edge)
     if check:
         from .layout import BlockTree
 
-        BlockTree(diag=diag, edge=edge, parent=parent).validate()
-    parent_t = _as_parent_tensor(parent)
+        BlockTree(diag=diag, edge=edge, parent=parent_t).validate()
     root, children, collect_order = tree_orders(parent_t)
     return SelInvTree.apply(diag, edge, parent_t, root, children, collect_order, batched)

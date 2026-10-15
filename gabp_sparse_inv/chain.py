@@ -20,7 +20,7 @@ import torch
 from torch import Tensor
 
 from ._linalg import cholesky_spd, inv_via_chol
-from .layout import BlockTridiag
+from .layout import BlockTridiag, _check_blocks
 
 __all__ = ["selected_inverse_chain", "ChainFactors"]
 
@@ -66,7 +66,8 @@ def selected_inverse_chain(
     lower:
         Sub-diagonal blocks ``A_{i+1,i}``: ``[..., L-1, b, b]``.
     check:
-        If ``True``, validate inputs (shape / dtype / symmetry) before factorizing.
+        If ``True``, also validate values (dtype / finiteness / block symmetry) before
+        factorizing. Block shapes and counts are always checked.
     return_factors:
         If ``True``, also return the :class:`ChainFactors` from the forward pass.
     compute_dtype:
@@ -82,6 +83,8 @@ def selected_inverse_chain(
         ``A^{-1}``; ``G_lower`` ``[..., L-1, b, b]`` holds the sub-diagonal blocks
         (``G_{i,i+1} = G_lower[..., i].mT``).
     """
+    _check_blocks(diag)
+    _check_blocks(diag, diag.shape[-3] - 1, lower=lower)
     if check:
         BlockTridiag(diag=diag, lower=lower).validate()
 

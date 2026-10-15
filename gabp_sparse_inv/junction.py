@@ -52,6 +52,8 @@ import torch
 from torch import Tensor
 
 from ._linalg import cholesky_spd, inv_via_chol
+from .layout import _as_edge_index as _normalize_edge_index
+from .layout import _check_edge_index, _check_junction
 
 __all__ = [
     "JunctionAnalysis",
@@ -64,20 +66,6 @@ __all__ = [
     "elimination_order_min_degree",
     "elimination_order_nested_dissection",
 ]
-
-
-def _normalize_edge_index(edge_index: Tensor | Sequence[Sequence[int]]) -> Tensor:
-    """Normalize an edge index to a CPU ``long`` ``[2, m]`` tensor (not batched).
-
-    Non-integer indices are rejected rather than truncated toward zero.
-    """
-    ei = edge_index.detach() if isinstance(edge_index, Tensor) else torch.as_tensor(edge_index)
-    if ei.numel() > 0 and (ei.is_floating_point() or ei.is_complex() or ei.dtype == torch.bool):
-        raise TypeError(f"edge_index must hold integers; got dtype {ei.dtype}")
-    ei = ei.to(device="cpu", dtype=torch.long)
-    if ei.ndim != 2 or ei.shape[0] != 2:
-        raise ValueError(f"edge_index must have shape [2, m]; got {tuple(ei.shape)}")
-    return ei
 
 
 def _rhs_is_vector(b: Tensor, diag_shape) -> bool:
@@ -229,15 +217,7 @@ class JunctionAnalysis:
         if not isinstance(n, int) or isinstance(n, bool) or n < 1:
             raise ValueError(f"n must be a positive integer; got {n!r}")
         ei = _normalize_edge_index(edge_index).clone()
-        if ei.numel() > 0:
-            if int(ei.min()) < 0 or int(ei.max()) >= n:
-                raise ValueError(f"edge_index entries must lie in [0, {n}); got range "
-                                 f"[{int(ei.min())}, {int(ei.max())}]")
-            if torch.any(ei[0] <= ei[1]):
-                raise ValueError("edge_index must contain lower-triangular positions i > j")
-            keys = ei[0] * n + ei[1]
-            if torch.unique(keys).numel() != keys.numel():
-                raise ValueError("edge_index contains duplicate edges")
+        _check_edge_index(ei, n)
         symbolic = _symbolic(n, ei, order)
         self.n = n
         self.edge_index = ei
@@ -1020,16 +1000,19 @@ def selected_inverse_junction(
     diag:
         Node diagonal blocks ``A_vv``: ``[..., n, b, b]`` (each symmetric).
     edge_index:
-        ``[2, m]`` long tensor of off-diagonal block positions ``(i, j)`` with
-        ``i > j`` (node index); the upper triangle is implied by symmetry. Shared
-        across leading batch dims (not batched).
+        ``[2, m]`` integer tensor of off-diagonal block positions ``(i, j)`` with
+        ``i > j`` (node index), each block listed once; the upper triangle is implied by
+        symmetry. A list holding both orientations or a repeated block raises (convert a
+        both-direction list with ``keep = edge_index[0] > edge_index[1]``). Shared across
+        leading batch dims (not batched).
     edge_val:
         Off-diagonal blocks ``edge_val[..., k, :, :] = A_{i_k, j_k}``: ``[..., m, b, b]``.
     order:
         Optional explicit elimination order (a permutation of ``range(n)``). Defaults
         to a greedy minimum-degree order computed from the pattern.
     check:
-        If ``True``, validate inputs (shapes / dtype / symmetry / index range) first.
+        If ``True``, also validate values (dtype / finiteness / block symmetry). Structural
+        checks (shapes, integer in-range ``i > j`` indices without duplicates) always run.
     compute_dtype:
         If given, all linear algebra runs in this dtype (inputs upcast, result cast
         back). Mirrors the chain/star/tree kernels: models low-precision *storage* while
@@ -1050,11 +1033,11 @@ def selected_inverse_junction(
         ``edge_index`` when elimination creates fill), and ``G_lower``
         ``[..., m_S, b, b]`` holds ``G_{i_k, j_k}`` (so ``G_{j,i} = G_lower[k].mT``).
     """
+    edge_index = _check_junction(diag, edge_index, edge_val=edge_val)
     if check:
         from .layout import BlockSparseSym
 
-        BlockSparseSym(diag=diag, edge_index=_normalize_edge_index(edge_index), edge_val=edge_val).validate()
-    edge_index = _normalize_edge_index(edge_index)
+        BlockSparseSym(diag=diag, edge_index=edge_index, edge_val=edge_val).validate()
     in_dtype = diag.dtype
     if compute_dtype is not None and compute_dtype != in_dtype:
         diag = diag.to(compute_dtype)
@@ -1111,7 +1094,8 @@ def junction_solve(
         ``n == b``) is read as vectors only when it equals ``diag.shape[:-1]``, as in
         :func:`torch.linalg.solve`; pass ``b.unsqueeze(-1)`` to force the column layout.
     check:
-        If ``True``, validate the matrix inputs first.
+        If ``True``, also validate values (dtype / finiteness / block symmetry). Structural
+        checks (shapes, integer in-range ``i > j`` indices without duplicates) always run.
     compute_dtype:
         If given, all linear algebra runs in this dtype (``diag``, ``edge_val`` and ``b``
         upcast, result cast back). Mirrors :func:`selected_inverse_junction`.
@@ -1126,11 +1110,11 @@ def junction_solve(
     Functional / autograd-traceable: gradients of any loss over ``x`` flow to ``diag``,
     ``edge_val`` and ``b`` by reverse-mode (no custom backward).
     """
+    edge_index = _check_junction(diag, edge_index, edge_val=edge_val)
     if check:
         from .layout import BlockSparseSym
 
-        BlockSparseSym(diag=diag, edge_index=_normalize_edge_index(edge_index), edge_val=edge_val).validate()
-    edge_index = _normalize_edge_index(edge_index)
+        BlockSparseSym(diag=diag, edge_index=edge_index, edge_val=edge_val).validate()
     vector_rhs = _rhs_is_vector(b, diag.shape)
     rhs = b.unsqueeze(-1) if vector_rhs else b                     # -> [..., n, b, k]
     in_dtype = diag.dtype
@@ -1173,11 +1157,11 @@ def junction_logdet(
     logdet:
         ``log det A`` with shape equal to the leading batch dims (a scalar per problem).
     """
+    edge_index = _check_junction(diag, edge_index, edge_val=edge_val)
     if check:
         from .layout import BlockSparseSym
 
-        BlockSparseSym(diag=diag, edge_index=_normalize_edge_index(edge_index), edge_val=edge_val).validate()
-    edge_index = _normalize_edge_index(edge_index)
+        BlockSparseSym(diag=diag, edge_index=edge_index, edge_val=edge_val).validate()
     in_dtype = diag.dtype
     if compute_dtype is not None and compute_dtype != in_dtype:
         diag = diag.to(compute_dtype)
@@ -1211,6 +1195,6 @@ def selinv_junction(
     batched path is likewise functional, so reverse-mode gives the same backward), and
     only the scheduling -- per elimination level vs per node -- differs.
     """
-    edge_index = _normalize_edge_index(edge_index)
+    edge_index = _check_junction(diag, edge_index, edge_val=edge_val)
     forward = _selinv_junction_batched if batched else _selinv_junction_core
     return forward(diag, edge_index, edge_val, order)

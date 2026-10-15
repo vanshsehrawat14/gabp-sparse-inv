@@ -37,6 +37,7 @@ from torch import Tensor
 
 from .generators import grid_edges
 from .junction import JunctionAnalysis, _normalize_edge_index as _normalize_ei, analyze_junction
+from .layout import _check_edge_index
 
 __all__ = [
     "grid_gmrf_precision",
@@ -69,6 +70,7 @@ def _resolve_analysis(n, edge_index, order, analysis):
 def grid_node_degrees(n: int, edge_index: Tensor) -> Tensor:
     """Degree of each node (number of incident edges) as a ``[n]`` long tensor."""
     ei = _normalize_ei(edge_index)
+    _check_edge_index(ei, n)
     deg = torch.zeros(n, dtype=torch.long)
     deg.index_add_(0, ei[0], torch.ones(ei.shape[1], dtype=torch.long))
     deg.index_add_(0, ei[1], torch.ones(ei.shape[1], dtype=torch.long))

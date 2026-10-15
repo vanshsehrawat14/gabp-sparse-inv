@@ -30,12 +30,90 @@ __all__ = [
 
 
 def _as_parent_tensor(parent: Tensor | Sequence[int]) -> Tensor:
-    """Normalize a parent array to a 1-D CPU ``long`` tensor (topology is not batched)."""
-    if isinstance(parent, Tensor):
-        p = parent.detach().to(device="cpu", dtype=torch.long).reshape(-1)
-    else:
-        p = torch.tensor(list(parent), dtype=torch.long, device="cpu")
+    """Normalize a parent array to a 1-D CPU ``long`` tensor (topology is not batched).
+
+    Non-integer parents are rejected rather than truncated toward zero.
+    """
+    p = parent.detach() if isinstance(parent, Tensor) else torch.as_tensor(list(parent))
+    if p.numel() > 0 and (p.is_floating_point() or p.is_complex() or p.dtype == torch.bool):
+        raise TypeError(f"parent must hold integers; got dtype {p.dtype}")
+    return p.to(device="cpu", dtype=torch.long).reshape(-1)
+
+
+def _as_edge_index(edge_index: Tensor | Sequence[Sequence[int]]) -> Tensor:
+    """Normalize an edge index to a CPU ``long`` ``[2, m]`` tensor (not batched).
+
+    Non-integer indices are rejected rather than truncated toward zero.
+    """
+    ei = edge_index.detach() if isinstance(edge_index, Tensor) else torch.as_tensor(edge_index)
+    if ei.numel() > 0 and (ei.is_floating_point() or ei.is_complex() or ei.dtype == torch.bool):
+        raise TypeError(f"edge_index must hold integers; got dtype {ei.dtype}")
+    ei = ei.to(device="cpu", dtype=torch.long)
+    if ei.ndim != 2 or ei.shape[0] != 2:
+        raise ValueError(f"edge_index must have shape [2, m]; got {tuple(ei.shape)}")
+    return ei
+
+
+def _check_edge_index(ei: Tensor, n: int) -> None:
+    """Reject an edge list the block kernels would misread; runs whatever ``check`` says.
+
+    Each off-diagonal block is listed once, as ``(i, j)`` with ``i > j``; the ``(j, i)``
+    block is implied (by symmetry, or by ``edge_upper`` for the non-symmetric kernels).
+    Listing both orientations or the same block twice would otherwise be summed.
+    """
+    if ei.shape[1] == 0:
+        return
+    lo, hi = int(ei.min()), int(ei.max())
+    if lo < 0 or hi >= n:
+        raise ValueError(f"edge_index entries must lie in [0, {n - 1}]; got range [{lo}, {hi}]")
+    upper = (ei[0] <= ei[1]).nonzero()
+    if upper.numel():
+        k = int(upper[0, 0])
+        raise ValueError(
+            "edge_index must be lower-triangular: list each off-diagonal block once as (i, j) "
+            f"with i > j; column {k} is ({int(ei[0, k])}, {int(ei[1, k])}). For a list that "
+            "holds both directions (PyTorch Geometric style), keep one: keep = edge_index[0] > "
+            "edge_index[1]; edge_index, edge_val = edge_index[:, keep], edge_val[keep] (the "
+            "non-symmetric kernels take the dropped (j, i) blocks as edge_upper)"
+        )
+    keys = ei[0] * n + ei[1]
+    if torch.unique(keys).numel() != keys.numel():
+        raise ValueError("edge_index contains duplicate (i, j) blocks; they would be summed")
+
+
+def _check_blocks(diag: Tensor, count: int | None = None, **blocks: Tensor) -> None:
+    """Check ``diag`` is ``[..., n, b, b]`` with ``n >= 1`` and each named tensor ``[..., count, b, b]``.
+
+    ``count`` defaults to ``n``. Mismatched counts would otherwise be broadcast or ignored.
+    """
+    if not isinstance(diag, Tensor) or diag.ndim < 3 or diag.shape[-1] != diag.shape[-2]:
+        shape = tuple(diag.shape) if isinstance(diag, Tensor) else type(diag).__name__
+        raise ValueError(f"diag must have shape [..., n, b, b]; got {shape}")
+    n, b = diag.shape[-3], diag.shape[-1]
+    if n < 1:
+        raise ValueError("need at least one node; got n=0")
+    count = n if count is None else count
+    for name, t in blocks.items():
+        if not isinstance(t, Tensor) or t.ndim < 3 or tuple(t.shape[-3:]) != (count, b, b):
+            shape = tuple(t.shape) if isinstance(t, Tensor) else type(t).__name__
+            raise ValueError(f"{name} must have shape [..., {count}, {b}, {b}]; got {shape}")
+
+
+def _check_tree(diag: Tensor, parent: Tensor | Sequence[int], **blocks: Tensor) -> Tensor:
+    """Structural checks of a tree layout; returns the validated parent tensor."""
+    _check_blocks(diag, **blocks)
+    p = _as_parent_tensor(parent)
+    if int(p.numel()) != diag.shape[-3]:
+        raise ValueError(f"parent must have length n={diag.shape[-3]}; got {int(p.numel())}")
     return p
+
+
+def _check_junction(diag: Tensor, edge_index, **edge_blocks: Tensor) -> Tensor:
+    """Structural checks of a junction layout; returns the normalized edge index."""
+    ei = _as_edge_index(edge_index)
+    _check_blocks(diag, ei.shape[1], **edge_blocks)
+    _check_edge_index(ei, diag.shape[-3])
+    return ei
 
 
 def tree_orders(parent: Tensor | Sequence[int]) -> tuple[int, list[list[int]], list[int]]:
@@ -728,9 +806,7 @@ class BlockSparseSym:
     edge_val: Tensor
 
     def __post_init__(self) -> None:
-        if not isinstance(self.edge_index, Tensor):
-            self.edge_index = torch.tensor(self.edge_index, dtype=torch.long)
-        self.edge_index = self.edge_index.to(device="cpu", dtype=torch.long)
+        self.edge_index = _as_edge_index(self.edge_index)
 
     # -- basic shape accessors -------------------------------------------------
     @property
@@ -770,21 +846,11 @@ class BlockSparseSym:
             raise ValueError(f"diag blocks must be square; got {b}x{b2}")
         if n < 1:
             raise ValueError(f"need at least one node; got n={n}")
-        if self.edge_index.ndim != 2 or self.edge_index.shape[0] != 2:
-            raise ValueError(f"edge_index must have shape [2, m]; got {tuple(self.edge_index.shape)}")
         m = self.edge_index.shape[1]
         expected = (*self.diag.shape[:-3], m, b, b)
         if tuple(self.edge_val.shape) != expected:
             raise ValueError(f"edge_val must have shape {expected}; got {tuple(self.edge_val.shape)}")
-        if m > 0:
-            ii, jj = self.edge_index[0], self.edge_index[1]
-            if int(ii.max()) >= n or int(jj.max()) >= n or int(ii.min()) < 0 or int(jj.min()) < 0:
-                raise ValueError(f"edge_index entries out of range [0, {n - 1}]")
-            if bool((ii <= jj).any()):
-                raise ValueError("edge_index must store the lower triangle: every column needs i > j")
-            pairs = [(int(a), int(c)) for a, c in zip(ii.tolist(), jj.tolist())]
-            if len(set(pairs)) != len(pairs):
-                raise ValueError("edge_index contains duplicate (i, j) blocks")
+        _check_edge_index(self.edge_index, n)
 
         tol = symmetry_tol
         if tol is None:
@@ -829,7 +895,7 @@ class BlockSparseSym:
             raise ValueError(f"N={N} not divisible by block_size={block_size}")
         b = block_size
         n = N // b
-        ei = edge_index.to(device="cpu", dtype=torch.long)
+        ei = _as_edge_index(edge_index)
         m = ei.shape[1]
         diag = mat.new_zeros((*mat.shape[:-2], n, b, b))
         for v in range(n):

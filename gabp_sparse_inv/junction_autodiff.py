@@ -46,7 +46,8 @@ import torch
 from torch import Tensor
 
 from ._linalg import inv_via_chol, refuse_double_backward
-from .junction import _normalize_edge_index, _selinv_junction_core
+from .junction import _selinv_junction_core
+from .layout import _check_junction
 from .nonsym_junction import _selinv_nonsym_junction_core
 
 __all__ = [
@@ -209,7 +210,7 @@ def selinv_junction_analytic(
     backward raises (use the functional :func:`~gabp_sparse_inv.selinv_junction` for
     Hessian-vector products).
     """
-    edge_index = _normalize_edge_index(edge_index)
+    edge_index = _check_junction(diag, edge_index, edge_val=edge_val)
     return SelInvJunction.apply(diag, edge_val, edge_index, order)
 
 
@@ -382,5 +383,5 @@ def selinv_nonsym_junction_analytic(
     raises (use the functional :func:`~gabp_sparse_inv.selinv_nonsym_junction` for
     Hessian-vector products).
     """
-    edge_index = _normalize_edge_index(edge_index)
+    edge_index = _check_junction(diag, edge_index, edge_lower=edge_lower, edge_upper=edge_upper)
     return SelInvNonsymJunction.apply(diag, edge_lower, edge_upper, edge_index, order)

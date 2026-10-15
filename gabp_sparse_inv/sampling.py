@@ -29,10 +29,9 @@ from torch import Tensor
 from .gmrf import _tree_collect_batched
 from .junction import (
     _factor_junction,
-    _normalize_edge_index,
     _sample_transform_from_factors,
 )
-from .layout import _as_parent_tensor, tree_orders
+from .layout import _check_junction, _check_tree, tree_orders
 
 __all__ = ["sample_gaussian_tree", "sample_gaussian_junction"]
 
@@ -86,7 +85,7 @@ def sample_gaussian_tree(
     x:
         Samples shaped ``[num_samples, ..., n, b]`` with exact covariance ``A^{-1}``.
     """
-    p = _as_parent_tensor(parent)
+    p = _check_tree(diag, parent, edge=edge)
     n, b = diag.shape[-3], diag.shape[-1]
     batch = diag.shape[:-3]
     z = torch.randn((*batch, n, b, num_samples), generator=generator, dtype=diag.dtype, device=diag.device)
@@ -121,7 +120,7 @@ def sample_gaussian_junction(
     x:
         Samples shaped ``[num_samples, ..., n, b]`` with exact covariance ``A^{-1}``.
     """
-    edge_index = _normalize_edge_index(edge_index)
+    edge_index = _check_junction(diag, edge_index, edge_val=edge_val)
     n, b = diag.shape[-3], diag.shape[-1]
     batch = diag.shape[:-3]
     z = torch.randn((*batch, n, b, num_samples), generator=generator, dtype=diag.dtype, device=diag.device)

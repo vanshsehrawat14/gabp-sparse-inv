@@ -76,8 +76,8 @@ from ._linalg import (
     check_pivot_growth,
     local_scales,
 )
-from .junction import _normalize_edge_index, _rhs_is_vector, _symbolic
-from .layout import _require_finite
+from .junction import _rhs_is_vector, _symbolic
+from .layout import _check_junction, _require_finite
 
 __all__ = [
     "selected_inverse_nonsym_junction",
@@ -241,9 +241,10 @@ def selected_inverse_nonsym_junction(
     diag:
         Node diagonal blocks ``A_vv``: ``[..., n, b, b]`` (general square blocks).
     edge_index:
-        ``[2, m]`` long tensor of off-diagonal positions ``(i, j)`` with ``i > j`` (node
-        index). The pattern is structurally symmetric: each ``(i, j)`` carries *both*
-        ``A_{i,j}`` and ``A_{j,i}`` (independent). Shared across leading batch dims.
+        ``[2, m]`` integer tensor of off-diagonal positions ``(i, j)`` with ``i > j`` (node
+        index), each listed once. The pattern is structurally symmetric: each ``(i, j)``
+        carries *both* ``A_{i,j}`` and ``A_{j,i}`` (independent), so a list holding both
+        orientations or a repeated pair raises. Shared across leading batch dims.
     edge_lower:
         Lower blocks ``edge_lower[..., k, :, :] = A_{i_k, j_k}`` (``i_k > j_k``): ``[..., m, b, b]``.
     edge_upper:
@@ -253,7 +254,8 @@ def selected_inverse_nonsym_junction(
         Optional explicit elimination order (a permutation of ``range(n)``); default greedy
         min-degree.
     check:
-        If ``True``, validate shapes and the ``i > j`` / in-range index convention first.
+        If ``True``, also require finite values. The structural checks (shapes, integer
+        in-range ``i > j`` indices without duplicates) always run.
     compute_dtype:
         If given, all linear algebra runs in this dtype (inputs upcast, result cast back).
 
@@ -264,18 +266,9 @@ def selected_inverse_nonsym_junction(
         pattern (``i > j``); ``G_lower[..., k, :, :] = G_{i_k, j_k}`` and ``G_upper[..., k, :, :]
         = G_{j_k, i_k}`` (both orientations, since ``A^{-1}`` is non-symmetric).
     """
-    edge_index = _normalize_edge_index(edge_index)
+    edge_index = _check_junction(diag, edge_index, edge_lower=edge_lower, edge_upper=edge_upper)
     if check:
-        n, b = diag.shape[-3], diag.shape[-1]
-        if edge_lower.shape[-3:] != (edge_index.shape[1], b, b) or edge_upper.shape[-3:] != (edge_index.shape[1], b, b):
-            raise ValueError("edge_lower/edge_upper must have shape [..., m, b, b] matching edge_index")
         _require_finite(diag=diag, edge_lower=edge_lower, edge_upper=edge_upper)
-        ij = edge_index.tolist()
-        for i, j in zip(ij[0], ij[1]):
-            if not (n > i > j >= 0):
-                raise ValueError(f"edge_index must be lower-triangular in range (n>i>j>=0); got ({i},{j})")
-        if len({(i, j) for i, j in zip(ij[0], ij[1])}) != edge_index.shape[1]:
-            raise ValueError("duplicate edges in edge_index")
 
     in_dtype = diag.dtype
     if compute_dtype is not None and compute_dtype != in_dtype:
@@ -379,7 +372,8 @@ def nonsym_junction_solve(
     transpose:
         If ``True``, solve ``A^T x = b`` instead of ``A x = b``.
     check:
-        If ``True``, validate the matrix inputs / index convention first.
+        If ``True``, also require finite values. The structural checks (shapes, integer
+        in-range ``i > j`` indices without duplicates) always run.
     compute_dtype:
         If given, all linear algebra runs in this dtype (inputs upcast, result cast back).
 
@@ -395,16 +389,9 @@ def nonsym_junction_solve(
     :class:`torch.linalg.LinAlgError` when a pivot is singular or local element growth exceeds
     ``1 / sqrt(eps)``.
     """
-    edge_index = _normalize_edge_index(edge_index)
+    edge_index = _check_junction(diag, edge_index, edge_lower=edge_lower, edge_upper=edge_upper)
     if check:
-        n, bs = diag.shape[-3], diag.shape[-1]
-        if edge_lower.shape[-3:] != (edge_index.shape[1], bs, bs) or edge_upper.shape[-3:] != (edge_index.shape[1], bs, bs):
-            raise ValueError("edge_lower/edge_upper must have shape [..., m, b, b] matching edge_index")
         _require_finite(diag=diag, edge_lower=edge_lower, edge_upper=edge_upper)
-        ij = edge_index.tolist()
-        for i, j in zip(ij[0], ij[1]):
-            if not (n > i > j >= 0):
-                raise ValueError(f"edge_index must be lower-triangular in range (n>i>j>=0); got ({i},{j})")
     vector_rhs = _rhs_is_vector(b, diag.shape)
     rhs = b.unsqueeze(-1) if vector_rhs else b                     # -> [..., n, b, k]
     in_dtype = diag.dtype
@@ -434,5 +421,5 @@ def selinv_nonsym_junction(
     ``docs/derivations.md`` §10.3. The VJP is the inversion derivative's adjoint, which is the
     derivative at ``A^T``; it is not a selected inverse of ``A^T``. No custom backward.
     """
-    edge_index = _normalize_edge_index(edge_index)
+    edge_index = _check_junction(diag, edge_index, edge_lower=edge_lower, edge_upper=edge_upper)
     return _selinv_nonsym_junction_core(diag, edge_index, edge_lower, edge_upper, order)

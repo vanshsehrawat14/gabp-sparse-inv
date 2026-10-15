@@ -36,7 +36,7 @@ from torch import Tensor
 
 from ._linalg import cholesky_spd
 from .autodiff import selinv_tree
-from .layout import _as_parent_tensor, tree_levels, tree_orders
+from .layout import _as_parent_tensor, _check_tree, tree_levels, tree_orders
 from .tree import _level_index_tensors
 
 __all__ = [
@@ -194,7 +194,7 @@ def tree_logdet(diag, edge, parent, *, batched=False):
     With ``batched=True`` use the level-set schedule (one batched Cholesky per height
     antichain) instead of the per-node loop; mathematically identical.
     """
-    p = _as_parent_tensor(parent)
+    p = _check_tree(diag, parent, edge=edge)
     if batched:
         return _tree_collect_batched(diag, edge, p)[2]
     return _tree_collect(diag, edge, p)[2]
@@ -207,7 +207,10 @@ def tree_solve(diag, edge, parent, rhs, *, batched=False):
     forward RHS elimination (leaves->root) then back-substitution (root->leaves). With
     ``batched=True`` both passes run on the level-set schedule (same result).
     """
-    p = _as_parent_tensor(parent)
+    p = _check_tree(diag, parent, edge=edge)
+    if rhs.ndim < 2 or tuple(rhs.shape[-2:]) != tuple(diag.shape[-3:-1]):
+        raise ValueError(f"rhs must have shape [..., {diag.shape[-3]}, {diag.shape[-1]}]; "
+                         f"got {tuple(rhs.shape)}")
     if batched:
         return _tree_solve_batched(diag, edge, p, rhs)
     Dinv, ell, _logdet, root, collect, plist, _children = _tree_collect(diag, edge, p)
