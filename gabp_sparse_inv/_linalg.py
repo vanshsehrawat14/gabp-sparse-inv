@@ -23,23 +23,30 @@ __all__ = [
 ]
 
 
-def cholesky_spd(block: Tensor, *, name: str) -> Tensor:
+def cholesky_spd(block: Tensor, *, name: str, nodes=None) -> Tensor:
     """Batched Cholesky via ``cholesky_ex`` with an informative SPD failure message.
 
     ``cholesky_ex`` reports failure through an ``info`` code per batch element instead
     of raising inside the kernel. Inspecting ``info`` here still costs one host
     synchronization on accelerators.
 
-    ``name`` identifies the failing pivot in the error message (e.g. ``"D_3"`` or
-    ``"S (center Schur complement)"``).
+    ``name`` identifies the failing pivot in the error message (e.g. ``"D_3"`` for node 3,
+    or ``"S (center Schur complement)"``). When ``block`` stacks the pivots of several nodes
+    along its last batch dimension, ``nodes`` lists their node indices so the message names
+    the failing nodes.
     """
     chol, info = torch.linalg.cholesky_ex(block)
     if torch.any(info != 0):
-        where = (
-            f"batch indices {torch.nonzero(info != 0, as_tuple=False).tolist()}"
-            if info.ndim > 0
-            else "an unbatched input"
-        )
+        bad = torch.nonzero(info != 0, as_tuple=False).tolist()
+        if nodes is not None:
+            ids = nodes.tolist() if isinstance(nodes, Tensor) else list(nodes)
+            where = f"node(s) {sorted({ids[i[-1]] for i in bad})}"
+            if info.ndim > 1:
+                where += f" at batch indices {sorted({tuple(i[:-1]) for i in bad})}"
+        elif info.ndim > 0:
+            where = f"batch indices {bad}"
+        else:
+            where = "an unbatched input"
         raise torch.linalg.LinAlgError(
             f"pivot block {name} lost positive-definiteness during factorization "
             f"(cholesky_ex info != 0 for {where}); matrix is not SPD or is too "

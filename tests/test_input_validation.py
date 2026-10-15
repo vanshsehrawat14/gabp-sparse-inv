@@ -222,3 +222,33 @@ def test_roundoff_level_asymmetry_still_passes():
         block = scale * torch.tensor([[2.0, 0.5], [0.5 * (1 + 1e-14), 2.0]], dtype=F64)
         for call in _spd_checked_calls(torch.stack([block, block])):
             call()
+
+
+def test_pivot_failures_name_the_node_in_every_path():
+    # Node 2 is indefinite. 0.4.0 called it D_3 in the chain (1-based), named only the level
+    # in the batched paths, and tree_logdet surfaced a bare backend error.
+    b = 2
+    eye = torch.eye(b, dtype=F64)
+    diag = torch.stack([3 * eye, 3 * eye, -5 * eye, 3 * eye, 3 * eye])
+    lower = torch.full((4, b, b), 0.1, dtype=F64)
+    edge = torch.cat([torch.zeros(1, b, b, dtype=F64), lower])     # path tree rooted at node 0
+    parent = [-1, 0, 1, 2, 3]
+    ei, order = torch.tensor([[1, 2, 3, 4], [0, 1, 2, 3]]), [0, 1, 2, 3, 4]
+    named = {
+        "D_2": [
+            lambda: gs.selected_inverse_chain(diag, lower),
+            lambda: gs.selected_inverse_tree(diag, edge, parent),
+            lambda: gs.selected_inverse_junction(diag, ei, lower, order),
+            lambda: gs.tree_logdet(diag, edge, parent),
+        ],
+        "node(s) [2]": [
+            lambda: gs.selected_inverse_tree(diag, edge, parent, batched=True),
+            lambda: gs.selected_inverse_junction(diag, ei, lower, order, batched=True),
+            lambda: gs.tree_logdet(diag, edge, parent, batched=True),
+        ],
+    }
+    for text, calls in named.items():
+        for call in calls:
+            with pytest.raises(torch.linalg.LinAlgError, match=r"positive-definiteness") as err:
+                call()
+            assert text in str(err.value), str(err.value)

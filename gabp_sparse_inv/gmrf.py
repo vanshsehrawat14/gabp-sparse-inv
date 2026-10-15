@@ -139,7 +139,7 @@ def _tree_collect(diag, edge, parent_t):
     logdet = diag.new_zeros(diag.shape[:-3])
     for v in collect:
         Dv = 0.5 * (P[v] + P[v].mT)
-        Lv = torch.linalg.cholesky(Dv)
+        Lv = cholesky_spd(Dv, name=f"D_{v}")
         logdet = logdet + 2.0 * torch.log(torch.diagonal(Lv, dim1=-2, dim2=-1)).sum(-1)
         Dinv[v] = torch.cholesky_solve(eye.expand_as(Dv), Lv)
         if v != root:
@@ -175,7 +175,7 @@ def _tree_collect_batched(diag, edge, parent_t):
     for h, (node_idx, nonroot_idx, parent_idx) in enumerate(lvl_idx):
         Pl = P.index_select(-3, node_idx)
         Pl = 0.5 * (Pl + Pl.mT)                       # symmetrize pivots (policy)
-        chol_l = cholesky_spd(Pl, name=f"D(level h={h})")
+        chol_l = cholesky_spd(Pl, name=f"D(level h={h})", nodes=node_idx)
         chol_D = chol_D.index_copy(-3, node_idx, chol_l)
         if nonroot_idx.numel() > 0:
             U = edge.index_select(-3, nonroot_idx)

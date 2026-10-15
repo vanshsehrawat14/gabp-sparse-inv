@@ -788,9 +788,9 @@ def _factor_junction_batched_numeric(diag, edge_val, symbolic, *, check_spd=True
     def sym(x):
         return 0.5 * (x + x.mT)
 
-    def chol(block, *, name):
+    def chol(block, *, name, nodes):
         if check_spd:
-            return cholesky_spd(block, name=name)
+            return cholesky_spd(block, name=name, nodes=nodes)
         return torch.linalg.cholesky_ex(block, check_errors=False)[0]
 
     # ---- unified working block array: [ D (n node diagonals) | W (nS off-blocks) ] ----
@@ -806,7 +806,7 @@ def _factor_junction_batched_numeric(diag, edge_val, symbolic, *, check_spd=True
     # ---- collect: sparse block Cholesky + clique Schur fill, increasing level ----------
     for h, lv in enumerate(levels):
         Dl = sym(Mbuf.index_select(-3, lv.nodes))
-        chol_l = chol(Dl, name=f"D(level {h})")
+        chol_l = chol(Dl, name=f"D(level {h})", nodes=lv.nodes)
         chol_buf = chol_buf.index_add(-3, lv.nodes, chol_l)
         Dsym_buf = Dsym_buf.index_add(-3, lv.nodes, Dl)
         if lv.ell_dest.numel() > 0:

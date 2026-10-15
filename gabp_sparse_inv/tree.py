@@ -97,7 +97,7 @@ def _selected_inverse_tree_batched(diag, edge, parent_t, root, plist, return_fac
     for h, (node_idx, nonroot_idx, parent_idx) in enumerate(lvl_idx):
         Pl = P.index_select(-3, node_idx)
         Pl = 0.5 * (Pl + Pl.mT)                       # symmetrize pivots (policy)
-        chol_l = cholesky_spd(Pl, name=f"D(level h={h})")
+        chol_l = cholesky_spd(Pl, name=f"D(level h={h})", nodes=node_idx)
         chol_D.index_copy_(-3, node_idx, chol_l)
         if nonroot_idx.numel() > 0:
             U = edge.index_select(-3, nonroot_idx)

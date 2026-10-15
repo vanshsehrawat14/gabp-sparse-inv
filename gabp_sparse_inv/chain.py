@@ -45,7 +45,7 @@ class ChainFactors:
 
 
 def _cholesky(block: Tensor, *, block_index: int) -> Tensor:
-    """Batched SPD Cholesky of pivot ``D_{block_index}`` (see :func:`cholesky_spd`)."""
+    """Batched SPD Cholesky of pivot ``D_{block_index}`` (0-based, see :func:`cholesky_spd`)."""
     return cholesky_spd(block, name=f"D_{block_index}")
 
 
@@ -101,7 +101,7 @@ def selected_inverse_chain(
     chol_D = diag.new_empty((*batch, L, b, b))
     ell = diag.new_empty((*batch, max(L - 1, 0), b, b))
 
-    chol_prev = _cholesky(diag[..., 0, :, :], block_index=1)
+    chol_prev = _cholesky(diag[..., 0, :, :], block_index=0)
     chol_D[..., 0, :, :] = chol_prev
     for i in range(1, L):
         C = lower[..., i - 1, :, :]              # A_{i+1,i} == A_{i,i-1} in 1-based terms
@@ -112,7 +112,7 @@ def selected_inverse_chain(
         ell_i = X.mT                                # = C @ D_{i-1}^{-1}
         D_i = diag[..., i, :, :] - C @ X            # = A_ii - C D_{i-1}^{-1} C^T
         D_i = 0.5 * (D_i + D_i.mT)                  # symmetrize the pivot (policy: see derivations.md §6)
-        chol_prev = _cholesky(D_i, block_index=i + 1)
+        chol_prev = _cholesky(D_i, block_index=i)
         chol_D[..., i, :, :] = chol_prev
         ell[..., i - 1, :, :] = ell_i
 
