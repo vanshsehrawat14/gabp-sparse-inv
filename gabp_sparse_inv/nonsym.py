@@ -32,7 +32,13 @@ from typing import Sequence
 import torch
 from torch import Tensor
 
-from ._linalg import block_amax, check_pivot_growth
+from ._linalg import (
+    SELINV_GROWTH_POWER,
+    block_amax,
+    block_norm,
+    check_pivot_growth,
+    local_scales,
+)
 from .layout import BlockBidiag, _as_parent_tensor, _require_finite, tree_orders
 
 __all__ = [
@@ -263,8 +269,10 @@ def selected_inverse_nonsym_tree(
 
     When ``M`` is symmetric (``edge_cp[v] = edge_pc[v].mT``) these reduce block-for-block to
     the SPD tree kernel. Each ``D_v`` must be invertible (general blocks; no SPD assumption),
-    and the elimination raises :class:`torch.linalg.LinAlgError` when element growth exceeds
-    ``1 / sqrt(eps)`` of the working dtype, since the result would then be unreliable.
+    and the elimination raises :class:`torch.linalg.LinAlgError` when local element growth (a
+    Schur update or reduced pivot against the largest input entries of its block row and
+    column) exceeds ``1 / sqrt(eps)`` of the working dtype, since the result would then be
+    unreliable. Passing that heuristic test does not guarantee full accuracy.
 
     Parameters
     ----------
@@ -317,14 +325,16 @@ def selected_inverse_nonsym_tree(
     n = diag.shape[-3]
 
     # ---- collect: eliminate children into parents (leaves -> root) -----------
+    # Local element growth (check_pivot_growth): the reduced pivot at (v, v) and the factor
+    # product ||ellL_v|| ||D_v|| ||ellU_v|| that lands at (p(v), p(v)) are measured against
+    # the largest input entries of their own block row and column.
     nonroot = [v for v in range(n) if v != root]
-    scale = block_amax(diag, 3)
-    if nonroot:
-        idx = torch.tensor(nonroot, device=diag.device)
-        scale = torch.maximum(scale, torch.maximum(
-            block_amax(edge_pc.index_select(-3, idx), 3),
-            block_amax(edge_cp.index_select(-3, idx), 3)))
-    growth = torch.zeros_like(scale)
+    idx = torch.tensor(nonroot, dtype=torch.long, device=diag.device)
+    pidx = torch.tensor([plist[v] for v in nonroot], dtype=torch.long, device=diag.device)
+    row_scale, col_scale = local_scales(
+        diag, pidx, idx, edge_pc.index_select(-3, idx), edge_cp.index_select(-3, idx))
+    vscale = torch.maximum(row_scale, col_scale).clamp_min(torch.finfo(diag.dtype).tiny)
+    growth = torch.zeros_like(vscale[..., 0])
     Dinv: list[Tensor | None] = [None] * n          # D_v^{-1} (Schur pivot inverse)
     ellL: list[Tensor | None] = [None] * n          # M_{p,v} D_v^{-1}
     ellU: list[Tensor | None] = [None] * n          # D_v^{-1} M_{v,p}
@@ -332,17 +342,17 @@ def selected_inverse_nonsym_tree(
         Dv = diag[..., v, :, :]
         for c in children[v]:
             # subtract child Schur term  M_{v,c} D_c^{-1} M_{c,v}
-            term = edge_pc[..., c, :, :] @ Dinv[c] @ edge_cp[..., c, :, :]
-            growth = torch.maximum(growth, block_amax(term))
-            Dv = Dv - term
-        growth = torch.maximum(growth, block_amax(Dv))
+            Dv = Dv - edge_pc[..., c, :, :] @ Dinv[c] @ edge_cp[..., c, :, :]
+        growth = torch.maximum(growth, block_amax(Dv) / vscale[..., v])
         Dv_inv = torch.linalg.inv(Dv)
         Dinv[v] = Dv_inv
         if v != root:
             ellL[v] = edge_pc[..., v, :, :] @ Dv_inv
             ellU[v] = Dv_inv @ edge_cp[..., v, :, :]
+            prod = block_norm(ellL[v]) * block_norm(Dv) * block_norm(ellU[v])
+            growth = torch.maximum(growth, prod / vscale[..., plist[v]])
 
-    check_pivot_growth(growth, scale, diag.dtype)
+    check_pivot_growth(growth, diag.dtype, SELINV_GROWTH_POWER)
 
     # ---- distribute: root marginal, then each child (root -> leaves) ---------
     G_d: list[Tensor | None] = [None] * n

@@ -34,10 +34,13 @@ are asserted in the tests.
 symbolic order with **no pivoting**, which is what keeps the pattern static and the cost
 front-dependent. Every block pivot ``D_v`` must stay nonsingular and the elimination must not
 amplify entries: a well-conditioned ``A`` can still defeat a fixed order (``[[eps, 1], [2, 1]]``
-eliminated from node 0). The factorization therefore tracks element growth and raises
-:class:`torch.linalg.LinAlgError` when it exceeds ``1 / sqrt(eps)`` of the working dtype,
-instead of returning unreliable blocks (``docs/derivations.md`` §10.4). Block diagonal
-dominance in the elimination order is the safe regime; pivoting is not implemented.
+eliminated from node 0). The factorization therefore tracks local element growth (each block it
+forms against the largest input entries of that block's row and column) and raises
+:class:`torch.linalg.LinAlgError` when it exceeds ``1 / sqrt(eps)`` of the working dtype
+(``docs/derivations.md`` §10.4). This is a heuristic, not a stability guarantee: an accepted
+elimination can still lose up to about half the working digits, more when ``A`` is ill
+conditioned. Block diagonal dominance in the elimination order is the safe regime; pivoting is
+not implemented.
 
 **Differentiability.** The core is functional (the block inverses are ``torch.linalg.inv``),
 so reverse-mode autograd through it is the ``S``-local adjoint-up-to-transpose schedule
@@ -65,7 +68,14 @@ from typing import Sequence
 import torch
 from torch import Tensor
 
-from ._linalg import block_amax, check_pivot_growth
+from ._linalg import (
+    SELINV_GROWTH_POWER,
+    SOLVE_GROWTH_POWER,
+    block_amax,
+    block_norm,
+    check_pivot_growth,
+    local_scales,
+)
 from .junction import _normalize_edge_index, _rhs_is_vector, _symbolic
 from .layout import _require_finite
 
@@ -76,13 +86,15 @@ __all__ = [
 ]
 
 
-def _factor_nonsym(diag, edge_index, edge_lower, edge_upper, order):
+def _factor_nonsym(diag, edge_index, edge_lower, edge_upper, order, *,
+                   growth_power=SOLVE_GROWTH_POWER):
     """Block ``LDU`` factorization on the filled pattern (the collect pass), functional.
 
     Returns ``(order, pos, U, S_pairs, Dinv, Lf, Uf)`` where, keyed by elimination-position
     orientation ``(hi, lo)`` with ``pos[hi] > pos[lo]``: ``Dinv[v] = D_v^{-1}``,
     ``Lf[(w,v)] = L_{wv} = A_{wv} D_v^{-1}`` (lower factor) and ``Uf[(w,v)] = U_{vw} =
-    D_v^{-1} A_{vw}`` (upper factor).
+    D_v^{-1} A_{vw}`` (upper factor). Raises when the local element growth exceeds
+    ``eps ** -growth_power`` (:func:`~gabp_sparse_inv._linalg.check_pivot_growth`).
     """
     n, b = diag.shape[-3], diag.shape[-1]
     batch = diag.shape[:-3]
@@ -106,30 +118,41 @@ def _factor_nonsym(diag, edge_index, edge_lower, edge_upper, order):
             WL[(j, i)] = WL[(j, i)] + up_blk           # A_{hi,lo} = A_{j,i}
             WU[(j, i)] = WU[(j, i)] + lo_blk           # A_{lo,hi} = A_{i,j}
 
-    # Element growth of the reduced matrix, checked once elimination is complete.
-    scale = block_amax(diag, 3)
-    if m:
-        scale = torch.maximum(scale, torch.maximum(block_amax(edge_lower, 3),
-                                                   block_amax(edge_upper, 3)))
-    growth = torch.zeros_like(scale)
+    # Local element growth (check_pivot_growth): reduced blocks and the factor products
+    # ||L_wv|| ||D_v|| ||U_vw'|| are measured against the largest input entry of their own
+    # block row and block column.
+    row_scale, col_scale = local_scales(diag, edge_index[0], edge_index[1], edge_lower, edge_upper)
+    tiny = torch.finfo(diag.dtype).tiny
+    row_scale, col_scale = row_scale.clamp_min(tiny), col_scale.clamp_min(tiny)
+    rs = [row_scale[..., v] for v in range(n)]
+    cs = [col_scale[..., v] for v in range(n)]
+    growth = torch.zeros_like(row_scale[..., 0])
 
     Dinv, Lf, Uf = {}, {}, {}
     for v in order:
-        growth = torch.maximum(growth, block_amax(Wd[v]))
+        growth = torch.maximum(growth, block_amax(Wd[v]) / torch.maximum(rs[v], cs[v]))
         Dv_inv = torch.linalg.inv(Wd[v])
         Dinv[v] = Dv_inv
         Uv = U[v]
         for w in Uv:
-            growth = torch.maximum(growth, torch.maximum(block_amax(WL[(w, v)]),
-                                                         block_amax(WU[(w, v)])))
+            growth = torch.maximum(growth, torch.maximum(
+                block_amax(WL[(w, v)]) / torch.maximum(rs[w], cs[v]),
+                block_amax(WU[(w, v)]) / torch.maximum(rs[v], cs[w])))
             Lf[(w, v)] = WL[(w, v)] @ Dv_inv           # L_{w,v}
             Uf[(w, v)] = Dv_inv @ WU[(w, v)]           # U_{v,w}
+        if Uv:
+            nL = torch.stack([block_norm(Lf[(w, v)]) for w in Uv], -1)
+            nU = torch.stack([block_norm(Uf[(w, v)]) for w in Uv], -1)
+            r_U = torch.stack([rs[w] for w in Uv], -1)
+            c_U = torch.stack([cs[w] for w in Uv], -1)
+            prod = nL[..., :, None] * nU[..., None, :] * block_norm(Wd[v])[..., None, None]
+            scale = torch.maximum(r_U[..., :, None], c_U[..., None, :])
+            growth = torch.maximum(growth, (prod / scale).amax(dim=(-2, -1)))
         # Schur over the clique: block(row w, col w') -= A_{w,v} D_v^{-1} A_{v,w'}.
         for w in Uv:
-            AwvDinv = WL[(w, v)] @ Dv_inv
+            AwvDinv = Lf[(w, v)]                        # A_{w,v} D_v^{-1}
             for wp in Uv:
                 term = AwvDinv @ WU[(wp, v)]            # A_{w,v} D_v^{-1} A_{v,w'}
-                growth = torch.maximum(growth, block_amax(term))
                 if w == wp:
                     Wd[w] = Wd[w] - term
                 elif pos[w] > pos[wp]:
@@ -137,7 +160,7 @@ def _factor_nonsym(diag, edge_index, edge_lower, edge_upper, order):
                 else:
                     WU[(wp, w)] = WU[(wp, w)] - term    # upper block (row w < col w')
 
-    check_pivot_growth(growth, scale, diag.dtype)
+    check_pivot_growth(growth, diag.dtype, growth_power)
     return order, pos, U, S_pairs, Dinv, Lf, Uf
 
 
@@ -150,7 +173,9 @@ def _selinv_nonsym_junction_core(diag, edge_index, edge_lower, edge_upper, order
     n, b = diag.shape[-3], diag.shape[-1]
     batch = diag.shape[:-3]
 
-    order, pos, U, S_pairs, Dinv, Lf, Uf = _factor_nonsym(diag, edge_index, edge_lower, edge_upper, order)
+    order, pos, U, S_pairs, Dinv, Lf, Uf = _factor_nonsym(
+        diag, edge_index, edge_lower, edge_upper, order, growth_power=SELINV_GROWTH_POWER
+    )
 
     G_d, G_L, G_U = {}, {}, {}                          # G_L[(hi,lo)]=G_{hi,lo}; G_U[(hi,lo)]=G_{lo,hi}
 
@@ -367,7 +392,7 @@ def nonsym_junction_solve(
     -----
     Functional / autograd-traceable: gradients flow to ``diag``, ``edge_lower``,
     ``edge_upper`` and ``b`` by reverse-mode (no custom backward). No pivoting: raises
-    :class:`torch.linalg.LinAlgError` when a pivot is singular or element growth exceeds
+    :class:`torch.linalg.LinAlgError` when a pivot is singular or local element growth exceeds
     ``1 / sqrt(eps)``.
     """
     edge_index = _normalize_edge_index(edge_index)

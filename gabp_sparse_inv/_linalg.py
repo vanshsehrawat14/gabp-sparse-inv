@@ -12,7 +12,14 @@ from __future__ import annotations
 import torch
 from torch import Tensor
 
-__all__ = ["cholesky_spd", "inv_via_chol", "block_amax", "check_pivot_growth"]
+__all__ = [
+    "cholesky_spd",
+    "inv_via_chol",
+    "block_amax",
+    "block_norm",
+    "local_scales",
+    "check_pivot_growth",
+]
 
 
 def cholesky_spd(block: Tensor, *, name: str) -> Tensor:
@@ -52,23 +59,66 @@ def block_amax(x: Tensor, dims: int = 2) -> Tensor:
     return x.detach().abs().amax(dim=tuple(range(-dims, 0)))
 
 
-def check_pivot_growth(growth: Tensor, scale: Tensor, dtype: torch.dtype) -> None:
-    """Refuse a static no-pivot elimination whose element growth is unsafe.
+def local_scales(diag: Tensor, row: Tensor, col: Tensor, lower: Tensor, upper: Tensor):
+    """Largest input entry of every block row and block column, per batch element.
 
-    ``growth`` is the largest entry magnitude of any reduced pivot, reduced coupling
-    block or Schur update formed during elimination, and ``scale`` the largest input
-    entry, both per batch element. Without pivoting the backward error of block LU is
-    proportional to ``growth / scale`` times the unit roundoff, so beyond
-    ``1 / sqrt(eps)`` the computed inverse blocks can be wrong in every digit even
-    when ``A`` is well conditioned. Non-finite growth (overflow, or ``inf``/``nan``
-    input) is refused as well.
+    ``diag`` is ``[..., n, b, b]``; off-diagonal block ``k`` has ``lower[..., k]`` at block
+    position ``(row[k], col[k])`` and ``upper[..., k]`` at ``(col[k], row[k])``. Returns
+    ``(row_scale, col_scale)``, each ``[..., n]`` and detached.
     """
-    ratio = growth / scale.clamp_min(torch.finfo(dtype).tiny)
-    limit = torch.finfo(dtype).eps ** -0.5
-    if not bool(torch.all(ratio <= limit)):
+    d = block_amax(diag)
+    n = d.shape[-1]
+    if row.numel() == 0:
+        return d, d
+    lo, up = block_amax(lower), block_amax(upper)
+    m = lo.shape[-1]
+    batch = torch.broadcast_shapes(d.shape[:-1], lo.shape[:-1], up.shape[:-1])
+    d, lo, up = d.expand(*batch, n), lo.expand(*batch, m), up.expand(*batch, m)
+    r = row.to(d.device).expand(*batch, m)
+    c = col.to(d.device).expand(*batch, m)
+    rows = d.scatter_reduce(-1, r, lo, "amax").scatter_reduce(-1, c, up, "amax")
+    cols = d.scatter_reduce(-1, c, lo, "amax").scatter_reduce(-1, r, up, "amax")
+    return rows, cols
+
+
+def block_norm(x: Tensor) -> Tensor:
+    """Infinity norm (largest absolute row sum) of each trailing ``b x b`` block, detached."""
+    return x.detach().abs().sum(-1).amax(-1)
+
+
+SOLVE_GROWTH_POWER = 0.5
+SELINV_GROWTH_POWER = 0.25
+
+
+def check_pivot_growth(growth: Tensor, dtype: torch.dtype, power: float) -> None:
+    """Refuse a static no-pivot elimination whose local element growth is unsafe.
+
+    ``growth`` holds, per batch element, the largest ratio between a quantity formed during
+    the elimination and the larger of the largest input entries in its block row and its
+    block column (:func:`local_scales`). The quantities are the reduced pivots and reduced
+    off-diagonal blocks, and for every Schur update ``L_wv D_v U_vw'`` the product of norms
+    ``||L_wv|| ||D_v|| ||U_vw'||``, which bounds the entries of ``|L| |D| |U|`` in the usual
+    backward error bound ``|dA| <~ c u |L| |D| |U|`` of elimination without pivoting
+    (block multipliers can be large while their product cancels, so the Schur entries
+    alone understate it). Measuring each position against its own row and column means a
+    large block elsewhere, a disconnected component or a global rescaling cannot hide
+    growth.
+
+    The limit is ``eps ** -power`` of the working dtype. A solve's backward error grows
+    like ``u * growth``, so solves use ``power = 1/2``. The Takahashi recurrence of the
+    selected inverse amplifies errors by the multipliers a second time, so its error grows
+    like ``u * growth**2`` and selected inverses use ``power = 1/4``. Either way an accepted
+    elimination can lose up to about half the working digits, more when ``A`` is ill
+    conditioned. Non-finite growth (overflow, or ``inf``/``nan`` input) is refused as
+    well. This is a heuristic test, not a stability proof.
+    """
+    limit = torch.finfo(dtype).eps ** -power
+    if not bool(torch.all(growth <= limit)):
         raise torch.linalg.LinAlgError(
-            f"element growth {float(ratio.max()):.3g} exceeds {limit:.3g} = 1/sqrt(eps) for {dtype} "
-            "during static no-pivot elimination; the result would be numerically "
-            "unreliable. Use an elimination order that keeps the leading pivots "
-            "well conditioned, or a pivoted LU."
+            f"local element growth {float(growth.max()):.3g} exceeds {limit:.3g} = eps**-{power:g} "
+            f"for {dtype} during static no-pivot elimination (the factors outgrew the input "
+            "entries of their block rows and columns); the result would be numerically "
+            "unreliable. Use an elimination order that keeps the leading pivots well "
+            "conditioned, compute in float64 (compute_dtype=torch.float64), or use a "
+            "pivoted LU."
         )
