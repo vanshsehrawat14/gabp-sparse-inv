@@ -1,23 +1,22 @@
-"""Backward-stability study: verify the tracked-constant theorem of derivations.md Sec 6.
+"""Backward-error diagnostic for the tree selected inverse (``derivations.md`` Sec 6).
 
-The Sec 6 theorem (eq. 9a) says the computed tree selected inverse is the exact selected
-inverse of ``A + E`` with ``||E||_2 <= c(b, Delta) * u * ||A||_2`` -- a constant that is a
-low-degree polynomial in the block size ``b`` and node degree ``Delta``, and is
-**independent of the tree height and of kappa(A)** (no growth factor). The forward error
-then tracks ``kappa`` (eq. 9): ``||Ghat - G|| / ||G|| <= c(b, Delta) * kappa(A) * u``.
+Sec 6 records local backward-error bounds for each block primitive. It does **not** prove
+that the computed selected inverse is the exact selected inverse of one perturbed matrix
+``A + E`` with ``||E||_2 <= c(b, Delta) * u * ||A||_2`` independent of tree height and
+``kappa(A)``; whether such a bound holds, and how ``c`` would depend on depth, degree and
+factor growth, is open (eq. 9a).
 
-This harness measures both, sweeping the two axes the theorem says decouple -- tree
-**height** and **kappa** -- on balanced trees (controlled height, fixed degree Delta=3):
+This harness measures, on balanced trees (controlled height, degree ``Delta = 3``) while
+sweeping tree **height** and **kappa**:
 
   * ``backward_over_u = ||E||_2 / (u ||A||_2)``, where ``E = Lhat Dhat Lhat^T - A`` is built
-    from the kernel's own fp32 ``LDL^T`` factors -- the literal eq.-(9a) object. The claim:
-    this stays ~ ``c(b, Delta)`` (a small constant), **flat across height and kappa**.
-  * ``forward_over_kappa_u = (||Ghat - G|| / ||G||) / (kappa * u)``: the claim is this is
-    also ~ ``c(b, Delta)`` (flat), i.e. the *forward* error grows like ``kappa * u`` while
-    the *backward* constant does not.
+    from the kernel's own fp32 ``LDL^T`` factors; and
+  * ``forward_over_kappa_u = (||Ghat - G|| / ||G||) / (kappa * u)``.
 
-Like the rest of ``bench/`` these are BLAS/dtype/device-dependent **diagnostics** -- recorded
-and printed, not asserted as thresholds (the theorem is about the *form*, not a tuned const).
+On the grids measured so far both stay small and show no visible trend with height or
+kappa. That is an observation on finite grids, not evidence of a height- or
+condition-independent bound. Like the rest of ``bench/`` these are BLAS/dtype/device-
+dependent **diagnostics**, recorded and printed, not asserted as thresholds.
 
     python -m gabp_sparse_inv.bench.stability
     python -m gabp_sparse_inv.bench.stability --depths 3 4 5 6 --b 1 2 4
@@ -140,8 +139,9 @@ def _median(xs: list[float]) -> float:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
-        description="Backward-stability study: verify ||E|| <= c(b,Delta) u ||A|| is "
-                    "height- and kappa-free (derivations.md Sec 6, eq. 9a).")
+        description="Backward-error diagnostic: measure ||E|| / (u ||A||) and the forward "
+                    "error over kappa*u across tree height and kappa (derivations.md Sec 6). "
+                    "Observations on a finite grid, not a proved bound.")
     ap.add_argument("--depths", type=int, nargs="+", default=DEFAULT_DEPTHS,
                     help="balanced-tree depths (height); n = 2^(depth+1)-1")
     ap.add_argument("--b", type=int, nargs="+", default=[2], help="block size(s)")
@@ -173,8 +173,8 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"\nwrote {out.with_suffix('.json')} and {out.with_suffix('.csv')}")
     print(f"storage={args.storage}  (median over seeds; diagnostics, not asserted)")
-    print("Claim (Sec 6, eq. 9a): backward/u is ~constant -- flat across height AND kappa;")
-    print("forward error tracks kappa*u, so forward/(kappa*u) is ~constant too.\n")
+    print("backward/u = ||E|| / (u ||A||) from the kernel's factors; forward/(kappa*u) is the")
+    print("forward error over kappa*u. A flat trend on this grid is an observation, not a bound.\n")
     for b in args.b:
         print(f"[b={b}]  {'depth':>5} {'n':>5} {'kappa':>10} {'backward/u':>11} "
               f"{'forward':>11} {'fwd/(k*u)':>11}")

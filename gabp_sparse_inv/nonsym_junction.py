@@ -52,9 +52,9 @@ so reverse-mode autograd through it is the ``S``-local adjoint-up-to-transpose s
 **Solve sibling.** The same block ``LDU`` factorization yields a linear *solve*
 ``x = A^{-1} b`` (and the transpose ``A^{-T} b``) via standard block triangular substitution:
 :func:`nonsym_junction_solve`, the non-symmetric counterpart of
-:func:`~gabp_sparse_inv.junction_solve`. The transpose solve is the implicit-differentiation
-adjoint a fixed-point / DEQ backward needs, reusing the *same* factors with no
-refactorization.
+:func:`~gabp_sparse_inv.junction_solve`. The transpose solve is the adjoint solve that
+implicit differentiation through a linear fixed point needs, reusing the *same* factors
+with no refactorization.
 
 **Scope.** A minimal reference: the dependency-free min-degree order from
 :mod:`gabp_sparse_inv.junction` and a per-node Python loop. No supernodal engineering, no
@@ -354,7 +354,7 @@ def nonsym_junction_solve(
     block-for-block.
 
     The ``transpose`` flag is the implicit-differentiation adjoint solve: backpropagating
-    through a fixed-point / DEQ layer ``z* = A^{-1} b`` requires one ``A^T`` solve (the
+    through a linear fixed point ``z* = A^{-1} b`` requires one ``A^T`` solve (the
     vector-Jacobian product of the implicit function theorem), and it is the *same* factors
     transposed -- no refactorization.
 

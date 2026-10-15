@@ -33,7 +33,7 @@ order**: the kernel implicitly factorizes in a fill-reducing (leaf-first / perfe
 order, so most of its "edge" is over a *naively-ordered* dense solve. ``tree_order_sensitivity``
 (below, ``--compare-orders``) commits the experiment that pins this down -- run on the *same*
 matrices it scores the kernel, a NATURAL-order dense ``cholesky_solve``, and a LEAF-FIRST-order
-one. The honest, properly-seeded read (fp32, ``random_spd_tree``, 16 seeds; ratios are
+one. The properly seeded read (fp32, ``random_spd_tree``, 16 seeds; ratios are
 **heavy-tailed**, so report medians WITH spread, never a single ratio):
 
   * advantage over *naive* dense is **modest in the median (~1.5-2.3x), not the ~7x** an early
@@ -368,7 +368,7 @@ def tree_order_sensitivity(
 
     Returns ``[(kappa, {metric: (nat/ker, leaf/ker)}), ...]``, one tuple per seed. **Read it as
     a median WITH spread:** the ratios are heavy-tailed (per-seed they span ~0.3x..40x at high
-    kappa), so a single ratio -- or a 3-seed median-of-medians -- is misleading. The honest
+    kappa), so a single ratio -- or a 3-seed median-of-medians -- is misleading. The
     summary (16 seeds): ``nat/ker`` median ~1.5-2.3x, ``leaf/ker`` median ~0.9-1.4x. So ordering
     explains the bulk of the (modest) median gap, with a residual edge only on the worst trees.
     """

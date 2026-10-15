@@ -159,7 +159,7 @@ def selinv_bidiag(diag: Tensor, lower: Tensor, *, check: bool = False):
 
 
 # --------------------------------------------------------------------------- #
-# Dense triangular instance: T = (I - A)^{-1}, the DeltaNet chunk inverse.
+# Dense triangular instance: T = (I - A)^{-1}, a unit-lower-triangular chunk inverse.
 # --------------------------------------------------------------------------- #
 def _eye_like(A: Tensor) -> Tensor:
     return torch.eye(A.shape[-1], dtype=A.dtype, device=A.device).expand_as(A)
@@ -171,7 +171,7 @@ def selected_inverse_tril(
     check: bool = False,
     compute_dtype: torch.dtype | None = None,
 ) -> Tensor:
-    """Dense lower-triangular inverse ``T = (I - A)^{-1}`` -- the DeltaNet chunk inverse.
+    """Dense lower-triangular inverse ``T = (I - A)^{-1}`` of a unit-lower-triangular matrix.
 
     The dense instance of §9 (``docs/derivations.md`` §9.4): ``A`` is strictly
     lower-triangular (only ``A.tril(-1)`` is used), so ``M = I - A`` is *unit* lower
@@ -235,7 +235,7 @@ class SelInvTril(torch.autograd.Function):
 
 
 def selinv_tril(A: Tensor, *, check: bool = False) -> Tensor:
-    """Autograd-connected ``T = (I - A)^{-1}`` (DeltaNet chunk inverse).
+    """Autograd-connected ``T = (I - A)^{-1}`` for strictly-lower ``A``.
 
     Same forward as :func:`selected_inverse_tril`, with the analytic backward of
     :class:`SelInvTril` (``bar_A = tril(T^T bar_T T^T, -1)``), which also double-backs
@@ -260,7 +260,7 @@ def selected_inverse_nonsym_tree(
 ):
     """Selected inverse of a general (non-symmetric) block matrix whose graph is a tree.
 
-    The zero-fill non-symmetric rung between the block lower-bidiagonal case
+    The zero-fill non-symmetric case between the block lower-bidiagonal case
     (:func:`selected_inverse_bidiag`) and the general LU selected inverse: ``M`` is a
     block matrix whose off-diagonal pattern is a tree, but ``M_{uv}`` and ``M_{vu}`` are
     **independent** (``M_{uv} != M_{vu}^T``). Both directed blocks per tree edge are kept.

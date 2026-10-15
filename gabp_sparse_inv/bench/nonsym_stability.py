@@ -19,12 +19,13 @@ record, against a dense fp64 oracle:
     same blocks, the stability baseline pivoting buys.
   * ``penalty = err_nopivot / err_pivoted`` - the price of *not* pivoting, at equal precision.
 
-The honest reading (§10.4): while block-diagonally dominant (``alpha >~ 1``) the no-pivot kernel
+The reading (§10.4): while block-diagonally dominant (``alpha >~ 1``) the no-pivot kernel
 is at **parity** with pivoted LU and tracks ``kappa * u``; as dominance is lost the Schur floor
 collapses and ``err_nopivot`` departs from ``kappa * u`` while pivoted LU does not - the boundary
 of the static-pattern regime. Pivoting would fix it but makes the symbolic pattern
 data-dependent, so it is out of scope; past the boundary the kernels refuse eliminations whose
-element growth exceeds ``1 / sqrt(eps)``, which the harness records as an infinite error. Like
+local element growth exceeds the limit of ``derivations.md`` §10.4, which the harness records
+as an infinite error. Like
 the rest of ``bench/`` these are dtype/BLAS-dependent **diagnostics** - recorded, not asserted.
 
     python -m gabp_sparse_inv.bench.nonsym_stability

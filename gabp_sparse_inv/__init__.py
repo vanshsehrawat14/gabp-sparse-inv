@@ -2,7 +2,7 @@
 
 Returns the blocks of ``A^{-1}`` on a chosen sparsity pattern without ever forming the dense
 inverse. Trees cost ``O(n b^3)`` work and ``O(n b^2)`` storage. For a general elimination
-order with later-neighbour counts ``w_v``, numeric storage is
+order with ``w_v`` later neighbours of node ``v`` in the filled graph, numeric storage is
 ``Theta(sum_v(1+w_v) b^2)`` and clique work is
 ``Theta(sum_v(1+w_v^2) b^3)``. Kernels (all validated against dense fp64
 oracles; see ``README.md`` for the supported scope):
@@ -23,7 +23,7 @@ Non-symmetric
     Erisman-Tinney recurrence; no pivoting, so eliminations with unsafe element growth
     raise), with
     ``nonsym_junction_solve`` the sibling linear solve ``A^{-1} b`` / ``A^{-T} b`` (the
-    fixed-point / DEQ implicit-differentiation primitive).
+    transpose solve is the adjoint that implicit differentiation needs).
 Applications
     differentiable tree- and grid/loopy-GMRF learning (:mod:`gabp_sparse_inv.gmrf`,
     :mod:`gabp_sparse_inv.gmrf_grid`) and Gaussian sampling (:mod:`gabp_sparse_inv.sampling`).

@@ -339,7 +339,7 @@ def _analytic_grad_memory_tree(n: int, b: int) -> dict:
     The analytic backward holds a constant number of ``[n, b, b]`` accumulators and
     reuses the forward factors -- ``O((2n-1) b^2)``, the same order as the forward
     storage. Autograd through a *dense* ``inv`` must tape the ``(n b)^2`` inverse (and
-    its graph). The honest asymptotic win is vs. the dense tape, not vs. taping the
+    its graph). The asymptotic win is against the dense tape, not against taping the
     structured loop (which is also ``O(n b^2)``). See derivations.md §8 / B2.
     """
     structured = (2 * n - 1) * b * b

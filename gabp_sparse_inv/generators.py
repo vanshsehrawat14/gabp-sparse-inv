@@ -353,9 +353,8 @@ def grid_edges(rows: int, cols: int) -> Tensor:
     """Edge index ``[2, m]`` (``i > j``) of a 2-D 4-neighbour lattice.
 
     Node ``(r, c)`` has id ``r * cols + c`` and connects to its right and down
-    neighbours. This is the loopy graph behind the grid maze (treewidth ``~min(rows,
-    cols)``), the first structure that genuinely needs the junction-tree selected
-    inverse rather than a tree.
+    neighbours. The grid is loopy (treewidth ``~min(rows, cols)``), so it needs the
+    junction-tree selected inverse rather than a tree kernel.
     """
     if rows < 1 or cols < 1:
         raise ValueError(f"rows and cols must be >= 1; got {rows}x{cols}")
@@ -488,7 +487,7 @@ def random_spd_laplacian(
 
     Well-scaled, high-conditioning generator: small ``eps`` -> large ``kappa``
     (``~ lambda_max(L)/eps``), ``O(1)`` entries, a graph-Green's-function inverse. This
-    is the graph-Laplacian / maze regime, complementary to :func:`random_spd_graph`
+    is the graph-Laplacian regime, complementary to :func:`random_spd_graph`
     (block diagonally dominant, ``kappa`` capped low): here ``eps`` is the monotone
     condition-number knob in the *other* direction -- smaller ``eps`` raises ``kappa``.
 

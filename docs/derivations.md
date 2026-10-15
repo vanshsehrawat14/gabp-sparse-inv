@@ -328,17 +328,23 @@ restore positive definiteness lost to rounding.
 **Local primitive error bounds (not a global stability theorem).** Let `u` be the unit roundoff and
 `gamma_k := k u / (1 - k u)`. The schedule is built from three `b x b` primitives,
 each with a standard backward-error bound (Higham, *Accuracy and Stability of
-Numerical Algorithms*, 2nd ed.):
+Numerical Algorithms*, 2nd ed., SIAM 2002). The normwise forms use
+`||X||_2 <= || |X| ||_2 <= sqrt(b) ||X||_2`, so their constants grow faster with the
+block size `b` than the componentwise ones; `b` is the small block size, not the matrix
+dimension.
 
 - **(C) SPD Cholesky** of a pivot `D_v`: the computed factor satisfies
-  `R̂^T R̂ = D_v + ΔD_v` with `|ΔD_v| <= (b+1) gamma_{b+1} |R̂^T||R̂|`, hence
-  `||ΔD_v||_2 <= c_C · b · u · ||D_v||_2 + O(u^2)` (Thm 10.3-10.4). Crucially there is
-  **no element-growth factor**: SPD needs no pivoting and `||R̂||_2^2 = ||D_v||_2`.
-- **(S) Triangular solve** (each of the two in `cholesky_solve` for `ell_v`):
-  `(T + ΔT) x̂ = y` with `|ΔT| <= gamma_b |T|`, so `||ΔT||_2 <= c_S · b · u · ||T||_2`
-  (Thm 8.5).
-- **(P) Block product** with inner dimension `b`: `|Ĉ - AB| <= gamma_b |A||B|`, so
-  `||Ĉ - AB||_2 <= c_P · b · u · ||A||_2 ||B||_2` (§3.5).
+  `R̂^T R̂ = D_v + ΔD_v` with `|ΔD_v| <= gamma_{b+1} |R̂^T||R̂|` (Thm 10.3). Since
+  `|| |R̂^T||R̂| ||_2 = || |R̂| ||_2^2 <= b ||R̂||_2^2 = b ||D_v + ΔD_v||_2`, this gives
+  `||ΔD_v||_2 <= b gamma_{b+1} (1 - b gamma_{b+1})^{-1} ||D_v||_2`, about
+  `b (b+1) u ||D_v||_2`. There is **no element-growth factor**: SPD needs no pivoting.
+- **(S) Triangular solve** with one right-hand side: `(T + ΔT) x̂ = y` with
+  `|ΔT| <= gamma_b |T|` (Thm 8.5), so `||ΔT||_2 <= sqrt(b) gamma_b ||T||_2`, about
+  `b^{3/2} u ||T||_2`. With several right-hand sides, as in the `cholesky_solve` that forms
+  `ell_v`, each column has its own `ΔT`; equivalently the residual satisfies
+  `|T X̂ - Y| <= gamma_b |T||X̂|`. There is in general no single `ΔT` for all columns.
+- **(P) Block product** with inner dimension `b`: `|Ĉ - AB| <= gamma_b |A||B|` (§3.5),
+  so `||Ĉ - AB||_2 <= b gamma_b ||A||_2 ||B||_2`, about `b^2 u ||A||_2 ||B||_2`.
 
 **What these local bounds do and do not prove.** Composing (C), (S), and (P)
 shows that every local factorization, solve, product, and accumulation has the
@@ -351,11 +357,10 @@ algorithm is the exact selected inverse of one globally perturbed matrix
 `A + E` with a normwise constant independent of tree height or conditioning.
 Turning local perturbations into a single structured `E` requires controlling
 how factor-block magnitudes and cancellation accumulate along the elimination
-tree. The previous version of this note asserted that global theorem without
-such a proof. It is retracted here.
+tree. No such global bound is proved here.
 
-An honest open theorem is therefore: under which scaling and structural
-assumptions can one bound a structured backward error
+The open question is: under which scaling and structural assumptions can one bound a
+structured backward error
 
     ||E|| / ||A|| <= C(A, G, b) u + O(u^2),                              (9a)
 
@@ -383,8 +388,10 @@ explicit inverses where it matters. The finite test grids are consistent with a 
 effective constant in (9), but do not establish that bound outside those grids. The tests
 therefore use a conservative condition-aware tolerance (`tol ~ 1e3 * kappa * eps` in
 fp64), not a claimed theorem. Well-conditioned fp64 problems match the dense oracle to
-`~1e-10`; fp32 holds a loose `~1e-4`; bf16 is a coarse storage format exercised through
-a store-low / compute-fp32 path (CPU LAPACK has no half Cholesky). Note that for an
+`~1e-10`; fp32 holds a loose `~1e-4`. bf16 and fp16 are storage formats only: the
+kernels need `compute_dtype=torch.float32` (or float64) for them, because CPU LAPACK has no
+half-precision Cholesky or inverse, and a half-precision input without `compute_dtype`
+raises. Note that for an
 *uncontrolled*
 random tree the factor blocks `ell_v` compound along root-to-leaf paths (expected
 height `~ e*log n`), so `kappa(A)` is not pinned by `b` alone the way it is for a
@@ -398,19 +405,20 @@ The non-symmetric kernels lose SPD-ness, so the analysis splits into the benign 
 conditional case.
 
 - **Lower-bidiagonal (§9.2).** Each selected block is *one* `b x b` inverse plus at most two
-  products (15), with **no accumulation sweep**. Its backward error is therefore purely
-  local - `||ΔM_vv||_2 <= c·b·u·||M_vv||_2` per diagonal block and similarly for the
-  couplings - with no degree or height factor at all, and the forward error of each block is
-  governed by `kappa(M_vv)` (resp. the two endpoint diagonals) rather than a global
-  `kappa(M)`. This locality is why §9 needs no symmetrization and matches the dense oracle to
-  `~1e-9`.
-- **Dense triangular `(I - A)^{-1}` (§9.4).** Computed by backward-stable triangular solves
-  (S): the computed `T̂` solves `(I - A + ΔM) T̂ = I` with `||ΔM||_2 <= c·N·u·||I - A||_2`
-  (Higham ch. 8). Without SPD the forward error is governed by `kappa(I - A)`. The unit
-  diagonal makes `I - A` nonsingular (its determinant is one) but not well conditioned:
-  `[[1, 0], [t, 1]]` has `kappa_2` of order `t^2`. The triangular solve is backward
-  stable; the accuracy of `T` still depends on `kappa(I - A)`, which large strictly-lower
-  entries of a chunk can make arbitrarily large.
+  products (15), with **no accumulation sweep**. The errors are therefore local: `G_ii` is a
+  `b x b` inverse computed by LU with partial pivoting, accurate to about `kappa(M_ii) u`
+  relative to `||G_ii||`, and `G_{i+1,i}` adds the two products, with no degree or height
+  factor. The forward error of each block is governed by its endpoint diagonals rather than
+  a global `kappa(M)`. This locality is why §9 needs no symmetrization and matches the dense
+  oracle to `~1e-9`.
+- **Dense triangular `(I - A)^{-1}` (§9.4).** Computed by triangular solves against the
+  identity (S): each computed column `t̂_j` satisfies `(I - A + ΔM_j) t̂_j = e_j` with
+  `|ΔM_j| <= gamma_N |I - A|` (Thm 8.5), so `|(I - A) T̂ - I| <= gamma_N |I - A||T̂|`. The
+  perturbation differs from column to column, so `T̂` is in general not the exact inverse
+  of one nearby matrix. Without SPD the forward error is governed by the conditioning of
+  `I - A`. The unit diagonal makes `I - A` nonsingular (its determinant is one) but not well
+  conditioned: `[[1, 0], [t, 1]]` has `kappa_2` of order `t^2`, so large strictly-lower
+  entries of a chunk can make the accuracy of `T` arbitrarily poor.
 
 ---
 
@@ -504,9 +512,9 @@ implementation is also validated by differentiating a *parametrized dense oracle
 (`to_dense(diag, edge) → inv → extract → f`), which carries the duplication through
 autograd automatically (see `tests/test_autodiff.py`).
 
-### 8.2 The adjoint theorem (proved on trees)
+### 8.2 The reverse schedule on trees
 
-> **Theorem (same-structure reverse schedule).** Let `A` be SPD with tree pattern `G`, rooted
+> **Statement (same-structure reverse schedule).** Let `A` be SPD with tree pattern `G`, rooted
 > as in §2, with forward factors `D_v`, `ell_v = U_v D_v^{-1}` and selected blocks
 > `G_vv`, `G_{p(v),v}` from (3)-(6). For any loss `f` of the selected blocks, the
 > stored-block gradients (11b) are computed exactly by the **reverse two-pass
@@ -515,18 +523,19 @@ autograd automatically (see `tests/test_autodiff.py`).
 > Its cost is `O((|V|+|E|) b^3)` time and `O((|V|+|E|) b^2)` memory - identical to
 > the forward pass.
 
-**Proof.** The forward map `(diag, edge) ↦ (G_diag, G_edge)` is the finite composition
+**Derivation.** The forward map `(diag, edge) ↦ (G_diag, G_edge)` is the finite composition
 of the differentiable primitives (3)-(6) (block products, a symmetric solve realized
 through Cholesky, the inverse `D_v^{-1}`, and the symmetrizations of §6) scheduled on
-the tree. Reverse-mode AD of a composition is the reversed composition of the local
-vector-Jacobian products (VJPs); applied here it yields *exactly* (13)-(14), so the
-schedule computes the exact gradient `(barAd, barAe)`. The two claims that make it a
+the tree. Reverse-mode differentiation of a composition is the reversed composition of the
+local vector-Jacobian products (VJPs); writing out each step's VJP in reverse order gives
+(13)-(14). The recurrences are checked against dense autograd and `gradcheck`
+(`tests/test_autodiff.py`). The two claims that make it a
 *tree* schedule of forward cost are: (i) each forward node touches only its own blocks
 and its parent's, so each local VJP touches only the same neighbours - the reverse
 sweep has the same `1 + |children(v)|` block-op count per node; and (ii) the data
 dependencies reverse cleanly - a quantity computed in the forward collect (resp.
 distribute) has all its consumers in later collect/distribute steps, so its cotangent
-is complete by the time the reversed sweep reaches it (made explicit after (14)). ∎
+is complete by the time the reversed sweep reaches it (made explicit after (14)).
 
 **Remark (what is and is not self-adjoint).** On symmetric matrices with the trace
 inner product, and with the same pattern `S` for inputs and outputs, the derivative
@@ -607,13 +616,13 @@ pattern (§2.1, eq. (8)) - the edges of `A` plus all fill. The forward selected 
 back-substitution (7), `(D, L|_S) ↦ G|_S`; by the closure Lemma (§2.1) it references only
 `S`-blocks.
 
-> **Theorem (same-structure reverse schedule, filled pattern).** For any scalar loss `f` of the selected
+> **Statement (same-structure reverse schedule, filled pattern).** For any scalar loss `f` of the selected
 > blocks `{G_{uv} : (u,v) ∈ S}`, the cotangents `{∂f/∂A_{uv} : (u,v) ∈ S}` are computed by
 > a **reverse two-pass schedule on the same elimination structure** - a reverse-Takahashi
 > sweep followed by a reverse-elimination sweep - that touches only `S`-blocks, reuses the
 > forward factors `(D, L|_S)`, and costs the same `O(·)` as the forward selected inverse.
 
-**Proof.** The forward map `A|_S ↦ G|_S` is a finite composition of block primitives, each
+**Derivation.** The forward map `A|_S ↦ G|_S` is a finite composition of block primitives, each
 **`S`-local**, scheduled in elimination order:
 
 - *Elimination (collect).* Eliminating `v` forms `chol(D_v)`, the factor blocks
@@ -642,27 +651,26 @@ complete before it is consumed (its forward consumers are later in creation orde
 earlier in reverse) and the forward `(D, L|_S)` reused. With `w_v = |U_v|`, both
 directions visit `Theta(1 + w_v^2)` block operations at node `v`, including the
 clique-pair updates. Thus both cost `Theta(W b^3)` for
-`W = sum_v (1 + w_v^2)`. ∎
+`W = sum_v (1 + w_v^2)`.
 
 **Clique-tree view.** Grouping eliminated variables into the cliques of the chordal
 completion makes `S` the pattern of a **tree of cliques** (junction tree), and the schedule
 above is the §8.2 two-pass theorem *lifted to super-nodes* - clique residuals as diagonal
 blocks, separators as the couplings - which is why the tree argument generalizes verbatim in
-structure (the §8.2 proof is block-size agnostic). The within-clique selected blocks are
+structure (the §8.2 derivation is block-size agnostic). The within-clique selected blocks are
 dense but all lie in `S`.
 
-**Scope.** This establishes the **existence, `S`-closure, self-adjoint structure, and cost**
-of the filled-pattern adjoint. The **forward** is now shipped (§2.2,
-`gabp_sparse_inv/junction.py`), and because that forward is written as a finite
-composition of differentiable `S`-local block ops, **reverse-mode autograd through it is
-exactly the self-adjoint schedule of this theorem** - i.e. the adjoint is realized
-constructively, validated by `gradcheck` in `tests/test_junction.py`. The *hand-written*
-analytic clique recurrence - the explicit analog of §8.3 eqs. (13)-(14) - is now also
-shipped (§8.5, `gabp_sparse_inv/junction_autodiff.py`); the tree case (§8.2-8.3) is its
-zero-fill specialization. It stores `Theta(F b^2)` numeric factor/selected blocks, but the
-current checked level-set implementation also pre-materializes `Theta(W)` symbolic
-clique-pair indices. It is therefore tape-free, not a claim of `Theta(F)` total memory for
-the shipped path.
+**Scope.** This establishes the `S`-closure and cost of the filled-pattern reverse schedule.
+It is a statement about the schedule; whether the derivative map is self-adjoint is the
+separate question of the §8.2 remark. The forward (§2.2, `gabp_sparse_inv/junction.py`) is
+written as a finite composition of differentiable `S`-local block ops, so reverse-mode
+autograd through it runs this schedule, checked by `gradcheck` in `tests/test_junction.py`.
+The hand-written clique recurrence, the explicit analogue of §8.3 eqs. (13)-(14), is §8.5
+(`gabp_sparse_inv/junction_autodiff.py`); the tree case (§8.2-8.3) is its zero-fill
+specialization. It stores `Theta(F b^2)` numeric factor and selected blocks and keeps no
+autograd tape; the level-set implementation also pre-materializes `Theta(W)` symbolic
+clique-pair indices. Its backward reads saved factors that are not connected to the inputs,
+so it is first order only and refuses `create_graph=True`.
 
 ### 8.5 The explicit clique recurrences (what `SelInvJunction.backward` runs)
 
@@ -711,10 +719,9 @@ autograd path and by `gradcheck` (`tests/test_junction_autodiff.py`).
 ## 9. Non-symmetric selected inverse: the lower-bidiagonal case
 
 Sections 1-8 are SPD. The first non-symmetric instance is the **block lower-bidiagonal**
-matrix - the non-symmetric analogue of the chain (§4). It is the "easy" triangular case
-that validates the non-symmetric forward + adjoint machinery and bridges to the DeltaNet
-chunk inverse `(I − A)^{-1}` (§9.4). Implemented in `gabp_sparse_inv/nonsym.py`
-(`selected_inverse_bidiag`, `selinv_bidiag`).
+matrix - the non-symmetric analogue of the chain (§4), and the simplest triangular case.
+Its dense unit-diagonal relative is `(I − A)^{-1}` (§9.4). Implemented in
+`gabp_sparse_inv/nonsym.py` (`selected_inverse_bidiag`, `selinv_bidiag`).
 
 ### 9.0 Provenance
 
@@ -780,25 +787,24 @@ oracle assembles `M` exactly and inverts it, so analytic and autograd gradients 
 `~1e-9` (`tests/test_nonsym.py`), without the factor-of-2/transpose bookkeeping that the
 symmetric stored-block convention forces.
 
-### 9.4 Dense triangular instance (DeltaNet chunk)
+### 9.4 Dense triangular instance `(I − A)^{-1}`
 
 The same construction with a **dense** strictly-lower `A` (so `M = I − A` is unit
-lower-triangular, `D_i = I`) yields the chunk inverse `T = (I − A)^{-1}`, the DeltaNet /
-gated-DeltaNet primitive. There the selected set is the *full* lower triangle (no sparsity
+lower-triangular, `D_i = I`) yields `T = (I − A)^{-1}`, the chunk inverse of DeltaNet-style
+linear attention. There the selected set is the *full* lower triangle (no sparsity
 win) and the adjoint is the same `dT = T (dA) T` restricted to the strictly-lower pattern,
 
     bar_A = tril(T^T bar_T T^T, -1) .                                                      (17)
 
-It is the explicit bridge to the demonstration ladder, implemented as
-`selected_inverse_tril` / `selinv_tril` (`gabp_sparse_inv/nonsym.py`). The
-autograd-differentiable triangular solve is its baseline, so the contribution is the
-analytic transpose-form VJP (17), not the inverse itself; it is validated against the
+It is implemented as `selected_inverse_tril` / `selinv_tril` (`gabp_sparse_inv/nonsym.py`).
+Autograd through `torch.linalg.solve_triangular` computes the same gradient, so `selinv_tril`
+only packages the transpose-form VJP (17); it is validated against the
 dense inverse and against autograd-through-`solve_triangular` to `~1e-15`
 (`tests/test_nonsym.py`).
 
 ### 9.5 Non-symmetric *tree* instance (zero fill)
 
-The zero-fill non-symmetric rung between the lower-bidiagonal case (§9.2) and the general
+The zero-fill non-symmetric case between the lower-bidiagonal case (§9.2) and the general
 LU selected inverse: `M` is a block matrix whose off-diagonal graph is a rooted tree, but
 the two directed blocks per edge are **independent**, `M_{p,v} != M_{v,p}^T`. A tree is a
 perfect elimination order with no fill, so a block `LDU` factorization in collect order
@@ -827,7 +833,7 @@ general non-symmetric / pivoted LU (Erisman-Tinney) selected inverse - that is �
 
 ## 10. General non-symmetric (filled-pattern LU) selected inverse
 
-The headline non-symmetric rung: `A` is a general block matrix with an **arbitrary
+The general non-symmetric case: `A` is a general block matrix with an **arbitrary
 structurally-symmetric** pattern (`(i,j)` present iff `(j,i)` is) but independent directed
 blocks (`A_{ij} != A_{ji}^T`). This generalizes the junction kernel (§2.2, §8.4) from SPD to
 non-symmetric, and the non-symmetric *tree* (§9.5) from zero-fill to general fill.
@@ -896,9 +902,9 @@ input nonzeros.
 
 In the implementation the forward (21)-(26) is written functionally (the pivots are
 `torch.linalg.inv`), so reverse-mode autograd **is** this `S`-local schedule, `gradcheck`-validated
-in `tests/test_nonsym_junction.py`. The *hand-written* analytic version
-(the tape-free §8.5 analogue) is now also shipped
-(`gabp_sparse_inv/junction_autodiff.py`, `SelInvNonsymJunction` / `selinv_nonsym_junction_analytic`):
+in `tests/test_nonsym_junction.py`. The hand-written analytic version, the tape-free §8.5
+analogue, is `SelInvNonsymJunction` / `selinv_nonsym_junction_analytic`
+(`gabp_sparse_inv/junction_autodiff.py`), first order only:
 the reverse two-sweep of §8.5 with the lower/upper factors carrying **independent** cotangents
 `bL`, `bU` (no `L = U^T` symmetry to fold them), the pivot reversed by the general inverse VJP
 `bD = -Dinv^T bDinv Dinv^T` and no diagonal symmetrization (general blocks). It reduces
@@ -916,10 +922,44 @@ Schur complement. Global conditioning does not certify the regime:
 `[[eps, 1], [2, 1]]` has `kappa_2 -> 2.62` as `eps -> 0` and nonzero scalar pivots, yet
 eliminating node 0 first multiplies by `2 / eps`. Partial / threshold pivoting would
 restore stability, but it changes the elimination pattern *dynamically*, so it is out of
-scope. Instead the kernels track element growth (the largest reduced pivot, reduced
-coupling or Schur update relative to the largest input entry) and raise
-`torch.linalg.LinAlgError` when it exceeds `1 / sqrt(eps)` of the working dtype; the caller
-can choose an order that eliminates well-conditioned pivots first or use a pivoted LU.
+scope. The condition number of `A` therefore does not control the accuracy of these
+kernels; the elimination's element growth does.
+
+**Growth guard.** The kernels measure a *local* growth `g`: every reduced pivot and reduced
+off-diagonal block, and for every Schur update `L_wv D_v U_vw'` the product of norms
+`||L_wv|| ||D_v|| ||U_vw'||`, divided by the larger of the largest input entries in its
+block row and its block column. The products bound the entries of `|L| |D| |U|` in the
+backward error bound `|ΔA| <~ c u |L| |D| |U|` of elimination without pivoting; with
+`b x b` blocks the multipliers can be large while their product cancels, so the Schur
+entries alone understate it. Measuring each position against its own row and column makes
+`g` unaffected by a large block elsewhere, a disconnected component or a global rescaling.
+(0.4.0 divided the largest formed entry by the largest input entry of the whole matrix: one
+large unrelated block switched the guard off, and `[[1e-18, 1], [2, 1]]` plus an isolated
+node `1e12` returned `G_00 = 128` instead of `-0.5`.)
+
+Solves and selected inverses get different limits because their errors grow differently.
+A solve has backward error about `u g`, so `nonsym_junction_solve` refuses `g > eps^{-1/2}`.
+The Takahashi recurrence multiplies errors already present in later blocks by the factors
+again, and the selected-inverse error grows like `u g^2`: on the well-conditioned
+`[[d, 1, 1], [1, 1, 0.5], [2, 0.3, 1]]` (`kappa_2 = 5.6`), eliminating node 0 first with
+`d = 1e-7` gives `g = 1e7`, a solve accurate to `1.2e-9` and selected blocks wrong by
+`2.5e-3`. The selected-inverse kernels therefore refuse `g > eps^{-1/4}`. The limits are
+`2.9e3` / `54` in float32 and `6.7e7` / `8.2e3` in float64. A refused call raises
+`torch.linalg.LinAlgError`; a better elimination order, `compute_dtype=torch.float64` or a
+pivoted LU are the ways forward.
+
+This is a heuristic, not a stability guarantee. An accepted elimination can still lose up
+to about half the working digits relative to the local row and column scales, more when
+`A` (or its row- or column-equilibrated form) is ill conditioned, and small entries of the
+inverse can carry large relative errors. In a randomized check of 2,983 problems
+(non-symmetric trees, grids and graphs with `n <= 9`, `b <= 2`, dominance
+`0.05 <= alpha <= 3.2`, near-zero leading pivots, row and column scalings over up to eight
+decades, random orders, float32 and float64), no strictly dominant problem (`alpha >= 1`,
+no tiny pivot) was refused, and every accepted problem whose equilibrated condition numbers
+sum to less than `1e3` had selected-block errors below `4.3e-10` (float64) and `8.5e-5`
+(float32), and solve errors below `6.8e-9` and `1.1e-4`. The guard is conservative: it
+refused about 13% of the moderately dominant float32 selected inverses
+(`0.3 <= alpha < 1`), nearly all of which would have been accurate to `sqrt(eps)`.
 
 The boundary is **measured** in `gabp_sparse_inv/bench/nonsym_stability.py`: sweeping the
 block-diagonal-dominance ratio `α = σ_min(A_vv) / Σ_j ||A_vj||` (Feingold-Varga boundary at
@@ -938,8 +978,8 @@ Implemented and tested: **chain**, **star**, **general tree**
 (`gabp_sparse_inv/tree.py`), the **differentiable, level-set-batched adjoint of
 selected inversion** on trees (§8 - `gabp_sparse_inv/autodiff.py`, `SelInvTree`/
 `selinv_tree`; backward validated to machine precision), and the
-**non-symmetric lower-bidiagonal** selected inverse plus the dense `(I − A)^{-1}` DeltaNet
-chunk and the **non-symmetric tree** selected inverse (§9 - `gabp_sparse_inv/nonsym.py`),
+**non-symmetric lower-bidiagonal** selected inverse plus the dense `(I − A)^{-1}`
+and the **non-symmetric tree** selected inverse (§9 - `gabp_sparse_inv/nonsym.py`),
 and the **general-sparse (junction-tree)** selected
 inverse on the filled pattern (§2.2, §8.4 - `gabp_sparse_inv/junction.py`,
 `selected_inverse_junction`/`selinv_junction`): forward + an autograd adjoint (the §8.4
@@ -949,5 +989,6 @@ non-symmetric (LU / Erisman-Tinney)** selected inverse on the filled pattern (§
 `selinv_nonsym_junction`): forward + an autograd adjoint evaluated through
 `L_A^* = L_{A^T}` (§10.3), no pivoting (the static-pattern regime, with the §10.4
 growth guard), dense-oracle/`gradcheck`-gated.
-The hand-written analytic filled-pattern backwards are shipped for both
-symmetric and non-symmetric junction kernels.
+The hand-written analytic backwards (tree and both junction kernels) are first order and
+refuse `create_graph=True`; the functional forwards support second derivatives
+(`tests/test_double_backward.py`).
