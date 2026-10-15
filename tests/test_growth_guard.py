@@ -267,7 +267,11 @@ def test_block_pivot_conditioning_is_measured(monkeypatch):
     rhs = torch.linspace(-1, 1, 14, dtype=F32).reshape(7, 2)
     with pytest.raises(torch.linalg.LinAlgError, match="element growth"):
         nonsym_junction_solve(diag, ei, lower, upper, rhs)
+    # Unguarded, the answer is wrong. Every unit right-hand side is solved, because one vector
+    # can miss the unstable direction: the vector above errs by 1.6e-2 on x86 but by 9.3e-4 on
+    # Apple silicon.
     monkeypatch.setattr(nonsym_junction_module, "check_pivot_growth", lambda *args: None)
-    x = nonsym_junction_solve(diag, ei, lower, upper, rhs).reshape(14).double()
-    want = torch.linalg.solve(_dense(diag, ei, lower, upper), rhs.reshape(14).double())
-    assert float((x - want).abs().max() / want.abs().max()) > 1e-3
+    X = torch.stack([nonsym_junction_solve(diag, ei, lower, upper, e.reshape(7, 2)).reshape(14)
+                     for e in torch.eye(14, dtype=F32)], -1).double()
+    want = torch.linalg.inv(_dense(diag, ei, lower, upper))
+    assert float((X - want).abs().max() / want.abs().max()) > 1e-3
